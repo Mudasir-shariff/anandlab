@@ -1,0 +1,15 @@
+.git
+.openai
+work
+node_modules
+data
+backups
+outputs
+.env
+.env.*
+.dev.vars*
+*.sqlite*
+*.lfbackup
+*.partial
+dist/labflow-source.zip
+test

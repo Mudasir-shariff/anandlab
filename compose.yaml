@@ -1,0 +1,41 @@
+services:
+  labflow:
+    build: .
+    init: true
+    user: "1000:1000"
+    restart: unless-stopped
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    stop_grace_period: 30s
+    environment:
+      NODE_ENV: production
+      LAB_HOST: 0.0.0.0
+      PORT: "3000"
+      LAB_DATA_DIR: /app/data
+      LAB_BACKUP_DIR: /app/backups
+      LAB_PUBLIC_ORIGIN: ${LAB_PUBLIC_ORIGIN:?Configure the HTTPS laboratory origin}
+      LAB_USER: ${LAB_USER:-}
+      LAB_PASSWORD: ${LAB_PASSWORD:-}
+      LAB_REQUIRE_INDEPENDENT_REVIEW: "1"
+      LAB_ALLOW_BASIC: "0"
+      LAB_CLINICAL_VALIDATION_FILE: /app/validation/clinical.json
+      LAB_REQUIRED_INTEGRATIONS: ${LAB_REQUIRED_INTEGRATIONS:-analyzers,whatsapp,email}
+    ports:
+      - "127.0.0.1:3000:3000"
+    volumes:
+      - labflow_data:/app/data
+      - labflow_backups:/app/backups
+      - ${LAB_VALIDATION_DIR:-./validation}:/app/validation:ro
+    tmpfs:
+      - /tmp:uid=1000,gid=1000,mode=0700
+    mem_limit: 512m
+    cpus: 1.0
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+volumes:
+  labflow_data:
+  labflow_backups:

@@ -1,0 +1,12 @@
+work/
+data/
+.sites-runtime/
+outputs/
+.env*
+.dev.vars*
+*.sqlite*
+node_modules/
+backups/
+*.lfbackup
+*.partial
+validation/clinical.json

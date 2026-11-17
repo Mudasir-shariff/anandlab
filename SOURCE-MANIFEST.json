@@ -1,0 +1,228 @@
+{
+  "project": "Labflow",
+  "version": "1.3.0",
+  "createdAt": "2026-11-15T05:04:52.987405+00:00",
+  "sourceFiles": {
+    "README.md": {
+      "bytes": 4621,
+      "sha256": "975b014bc08145ada6b8e8edcd02cbd5986349d0b0302d5032b5ee2e5cbaa06b"
+    },
+    "SELF-HOSTING.md": {
+      "bytes": 7647,
+      "sha256": "42b930b5a03ce7fb475f0c1c3a85c7a3c5e443e06955d8fb720c6c00827b19a4"
+    },
+    "package.json": {
+      "bytes": 613,
+      "sha256": "b64060b9cd1cda81d68cad3036e108318677e3f08529ae07430da430306005b6"
+    },
+    "package-lock.json": {
+      "bytes": 12971,
+      "sha256": "583710d3a012c07ce9ed4e39ef5d2a37aaff7ac772f2c430889ea135b91494a6"
+    },
+    "server.mjs": {
+      "bytes": 35642,
+      "sha256": "24d854e8b1b9348930b7a5ea8be222bb6cf65be1ae075f2caeb08a508bea168b"
+    },
+    "Dockerfile": {
+      "bytes": 692,
+      "sha256": "b03382a2a2e1304fbcbf6f6125d367626bff962ceefcd2eaa0b0cdff24c1be1d"
+    },
+    "compose.yaml": {
+      "bytes": 1152,
+      "sha256": "b212664a66e8d4e6d08cd8d7bf1d0da0270820fcd930a0da5bde3439decb59f9"
+    },
+    ".gitignore": {
+      "bytes": 133,
+      "sha256": "df275e03d4a7ff793bede6db17c1e10112798c1a269b9c4420421f79069e99e0"
+    },
+    ".dockerignore": {
+      "bytes": 135,
+      "sha256": "fcc8510f849b5145be82878b2bb33dba0e9d7eb9c08f185eb508489f1ea1b570"
+    },
+    "dist/admin.js": {
+      "bytes": 11158,
+      "sha256": "544bf79697b72439ae06ef0b2d535a7a03a1f2ab2f3084236e79d02846cdc848"
+    },
+    "dist/app.js": {
+      "bytes": 79782,
+      "sha256": "471326f2691927e92598ac87e8ee60a46137192aaa8590e506332a6a8cb80e1b"
+    },
+    "dist/barcode.js": {
+      "bytes": 2855,
+      "sha256": "53dce8cc2ceae829215e8481c72e0a7bcdf1cc110e0a80262b0b093c5145d7da"
+    },
+    "dist/benchmark-results.json": {
+      "bytes": 693,
+      "sha256": "73b7457cd0f00be0ba6c455cf2bc5a19fa773909c2700ea96efeccc383dc2531"
+    },
+    "dist/benchmark.html": {
+      "bytes": 3506,
+      "sha256": "b6aa11582b03785a173c4760408804f05edc71caaf7ba23b1ffe9841bcc125ad"
+    },
+    "dist/catalog.js": {
+      "bytes": 14735,
+      "sha256": "8de3389b210c1a4d5102b1f4d91e19e28aea959158137b5b660b6e757b59df54"
+    },
+    "dist/competition-and-readiness.html": {
+      "bytes": 9408,
+      "sha256": "5c2d57111c655700d41b34cf3e256d6862fec5bc6c1111bccc8397f63801b294"
+    },
+    "dist/index.html": {
+      "bytes": 608,
+      "sha256": "003cd45cd7404193bacff94a1527e383cfe39e230195570fcbdf6dbe7adb3afb"
+    },
+    "dist/report.css": {
+      "bytes": 20997,
+      "sha256": "3a17c935c43cb61709110fec788f566965a8d6abd55755affc0ba982c58a9b7f"
+    },
+    "dist/report.js": {
+      "bytes": 15505,
+      "sha256": "eb32ff070d302144191bac153cba286735b79b9a1c61158b867a725bdada20b7"
+    },
+    "dist/style.css": {
+      "bytes": 39203,
+      "sha256": "9e4b4f072e56eb5ecd4e8fceca6f7b0e2af522369429a185ab99a50a63f92a63"
+    },
+    "lib/auth.mjs": {
+      "bytes": 13707,
+      "sha256": "529833c8e8d06ef840a0e171fcef0b9562b11f3b48b90c11e340bb74b7087da8"
+    },
+    "lib/integrations.mjs": {
+      "bytes": 16892,
+      "sha256": "c09cd4cd7c667df0637ba832a5d7347bb547e98f7a6463085c676689a2f13543"
+    },
+    "lib/platform.mjs": {
+      "bytes": 9754,
+      "sha256": "d70ca6dc1224a3006a62738c70ca65547392f43ab42dda4a7c4087726a2641df"
+    },
+    "lib/quality.mjs": {
+      "bytes": 24692,
+      "sha256": "8e001f42d90cfb3b67d6e3c2f11dde6c253b621075eec5daa9c419c4c57133c9"
+    },
+    "scripts/backup.mjs": {
+      "bytes": 6502,
+      "sha256": "5f490744697438953e62ed2c40e9d5b4c29a70b38a243bac7477d0f7d756bda1"
+    },
+    "scripts/benchmark.mjs": {
+      "bytes": 5158,
+      "sha256": "ee5cbaba63bae1a31285af007bf6c0145729347b5849662d47ef7f7b2c481d6d"
+    },
+    "scripts/build-docs.mjs": {
+      "bytes": 2985,
+      "sha256": "8d8eed89c30bb554b5af17a7fcdb6b466b3c539e05e3a6c494c28436ccee37dd"
+    },
+    "scripts/check-readiness.mjs": {
+      "bytes": 7171,
+      "sha256": "18263e2dcbcd325c0e4f49a5b3afe18a221f72904d75d583a4ad55349a88f795"
+    },
+    "scripts/check-syntax.mjs": {
+      "bytes": 889,
+      "sha256": "0fe4567162e6e5ec971ee00bf647faaa31b6aaeaf90f48c0c25ecc106628e249"
+    },
+    "scripts/container-smoke.mjs": {
+      "bytes": 3158,
+      "sha256": "64f3882d5b55a0e3576a716d0f50806725e66cf5552f1f2e685034453b109767"
+    },
+    "scripts/manage-users.mjs": {
+      "bytes": 2537,
+      "sha256": "b7e2cd79bb917aa8efb32e5b915984b68dfc09b45b42276df71cb6f5a09b29a4"
+    },
+    "scripts/restore-check.mjs": {
+      "bytes": 5030,
+      "sha256": "d47c62e6e6b5be8396dbe14a8db7ba55335fe087defd111af28b2337ef7cdeb2"
+    },
+    "scripts/restore.mjs": {
+      "bytes": 3122,
+      "sha256": "d465673c2150595b83a2743d92a4676c1b40b9e8218c93ab52cb14de0f084e30"
+    },
+    "scripts/test-server.mjs": {
+      "bytes": 2655,
+      "sha256": "c02503eec8178199a39ba96268a461cc5a91a8d89108caeb512a1bb18b7f238a"
+    },
+    "test/auth.test.mjs": {
+      "bytes": 12957,
+      "sha256": "af3b7e72c119ee068527b113f187849d72e1f107c9db326eb88329066350dde0"
+    },
+    "test/barcode.test.mjs": {
+      "bytes": 3275,
+      "sha256": "9b9dc06f84433430600dafde9915c03b02d5dcb3d6f2e3d09972b8c8bc610690"
+    },
+    "test/catalog.test.mjs": {
+      "bytes": 2971,
+      "sha256": "65eea4503cf7a6ba83f3f45c8f6a1f5022266fbe83b90d2e93f9220fc1e5c479"
+    },
+    "test/integrations.test.mjs": {
+      "bytes": 10809,
+      "sha256": "7aff8547454b9de435ba208f429f1afcb37ffc6dd1d780e80521b5dd77a04917"
+    },
+    "test/ops.test.mjs": {
+      "bytes": 6570,
+      "sha256": "c97ef1bc5eabd7cd0dd0df1f2edb13621e5798f6ba1fd167a1c2f334a8af45cb"
+    },
+    "test/platform.test.mjs": {
+      "bytes": 8929,
+      "sha256": "94f3ca7e00dfd120ca7a9f7dcb816ff556c3db34fe4b4b545e5cb2acbdbac538"
+    },
+    "test/quality.test.mjs": {
+      "bytes": 11831,
+      "sha256": "d7a7c30fe79847c962f5611e22bd03529e9379f9eb626fe089dc28eb3217bfc9"
+    },
+    "test/report.test.mjs": {
+      "bytes": 9078,
+      "sha256": "16479ef051c3bad0065f8bf6bf52faf282e37f37168330cbd49db7a38ea4128b"
+    },
+    "test/server.test.mjs": {
+      "bytes": 21984,
+      "sha256": "41ce41aa5451c26f387a8586b680ae27e9c57b0e793c7389dfe8027b1b3bff44"
+    },
+    "test/styles.test.mjs": {
+      "bytes": 2209,
+      "sha256": "2ee7fc3ff83d4457293a381db84f5ce9e9a33e02fdc40b425a885d6aa9c2e9f2"
+    },
+    "test/ui-edge.test.mjs": {
+      "bytes": 10816,
+      "sha256": "521a758308639bd8098fdf4d85c260ab1c8e3266b9539a2f8440354bf85c4c6e"
+    },
+    "test/ui-session.test.mjs": {
+      "bytes": 4272,
+      "sha256": "ae5c67248d3ffff58b601c60d1a6da867943ae644c761e676c8e17ef86c00bf1"
+    },
+    "test/ui.test.mjs": {
+      "bytes": 14299,
+      "sha256": "e8396d989b3489290c2f172747dd4b336b689f3ea9648b18fe3d258c072e2674"
+    },
+    "docs/BENCHMARK.md": {
+      "bytes": 1935,
+      "sha256": "030cc92e4746a9d26437a2988aedf2e84c031bc0757b937657bf35dbf0508b88"
+    },
+    "docs/COMPETITOR-COMPARISON.md": {
+      "bytes": 7393,
+      "sha256": "dfe4b2048bf31fa80f14e9007426233f1dc18f012d24bf85e946dbd839b1bbed"
+    },
+    "docs/INTEGRATIONS.md": {
+      "bytes": 15141,
+      "sha256": "295fdee4fb9868af65dee8200bf4ce0f91838d3045683dc1e42422b2a49bab04"
+    },
+    "docs/OPERATIONS.md": {
+      "bytes": 10999,
+      "sha256": "27e1fb9e57b7cce7c19f69d245411c59240849c77b991353e4a90c334d027ff6"
+    },
+    "docs/VERIFICATION.md": {
+      "bytes": 1849,
+      "sha256": "ff0afecb48cd49360d22652f6eb4a115439b0234b30d0a6411091a4a34bbf852"
+    },
+    "validation/README.md": {
+      "bytes": 1288,
+      "sha256": "b651b1281b6b6b1478cbc20eb621afdf27544c33e6baefd1ec68e7dc7a479fc6"
+    }
+  },
+  "verification": {
+    "automatedTestsPassed": 44,
+    "workloadPatients": 100,
+    "workloadClinicalWrites": 500,
+    "workloadConcurrency": 8,
+    "workloadUnexpectedFailures": 0,
+    "dockerBuildAndPersistenceSmoke": "passed",
+    "clinicalGoLive": "requires external laboratory and deployment acceptance"
+  }
+}
