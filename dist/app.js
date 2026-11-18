@@ -1270,6 +1270,43 @@ function renderReportsModule(container) {
     return;
   }
 
+  if (state.reportsSubTab === 'register') {
+    container.innerHTML = `
+      <div class="module-header">
+        <div class="module-title">
+          <h1>Laboratory Reports · Patient Registration</h1>
+          <p>Register new patients, order tests, and generate clinical reports</p>
+        </div>
+        <div class="module-tabs">
+          <button class="tab-btn active" id="tab-rep-register">${uiIcon('plus', 14)} New Registration</button>
+          <button class="tab-btn" id="tab-rep-pending">Pending Reports</button>
+          <button class="tab-btn" id="tab-rep-completed">Completed Reports</button>
+          <button class="tab-btn" id="tab-rep-all">All Reports</button>
+        </div>
+      </div>
+      <div class="module-body" id="reports-reg-body"></div>`;
+
+    document.getElementById('tab-rep-register').addEventListener('click', () => {
+      state.reportsSubTab = 'register';
+      renderReportsModule(container);
+    });
+    document.getElementById('tab-rep-pending').addEventListener('click', () => {
+      state.reportsSubTab = 'pending';
+      renderReportsModule(container);
+    });
+    document.getElementById('tab-rep-completed').addEventListener('click', () => {
+      state.reportsSubTab = 'completed';
+      renderReportsModule(container);
+    });
+    document.getElementById('tab-rep-all').addEventListener('click', () => {
+      state.reportsSubTab = 'all';
+      renderReportsModule(container);
+    });
+
+    renderNewBillForm(document.getElementById('reports-reg-body'));
+    return;
+  }
+
   container.innerHTML = `
     <div class="module-header">
       <div class="module-title">
@@ -1277,6 +1314,7 @@ function renderReportsModule(container) {
         <p>Result entry, automated reference interval flagging, and multi-template printing</p>
       </div>
       <div class="module-tabs">
+        <button class="tab-btn ${state.reportsSubTab === 'register' ? 'active' : ''}" id="tab-rep-register">${uiIcon('plus', 14)} New Registration</button>
         <button class="tab-btn ${state.reportsSubTab === 'pending' ? 'active' : ''}" id="tab-rep-pending">Pending Reports</button>
         <button class="tab-btn ${state.reportsSubTab === 'completed' ? 'active' : ''}" id="tab-rep-completed">Completed Reports</button>
         <button class="tab-btn ${state.reportsSubTab === 'all' ? 'active' : ''}" id="tab-rep-all">All Reports</button>
@@ -1286,7 +1324,8 @@ function renderReportsModule(container) {
       <div class="card">
         <div class="card-header">
           <div class="filter-bar">
-            <input type="text" id="reports-search" placeholder="Search by patient, bill no..." class="table-search" value="${escapeHTML(state.reportsFilter.search)}" />
+            <button id="btn-quick-register-report" class="btn btn-primary btn-sm">${uiIcon('plus', 14)} Register Patient</button>
+            <input type="text" id="reports-search" placeholder="Search by patient, mobile, bill no..." class="table-search" value="${escapeHTML(state.reportsFilter.search)}" />
             <select id="reports-filter-date" class="filter-select">
               <option value="Today" ${state.reportsFilter.dateRange === 'Today' ? 'selected' : ''}>Today</option>
               <option value="Yesterday" ${state.reportsFilter.dateRange === 'Yesterday' ? 'selected' : ''}>Yesterday</option>
@@ -1304,6 +1343,14 @@ function renderReportsModule(container) {
       </div>
     </div>`;
 
+  document.getElementById('tab-rep-register').addEventListener('click', () => {
+    state.reportsSubTab = 'register';
+    renderReportsModule(container);
+  });
+  document.getElementById('btn-quick-register-report').addEventListener('click', () => {
+    state.reportsSubTab = 'register';
+    renderReportsModule(container);
+  });
   document.getElementById('tab-rep-pending').addEventListener('click', () => {
     state.reportsSubTab = 'pending';
     renderReportsModule(container);
@@ -1377,11 +1424,11 @@ async function loadReportsTable() {
       <table class="data-table">
         <thead>
           <tr>
-            <th>Bill / Order</th>
-            <th>Date</th>
+            <th>Reg No / Bill</th>
+            <th>Registered Date</th>
             <th>Patient Details</th>
             <th>Doctor</th>
-            <th>Tests</th>
+            <th>Tests Ordered</th>
             <th class="text-center">Status</th>
             <th class="text-center">Action</th>
           </tr>
@@ -1391,11 +1438,17 @@ async function loadReportsTable() {
             const uniqueTestCodes = [...new Set(r.report_results?.map(res => res.test_code) || [])];
             return `
               <tr>
-                <td><strong>${escapeHTML(r.bills?.bill_no || '—')}</strong></td>
-                <td>${formatDate(r.created_at)}</td>
+                <td>
+                  <strong>${escapeHTML(r.bills?.bill_no || '—')}</strong>
+                  <div><small style="color: #0d9488; font-weight: 600;">${r.patients?.patient_no || ''}</small></div>
+                </td>
+                <td>
+                  ${formatDate(r.created_at)}
+                  <div><small style="color: #64748b;">${new Date(r.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</small></div>
+                </td>
                 <td>
                   <strong>${escapeHTML(r.patients?.full_name || '—')}</strong>
-                  <div><small>${r.patients?.patient_no} · ${r.patients?.sex}, ${r.patients?.age_value}${r.patients?.age_unit}</small></div>
+                  <div><small>${r.patients?.sex || ''}, ${r.patients?.age_value || ''}${r.patients?.age_unit || ''} · 📱 ${escapeHTML(r.patients?.mobile || 'No mobile')}</small></div>
                 </td>
                 <td>${escapeHTML(r.bills?.doctors?.name || 'Self / Walk-in')}</td>
                 <td><span class="test-codes-badge">${uniqueTestCodes.join(', ')}</span></td>
@@ -1485,10 +1538,10 @@ function renderResultEntryForm(container) {
         <div class="patient-banner">
           <div>
             <h2>${escapeHTML(r.patients.title)} ${escapeHTML(r.patients.full_name)}</h2>
-            <p>Patient ID: <strong>${r.patients.patient_no}</strong> | Age/Sex: <strong>${r.patients.age_value} ${r.patients.age_unit} / ${r.patients.sex}</strong></p>
+            <p>Patient Reg No: <strong>${r.patients.patient_no}</strong> | Age/Sex: <strong>${r.patients.age_value} ${r.patients.age_unit} / ${r.patients.sex}</strong> | Mobile: <strong>${escapeHTML(r.patients.mobile || '—')}</strong></p>
           </div>
           <div>
-            <p>Bill No: <strong>${r.bills.bill_no}</strong> | Date: <strong>${formatDate(r.created_at)}</strong></p>
+            <p>Invoice / Bill: <strong>${r.bills.bill_no}</strong> | Reg Date: <strong>${formatDate(r.created_at)} ${new Date(r.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</strong></p>
             <p>Referred By: <strong>${escapeHTML(r.bills.doctors?.name || 'Self / Walk-in')}</strong></p>
           </div>
           <div class="banner-actions">
@@ -1736,8 +1789,16 @@ async function openReceiptModal(billId) {
     updatePreview();
     formatSelect.addEventListener('change', updatePreview);
 
-    document.getElementById('modal-close-btn').addEventListener('click', () => modalContainer.innerHTML = '');
-    document.getElementById('receipt-close-btn').addEventListener('click', () => modalContainer.innerHTML = '');
+    function closeReceipt() {
+      modalContainer.innerHTML = '';
+      if (state.currentPage === 'reports' && state.reportsSubTab === 'register') {
+        state.reportsSubTab = 'pending';
+        const main = document.getElementById('main-content');
+        if (main) renderReportsModule(main);
+      }
+    }
+    document.getElementById('modal-close-btn').addEventListener('click', closeReceipt);
+    document.getElementById('receipt-close-btn').addEventListener('click', closeReceipt);
 
     document.getElementById('btn-do-print-receipt').addEventListener('click', async () => {
       const format = formatSelect.value;
@@ -1745,7 +1806,7 @@ async function openReceiptModal(billId) {
       const res = await window.labflowAPI.printReceipt({ html, format });
       if (res.success) {
         showToast('Receipt printed successfully', 'success');
-        modalContainer.innerHTML = '';
+        closeReceipt();
       } else {
         showToast('Print error: ' + (res.failureReason || 'Failed'), 'error');
       }
