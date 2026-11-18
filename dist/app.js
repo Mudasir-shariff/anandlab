@@ -158,7 +158,16 @@ function uiIcon(name, size = 16, className = '') {
     'check-circle': `<svg class="svg-icon${extraClass}" width="${s}" height="${s}" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>`,
     'download': `<svg class="svg-icon${extraClass}" width="${s}" height="${s}" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>`,
     'log-out': `<svg class="svg-icon${extraClass}" width="${s}" height="${s}" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>`,
-    'plus': `<svg class="svg-icon${extraClass}" width="${s}" height="${s}" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>`
+    'plus': `<svg class="svg-icon${extraClass}" width="${s}" height="${s}" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>`,
+    'lock': `<svg class="svg-icon${extraClass}" width="${s}" height="${s}" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>`,
+    'eye': `<svg class="svg-icon${extraClass}" width="${s}" height="${s}" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`,
+    'eye-off': `<svg class="svg-icon${extraClass}" width="${s}" height="${s}" viewBox="0 0 24 24"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>`,
+    'shield-check': `<svg class="svg-icon${extraClass}" width="${s}" height="${s}" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg>`,
+    'arrow-right': `<svg class="svg-icon${extraClass}" width="${s}" height="${s}" viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>`,
+    'info': `<svg class="svg-icon${extraClass}" width="${s}" height="${s}" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>`,
+    'alert-circle': `<svg class="svg-icon${extraClass}" width="${s}" height="${s}" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>`,
+    'flask': `<svg class="svg-icon${extraClass}" width="${s}" height="${s}" viewBox="0 0 24 24"><path d="M10 2v7.527a2 2 0 0 1-.211.896L4.72 20.55a1 1 0 0 0 .9 1.45h12.76a1 1 0 0 0 .9-1.45l-5.069-10.127A2 2 0 0 1 14 9.527V2"/><line x1="8.5" y1="2" x2="15.5" y2="2"/><line x1="7" y1="16" x2="17" y2="16"/></svg>`,
+    'database': `<svg class="svg-icon${extraClass}" width="${s}" height="${s}" viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>`
   };
   return icons[name] || '';
 }
@@ -355,43 +364,161 @@ function renderLogin(errorMessage = '') {
   const remainingSecs = Math.ceil((state.lockoutUntil - Date.now()) / 1000);
 
   document.getElementById('app').innerHTML = `
-    <div class="login-wrapper">
-      <div class="login-card">
-        <div class="login-header">
-          <div class="login-logo-container">
+    <div class="login-wrapper login-split-page">
+      <!-- Left Hero / Brand Showcase with Multi-Layer Gradients -->
+      <div class="login-brand-side">
+        <div class="brand-ambient-glow brand-glow-1"></div>
+        <div class="brand-ambient-glow brand-glow-2"></div>
+
+        <div class="brand-side-content">
+          <div class="brand-pill-badge">
+            ${uiIcon('shield-check', 14)}
+            <span>Clinical Laboratory LIS &bull; v2.0 Enterprise</span>
+          </div>
+
+          <div class="brand-logo-card">
             <img src="./assets/logo.png" alt="OPTI - X LABS" class="login-logo-img" />
           </div>
-          <h1>Opti-X Labs</h1>
-          <p class="subtitle">Diagnostic Laboratory Management System</p>
+
+          <div class="brand-heading-group">
+            <h1>Opti-X Labs</h1>
+            <p class="brand-subtitle">Anand Diagnostic Laboratory Management &amp; Reporting</p>
+          </div>
+
+          <div class="brand-feature-list">
+            <div class="brand-feature-item">
+              <div class="brand-feature-icon">${uiIcon('credit-card', 18)}</div>
+              <div class="brand-feature-text">
+                <span class="feat-title">Diagnostic Billing &amp; Receipts</span>
+                <span class="feat-desc">Rapid billing, thermal receipts, payments &amp; ledger</span>
+              </div>
+            </div>
+
+            <div class="brand-feature-item">
+              <div class="brand-feature-icon">${uiIcon('flask', 18)}</div>
+              <div class="brand-feature-text">
+                <span class="feat-title">38 Clinical Test Panels</span>
+                <span class="feat-desc">CBC, Biochemistry, Hormones, Serology &amp; Profiles</span>
+              </div>
+            </div>
+
+            <div class="brand-feature-item">
+              <div class="brand-feature-icon">${uiIcon('printer', 18)}</div>
+              <div class="brand-feature-text">
+                <span class="feat-title">Multi-Template Print Engine</span>
+                <span class="feat-desc">Instant PDF export, barcoded letterheads &amp; direct printing</span>
+              </div>
+            </div>
+
+            <div class="brand-feature-item">
+              <div class="brand-feature-icon">${uiIcon('database', 18)}</div>
+              <div class="brand-feature-text">
+                <span class="feat-title">PostgreSQL Cloud Persistence</span>
+                <span class="feat-desc">Real-time Supabase sync with secure local SafeStorage</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="brand-footer-status">
+            ${uiIcon('check-circle', 14)}
+            <span>System Online &bull; Cloud Sync Active</span>
+          </div>
         </div>
+      </div>
 
-        ${errorMessage ? `<div class="login-error-banner" role="alert">${escapeHTML(errorMessage)}</div>` : ''}
-        ${isLocked ? `<div class="login-error-banner">Too many failed attempts. Locked for ${remainingSecs} seconds.</div>` : ''}
-
-        <form id="login-form" class="login-form">
-          <div class="form-group">
-            <label for="username">Username</label>
-            <input type="text" id="username" name="username" placeholder="anandlab" required autocomplete="username" ${isLocked ? 'disabled' : ''} />
+      <!-- Right Staff Authentication Side -->
+      <div class="login-form-side">
+        <div class="login-card-inner">
+          <div class="login-mobile-logo">
+            <div class="mobile-logo-card">
+              <img src="./assets/logo.png" alt="OPTI - X LABS" class="login-logo-img" />
+            </div>
           </div>
 
-          <div class="form-group">
-            <label for="password">Password</label>
-            <input type="password" id="password" name="password" placeholder="••••••••" required autocomplete="current-password" ${isLocked ? 'disabled' : ''} />
+          <div class="auth-header">
+            <div class="auth-tag">
+              ${uiIcon('user', 13)}
+              <span>Staff Portal</span>
+            </div>
+            <h2>Sign in to Account</h2>
+            <p class="auth-subtitle">Enter your laboratory staff credentials to access operations.</p>
           </div>
 
-          <button type="submit" id="login-submit-btn" class="btn btn-primary btn-block" ${isLocked ? 'disabled' : ''}>
-            Sign In to Labflow
-          </button>
-        </form>
+          ${errorMessage ? `
+            <div class="login-error-banner" role="alert">
+              ${uiIcon('alert-circle', 16)}
+              <span>${escapeHTML(errorMessage)}</span>
+            </div>
+          ` : ''}
 
-        <div class="login-footer">
-          <span>Protected by Supabase Auth &amp; SafeStorage</span>
+          ${isLocked ? `
+            <div class="login-error-banner" role="alert">
+              ${uiIcon('alert-circle', 16)}
+              <span>Too many failed attempts. Account locked for ${remainingSecs} seconds.</span>
+            </div>
+          ` : ''}
+
+          <form id="login-form" class="login-form" novalidate>
+            <div class="form-group">
+              <label for="username">Username / Staff ID</label>
+              <div class="input-with-icon">
+                <span class="input-icon-slot">${uiIcon('user', 16)}</span>
+                <input type="text" id="username" name="username" placeholder="e.g. anandlab" required autocomplete="username" spellcheck="false" ${isLocked ? 'disabled' : ''} />
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="password">Password</label>
+              <div class="input-with-icon">
+                <span class="input-icon-slot">${uiIcon('lock', 16)}</span>
+                <input type="password" id="password" name="password" placeholder="••••••••••••" required autocomplete="current-password" ${isLocked ? 'disabled' : ''} />
+                <button type="button" class="btn-toggle-pwd" id="btn-toggle-pwd" title="Toggle password visibility" tabindex="-1">
+                  <span class="eye-open">${uiIcon('eye', 16)}</span>
+                  <span class="eye-closed" style="display:none;">${uiIcon('eye-off', 16)}</span>
+                </button>
+              </div>
+            </div>
+
+            <button type="submit" id="login-submit-btn" class="btn btn-login-gradient btn-block" ${isLocked ? 'disabled' : ''}>
+              <span>Sign In to Laboratory</span>
+              ${uiIcon('arrow-right', 16)}
+            </button>
+          </form>
+
+          <div class="login-hint-pill">
+            ${uiIcon('info', 14)}
+            <span>Authorized Lab Incharge: <strong>anandlab</strong></span>
+          </div>
+
+          <div class="login-footer">
+            <span>${uiIcon('shield-check', 13)} Protected by Supabase Auth &amp; SafeStorage</span>
+          </div>
         </div>
       </div>
     </div>`;
 
   const form = document.getElementById('login-form');
   form.addEventListener('submit', handleLogin);
+
+  const toggleBtn = document.getElementById('btn-toggle-pwd');
+  if (toggleBtn) {
+    toggleBtn.addEventListener('click', () => {
+      const pwdInput = document.getElementById('password');
+      if (!pwdInput) return;
+      const eyeOpen = toggleBtn.querySelector('.eye-open');
+      const eyeClosed = toggleBtn.querySelector('.eye-closed');
+      if (pwdInput.type === 'password') {
+        pwdInput.type = 'text';
+        if (eyeOpen) eyeOpen.style.display = 'none';
+        if (eyeClosed) eyeClosed.style.display = 'inline-flex';
+      } else {
+        pwdInput.type = 'password';
+        if (eyeOpen) eyeOpen.style.display = 'inline-flex';
+        if (eyeClosed) eyeClosed.style.display = 'none';
+      }
+      pwdInput.focus();
+    });
+  }
 }
 
 async function handleLogin(e) {
