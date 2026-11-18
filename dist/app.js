@@ -180,10 +180,26 @@ async function init() {
     // Browser fallback shim when opened outside Electron
     if (!window.labflowAPI) {
       window.labflowAPI = {
-        getSupabaseConfig: async () => ({
-          supabaseUrl: localStorage.getItem('supabase_url') || '',
-          supabaseAnonKey: localStorage.getItem('supabase_publishable_key') || localStorage.getItem('supabase_anon_key') || ''
-        }),
+        getSupabaseConfig: async () => {
+          let u = localStorage.getItem('supabase_url') || '';
+          let k = localStorage.getItem('supabase_publishable_key') || localStorage.getItem('supabase_anon_key') || '';
+          if (!u || !k) {
+            try {
+              const res = await fetch('/api/config');
+              if (res.ok) {
+                const data = await res.json();
+                if (data.supabaseUrl && data.supabaseAnonKey) {
+                  u = data.supabaseUrl;
+                  k = data.supabaseAnonKey;
+                  localStorage.setItem('supabase_url', u);
+                  localStorage.setItem('supabase_publishable_key', k);
+                  localStorage.setItem('supabase_anon_key', k);
+                }
+              }
+            } catch (_) {}
+          }
+          return { supabaseUrl: u, supabaseAnonKey: k };
+        },
         saveSupabaseConfig: async (cfg) => {
           localStorage.setItem('supabase_url', cfg.supabaseUrl);
           localStorage.setItem('supabase_publishable_key', cfg.supabaseAnonKey);
