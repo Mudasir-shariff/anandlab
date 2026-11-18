@@ -177,13 +177,43 @@ function resetIdleTimer() {
 // -------------------------------------------------------------
 async function init() {
   try {
+    // Browser fallback shim when opened outside Electron
     if (!window.labflowAPI) {
-      document.getElementById('app').innerHTML = `
-        <div class="setup-container">
-          <h2>Browser Runtime Warning</h2>
-          <p>Please run Labflow inside the Electron Desktop Application for full security and printing access.</p>
-        </div>`;
-      return;
+      window.labflowAPI = {
+        getSupabaseConfig: async () => ({
+          supabaseUrl: localStorage.getItem('supabase_url') || '',
+          supabaseAnonKey: localStorage.getItem('supabase_anon_key') || ''
+        }),
+        saveSupabaseConfig: async (cfg) => {
+          localStorage.setItem('supabase_url', cfg.supabaseUrl);
+          localStorage.setItem('supabase_anon_key', cfg.supabaseAnonKey);
+          return { success: true };
+        },
+        saveSession: async (s) => { localStorage.setItem('labflow_session', s); return { success: true }; },
+        loadSession: async () => localStorage.getItem('labflow_session'),
+        clearSession: async () => { localStorage.removeItem('labflow_session'); return { success: true }; },
+        getPrinters: async () => [],
+        printReceipt: async ({ html }) => {
+          const w = window.open('', '_blank', 'width=450,height=600');
+          w.document.write(html);
+          w.document.close();
+          w.focus();
+          setTimeout(() => { w.print(); }, 250);
+          return { success: true };
+        },
+        printReport: async ({ html }) => {
+          const w = window.open('', '_blank');
+          w.document.write(html);
+          w.document.close();
+          w.focus();
+          setTimeout(() => { w.print(); }, 250);
+          return { success: true };
+        },
+        printToPDF: async () => {
+          window.print();
+          return { success: true };
+        }
+      };
     }
 
     state.config = await window.labflowAPI.getSupabaseConfig();
