@@ -123,6 +123,31 @@ function setupIPC() {
     };
   });
 
+  ipcMain.handle('save-supabase-config', async (event, { supabaseUrl, supabaseAnonKey }) => {
+    try {
+      const envPath = path.join(__dirname, '../../.env');
+      let content = '';
+      if (fs.existsSync(envPath)) {
+        content = fs.readFileSync(envPath, 'utf8');
+      }
+      let lines = content ? content.split(/\r?\n/) : [];
+      let urlFound = false, keyFound = false;
+      lines = lines.map(line => {
+        if (line.startsWith('SUPABASE_URL=')) { urlFound = true; return `SUPABASE_URL=${supabaseUrl}`; }
+        if (line.startsWith('SUPABASE_ANON_KEY=')) { keyFound = true; return `SUPABASE_ANON_KEY=${supabaseAnonKey}`; }
+        return line;
+      });
+      if (!urlFound) lines.push(`SUPABASE_URL=${supabaseUrl}`);
+      if (!keyFound) lines.push(`SUPABASE_ANON_KEY=${supabaseAnonKey}`);
+      fs.writeFileSync(envPath, lines.join('\n'), 'utf8');
+      process.env.SUPABASE_URL = supabaseUrl;
+      process.env.SUPABASE_ANON_KEY = supabaseAnonKey;
+      return { success: true };
+    } catch (err) {
+      return { success: false, error: err.message };
+    }
+  });
+
   // Encrypted Session Persistence (Electron safeStorage)
   ipcMain.handle('auth:save-session', async (event, sessionDataString) => {
     try {

@@ -241,14 +241,40 @@ function renderSetupPrompt() {
   document.getElementById('app').innerHTML = `
     <div class="setup-container">
       <div class="setup-card">
-        <div class="brand-badge">Labflow Desktop</div>
-        <h2>Supabase Connection Required</h2>
-        <p>Please configure your Supabase project credentials in <code>.env</code> file:</p>
-        <pre>SUPABASE_URL=https://your-project.supabase.co
-SUPABASE_ANON_KEY=your-anon-key-here</pre>
-        <p class="muted">Once configured, restart the application to connect.</p>
+        <div class="login-logo-container mb-3">
+          <img src="./assets/logo.png" alt="OPTI - X LABS" class="login-logo-img" style="filter: brightness(0) invert(1);" />
+        </div>
+        <div class="brand-badge">Opti-X Labs Desktop</div>
+        <h2>Connect Supabase Database</h2>
+        <p class="muted">Enter your Supabase project credentials to connect this desktop app to your cloud database:</p>
+        <form id="setup-supabase-form" class="mt-3 text-left">
+          <div class="form-group mb-3">
+            <label style="color: #cbd5e1;">Project URL</label>
+            <input type="url" id="setup-url" placeholder="https://xxxxxxxxxxxx.supabase.co" required style="background: #0f172a; border-color: #334155; color: #fff;" />
+          </div>
+          <div class="form-group mb-3">
+            <label style="color: #cbd5e1;">Public Anon Key</label>
+            <textarea id="setup-key" rows="3" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." required style="background: #0f172a; border-color: #334155; color: #fff;"></textarea>
+          </div>
+          <button type="submit" class="btn btn-primary btn-block">Save &amp; Connect Database</button>
+        </form>
       </div>
     </div>`;
+
+  document.getElementById('setup-supabase-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const url = document.getElementById('setup-url').value.trim();
+    const key = document.getElementById('setup-key').value.trim();
+    if (!url || !key) return;
+
+    const res = await window.labflowAPI.saveSupabaseConfig({ supabaseUrl: url, supabaseAnonKey: key });
+    if (res.success) {
+      showToast('Configuration saved! Connecting...', 'success');
+      init();
+    } else {
+      showToast('Failed to save configuration: ' + res.error, 'error');
+    }
+  });
 }
 
 // -------------------------------------------------------------
@@ -1876,8 +1902,7 @@ async function openReportPrintPreview(reportId) {
       labInchargeQualification: state.labSettings.lab_incharge_qualification,
       reportFooter: state.labSettings.report_footer,
       workingHours: state.labSettings.working_hours,
-      reportTemplate: state.labSettings.letterhead_template || 'classic',
-      logoUrl: './assets/logo.png'
+      reportTemplate: state.labSettings.letterhead_template || 'classic'
     };
 
     const modalContainer = document.getElementById('modal-container');
