@@ -3795,7 +3795,11 @@ tbody tr:hover {
 }
 
 .nav-icon {
-  font-size: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
 }
 
 .sidebar-footer {
@@ -3813,10 +3817,35 @@ tbody tr:hover {
 }
 
 .user-icon {
-  font-size: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
   background: #1e293b;
-  padding: 4px;
   border-radius: 50%;
+  color: #cbd5e1;
+}
+
+.svg-icon {
+  display: inline-block;
+  vertical-align: middle;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  flex-shrink: 0;
+}
+
+.btn .svg-icon {
+  margin-right: 6px;
+  vertical-align: -2px;
+}
+
+.btn-xs .svg-icon {
+  margin-right: 4px;
+  vertical-align: -1px;
 }
 
 .user-details strong {

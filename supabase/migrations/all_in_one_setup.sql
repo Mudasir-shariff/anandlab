@@ -16,11 +16,11 @@ CREATE SEQUENCE IF NOT EXISTS bill_no_seq START WITH 10001 INCREMENT BY 1;
 -- 3.1 Lab Settings (Single configuration row)
 CREATE TABLE IF NOT EXISTS public.lab_settings (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    lab_name TEXT NOT NULL DEFAULT 'Opti-X Labs',
+    lab_name TEXT NOT NULL DEFAULT 'Anand Labotory',
     tagline TEXT DEFAULT 'Precision Diagnostics & Clinical Excellence',
     address TEXT DEFAULT 'Bangalore, Karnataka',
-    phone TEXT DEFAULT '+91 98765 43210',
-    email TEXT DEFAULT 'contact@optixlabs.in',
+    phone TEXT DEFAULT '6361303305',
+    email TEXT DEFAULT 'anandhealthcaresdl@gmail.com',
     registration_no TEXT DEFAULT 'KA-BLR-LAB-2026-089',
     pathologist_name TEXT DEFAULT 'Dr. Ramesh Kumar',
     pathologist_qualification TEXT DEFAULT 'MD (Pathology), DCP',

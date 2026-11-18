@@ -140,6 +140,29 @@ function escapeHTML(str) {
   return String(str ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
 
+function uiIcon(name, size = 16, className = '') {
+  const extraClass = className ? ` ${className}` : '';
+  const s = size;
+  const icons = {
+    'credit-card': `<svg class="svg-icon${extraClass}" width="${s}" height="${s}" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>`,
+    'clipboard': `<svg class="svg-icon${extraClass}" width="${s}" height="${s}" viewBox="0 0 24 24"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg>`,
+    'settings': `<svg class="svg-icon${extraClass}" width="${s}" height="${s}" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>`,
+    'user': `<svg class="svg-icon${extraClass}" width="${s}" height="${s}" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>`,
+    'phone': `<svg class="svg-icon${extraClass}" width="${s}" height="${s}" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>`,
+    'search': `<svg class="svg-icon${extraClass}" width="${s}" height="${s}" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>`,
+    'refresh': `<svg class="svg-icon${extraClass}" width="${s}" height="${s}" viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>`,
+    'printer': `<svg class="svg-icon${extraClass}" width="${s}" height="${s}" viewBox="0 0 24 24"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>`,
+    'wallet': `<svg class="svg-icon${extraClass}" width="${s}" height="${s}" viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M7 15h0M2 10h20"/></svg>`,
+    'edit': `<svg class="svg-icon${extraClass}" width="${s}" height="${s}" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>`,
+    'save': `<svg class="svg-icon${extraClass}" width="${s}" height="${s}" viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>`,
+    'check-circle': `<svg class="svg-icon${extraClass}" width="${s}" height="${s}" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>`,
+    'download': `<svg class="svg-icon${extraClass}" width="${s}" height="${s}" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>`,
+    'log-out': `<svg class="svg-icon${extraClass}" width="${s}" height="${s}" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>`,
+    'plus': `<svg class="svg-icon${extraClass}" width="${s}" height="${s}" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>`
+  };
+  return icons[name] || '';
+}
+
 // -------------------------------------------------------------
 // Toast Notifications
 // -------------------------------------------------------------
@@ -488,31 +511,31 @@ function renderApp() {
 
         <nav class="sidebar-nav">
           <button class="nav-item ${state.currentPage === 'billing' ? 'active' : ''}" data-nav="billing">
-            <span class="nav-icon">💳</span>
+            <span class="nav-icon">${uiIcon('credit-card', 18)}</span>
             <span class="nav-label">Billing</span>
           </button>
 
           <button class="nav-item ${state.currentPage === 'reports' ? 'active' : ''}" data-nav="reports">
-            <span class="nav-icon">📋</span>
+            <span class="nav-icon">${uiIcon('clipboard', 18)}</span>
             <span class="nav-label">Reports</span>
           </button>
 
           <button class="nav-item ${state.currentPage === 'settings' ? 'active' : ''}" data-nav="settings">
-            <span class="nav-icon">⚙️</span>
+            <span class="nav-icon">${uiIcon('settings', 18)}</span>
             <span class="nav-label">Settings</span>
           </button>
         </nav>
 
         <div class="sidebar-footer">
           <div class="user-info">
-            <span class="user-icon">👤</span>
+            <span class="user-icon">${uiIcon('user', 18)}</span>
             <div class="user-details">
               <strong>${escapeHTML(state.user?.user_metadata?.username || 'anandlab')}</strong>
               <small>Staff Operator</small>
             </div>
           </div>
           <button id="logout-btn" class="btn btn-outline-danger btn-sm" title="Sign out">
-            Logout
+            ${uiIcon('log-out', 14)} Logout
           </button>
         </div>
       </aside>
@@ -600,7 +623,7 @@ function renderNewBillForm(container) {
           <div class="card-header">
             <h3>1. Patient Registration</h3>
             <div class="patient-search-box">
-              <input type="text" id="patient-lookup-input" placeholder="🔍 Search existing patient by mobile or name..." autocomplete="off" />
+              <input type="text" id="patient-lookup-input" placeholder="Search existing patient by mobile or name..." autocomplete="off" />
               <div id="patient-lookup-results" class="lookup-dropdown hidden"></div>
             </div>
           </div>
@@ -832,7 +855,7 @@ function renderNewBillForm(container) {
 
             <div class="mt-4">
               <button type="button" id="btn-submit-bill" class="btn btn-primary btn-lg btn-block" ${selectedTests.length === 0 ? 'disabled' : ''}>
-                💳 Create Bill &amp; Print Receipt
+                ${uiIcon('credit-card', 18)} Create Bill &amp; Print Receipt
               </button>
             </div>
           </div>
@@ -931,7 +954,7 @@ function attachNewBillListeners(container) {
           lookupDropdown.innerHTML = patients.map(p => `
             <div class="lookup-item" data-id="${p.id}">
               <strong>${escapeHTML(p.full_name)}</strong> (${p.patient_no}) - ${p.sex}, ${p.age_value}${p.age_unit}
-              <div><small>📱 ${escapeHTML(p.mobile || 'No mobile')} | ${escapeHTML(p.area || p.city || '')}</small></div>
+              <div><small>${uiIcon('phone', 12)} ${escapeHTML(p.mobile || 'No mobile')} | ${escapeHTML(p.area || p.city || '')}</small></div>
             </div>
           `).join('');
           lookupDropdown.classList.remove('hidden');
@@ -995,19 +1018,19 @@ async function handleCreateBill() {
   if (!fullName) {
     showToast('Please enter patient full name.', 'error');
     submitBtn.disabled = false;
-    submitBtn.textContent = '💳 Create Bill & Print Receipt';
+    submitBtn.innerHTML = `${uiIcon('credit-card', 18)} Create Bill &amp; Print Receipt`;
     return;
   }
   if (isNaN(ageValue) || ageValue < 0) {
     showToast('Please enter a valid age.', 'error');
     submitBtn.disabled = false;
-    submitBtn.textContent = '💳 Create Bill & Print Receipt';
+    submitBtn.innerHTML = `${uiIcon('credit-card', 18)} Create Bill &amp; Print Receipt`;
     return;
   }
   if (state.newBill.selectedTestIds.length === 0) {
     showToast('Please select at least one test.', 'error');
     submitBtn.disabled = false;
-    submitBtn.textContent = '💳 Create Bill & Print Receipt';
+    submitBtn.innerHTML = `${uiIcon('credit-card', 18)} Create Bill &amp; Print Receipt`;
     return;
   }
 
@@ -1076,7 +1099,7 @@ async function handleCreateBill() {
     console.error('Failed to create bill:', err);
     showToast('Billing error: ' + (err.message || 'Database transaction failed.'), 'error');
     submitBtn.disabled = false;
-    submitBtn.textContent = '💳 Create Bill & Print Receipt';
+    submitBtn.innerHTML = `${uiIcon('credit-card', 18)} Create Bill &amp; Print Receipt`;
   }
 }
 
@@ -1101,7 +1124,7 @@ async function renderBillsList(container) {
             <option value="Week" ${state.billsFilter.dateRange === 'Week' ? 'selected' : ''}>Last 7 Days</option>
             <option value="All" ${state.billsFilter.dateRange === 'All' ? 'selected' : ''}>All Time</option>
           </select>
-          <button id="btn-refresh-bills" class="btn btn-outline btn-sm">🔄 Refresh</button>
+          <button id="btn-refresh-bills" class="btn btn-outline btn-sm">${uiIcon('refresh', 14)} Refresh</button>
         </div>
       </div>
       <div class="card-body">
@@ -1213,9 +1236,9 @@ async function loadBillsTable() {
               </td>
               <td class="text-center">
                 <div class="table-actions">
-                  <button class="btn btn-outline btn-xs btn-print-receipt" data-id="${b.id}" title="Print Receipt">🖨️ Receipt</button>
+                  <button class="btn btn-outline btn-xs btn-print-receipt" data-id="${b.id}" title="Print Receipt">${uiIcon('printer', 13)} Receipt</button>
                   ${b.balance > 0 ? `
-                    <button class="btn btn-primary-outline btn-xs btn-collect-payment" data-id="${b.id}" data-balance="${b.balance}" title="Collect Balance">💵 Pay</button>
+                    <button class="btn btn-primary-outline btn-xs btn-collect-payment" data-id="${b.id}" data-balance="${b.balance}" title="Collect Balance">${uiIcon('wallet', 13)} Pay</button>
                   ` : ''}
                 </div>
               </td>
@@ -1270,7 +1293,7 @@ function renderReportsModule(container) {
               <option value="Week" ${state.reportsFilter.dateRange === 'Week' ? 'selected' : ''}>Last 7 Days</option>
               <option value="All" ${state.reportsFilter.dateRange === 'All' ? 'selected' : ''}>All Time</option>
             </select>
-            <button id="btn-refresh-reports" class="btn btn-outline btn-sm">🔄 Refresh</button>
+            <button id="btn-refresh-reports" class="btn btn-outline btn-sm">${uiIcon('refresh', 14)} Refresh</button>
           </div>
         </div>
         <div class="card-body">
@@ -1382,15 +1405,15 @@ async function loadReportsTable() {
                 <td class="text-center">
                   ${r.status === 'Pending' ? `
                     <button class="btn btn-primary btn-sm btn-enter-results" data-id="${r.id}">
-                      ✍️ Enter Results
+                      ${uiIcon('edit', 14)} Enter Results
                     </button>
                   ` : `
                     <div class="table-actions">
                       <button class="btn btn-outline btn-sm btn-print-report" data-id="${r.id}">
-                        🖨️ View / Print
+                        ${uiIcon('printer', 14)} View / Print
                       </button>
                       <button class="btn btn-outline-danger btn-xs btn-reopen-report" data-id="${r.id}" title="Reopen for editing">
-                        ✏️ Edit
+                        ${uiIcon('edit', 12)} Edit
                       </button>
                     </div>
                   `}
@@ -1538,8 +1561,8 @@ function renderResultEntryForm(container) {
         </div>
 
         <div class="form-actions sticky-actions">
-          <button type="button" id="btn-save-progress" class="btn btn-outline btn-lg">💾 Save Progress</button>
-          <button type="button" id="btn-complete-report" class="btn btn-primary btn-lg">✅ Mark as Completed &amp; Print</button>
+          <button type="button" id="btn-save-progress" class="btn btn-outline btn-lg">${uiIcon('save', 16)} Save Progress</button>
+          <button type="button" id="btn-complete-report" class="btn btn-primary btn-lg">${uiIcon('check-circle', 16)} Mark as Completed &amp; Print</button>
         </div>
       </form>
     </div>`;
@@ -1698,7 +1721,7 @@ async function openReceiptModal(billId) {
           </div>
           <div class="modal-footer">
             <button class="btn btn-outline" id="receipt-close-btn">Close</button>
-            <button class="btn btn-primary" id="btn-do-print-receipt">🖨️ Print Receipt</button>
+            <button class="btn btn-primary" id="btn-do-print-receipt">${uiIcon('printer', 16)} Print Receipt</button>
           </div>
         </div>
       </div>`;
@@ -1973,8 +1996,8 @@ async function openReportPrintPreview(reportId) {
           </div>
           <div class="modal-footer">
             <button class="btn btn-outline" id="btn-close-rep-modal">Close</button>
-            <button class="btn btn-outline" id="btn-export-pdf">📥 Export PDF</button>
-            <button class="btn btn-primary" id="btn-print-report-now">🖨️ Print Clinical Report</button>
+            <button class="btn btn-outline" id="btn-export-pdf">${uiIcon('download', 14)} Export PDF</button>
+            <button class="btn btn-primary" id="btn-print-report-now">${uiIcon('printer', 14)} Print Clinical Report</button>
           </div>
         </div>
       </div>`;

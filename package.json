@@ -16,7 +16,7 @@
     "appId": "in.anandlab.labflow",
     "productName": "Labflow Diagnostics",
     "directories": {
-      "output": "release"
+      "output": "build-out"
     },
     "files": [
       "src/**/*",
