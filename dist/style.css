@@ -3653,13 +3653,35 @@ tbody tr:hover {
   margin-bottom: 24px;
 }
 
-.login-logo {
-  color: #0d9488;
-  display: inline-flex;
-  padding: 12px;
-  background: #f0fdfa;
-  border-radius: 16px;
-  margin-bottom: 12px;
+.login-logo, .login-logo-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.login-logo-img {
+  max-height: 70px;
+  max-width: 220px;
+  object-fit: contain;
+}
+
+.sidebar-logo-container {
+  background: #ffffff;
+  border-radius: 8px;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  flex-shrink: 0;
+}
+
+.sidebar-logo-img {
+  max-height: 40px;
+  max-width: 40px;
+  object-fit: contain;
 }
 
 .login-header h1 {

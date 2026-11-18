@@ -262,10 +262,10 @@ function renderLogin(errorMessage = '') {
     <div class="login-wrapper">
       <div class="login-card">
         <div class="login-header">
-          <div class="login-logo">
-            <svg viewBox="0 0 48 48" width="40" height="40" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 5h10m-8 0v15L10 37a4 4 0 0 0 3 6h22a4 4 0 0 0 3-6L27 20V5M16 29h16"/><circle cx="22" cy="34" r="1.5"/><circle cx="28" cy="38" r="1"/></svg>
+          <div class="login-logo-container">
+            <img src="./assets/logo.png" alt="OPTI - X LABS" class="login-logo-img" />
           </div>
-          <h1>Labflow Diagnostics</h1>
+          <h1>Opti-X Labs</h1>
           <p class="subtitle">Diagnostic Laboratory Management System</p>
         </div>
 
@@ -404,11 +404,11 @@ function renderApp() {
       <!-- Sidebar -->
       <aside class="app-sidebar">
         <div class="sidebar-brand">
-          <div class="sidebar-logo">
-            <svg viewBox="0 0 48 48" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 5h10m-8 0v15L10 37a4 4 0 0 0 3 6h22a4 4 0 0 0 3-6L27 20V5M16 29h16"/><circle cx="22" cy="34" r="1.5"/><circle cx="28" cy="38" r="1"/></svg>
+          <div class="sidebar-logo-container">
+            <img src="./assets/logo.png" alt="OPTI - X LABS" class="sidebar-logo-img" />
           </div>
           <div class="sidebar-title">
-            <h2>${escapeHTML(state.labSettings.lab_name || 'Labflow Diagnostics')}</h2>
+            <h2>${escapeHTML(state.labSettings.lab_name || 'Opti-X Labs')}</h2>
             <span>${escapeHTML(state.labSettings.registration_no || 'KA-BLR-LAB')}</span>
           </div>
         </div>
@@ -1694,6 +1694,9 @@ function generateReceiptHTML(bill, lab, format = 'thermal', fullPage = false) {
         </style>
       </head>
       <body>
+        <div class="center" style="margin-bottom: 6px;">
+          <img src="./assets/logo.png" alt="OPTI - X LABS" style="max-height: 38px; max-width: 160px; object-fit: contain;" />
+        </div>
         <div class="center bold" style="font-size: 13px;">${escapeHTML(labName)}</div>
         <div class="center" style="font-size: 10px;">${escapeHTML(labAddr)}</div>
         <div class="center" style="font-size: 10px;">Phone: ${escapeHTML(labPhone)} | Reg: ${escapeHTML(labReg)}</div>
@@ -1754,10 +1757,13 @@ function generateReceiptHTML(bill, lab, format = 'thermal', fullPage = false) {
       </head>
       <body>
         <div class="header">
-          <div>
-            <div class="lab-name">${escapeHTML(labName)}</div>
-            <div>${escapeHTML(labAddr)}</div>
-            <div>Phone: ${escapeHTML(labPhone)} | Email: ${escapeHTML(lab.email || '')}</div>
+          <div style="display: flex; align-items: center; gap: 16px;">
+            <img src="./assets/logo.png" alt="OPTI - X LABS" style="max-height: 54px; max-width: 170px; object-fit: contain;" />
+            <div>
+              <div class="lab-name">${escapeHTML(labName)}</div>
+              <div>${escapeHTML(labAddr)}</div>
+              <div>Phone: ${escapeHTML(labPhone)} | Email: ${escapeHTML(lab.email || '')}</div>
+            </div>
           </div>
           <div class="text-right">
             <h2>TAX INVOICE / RECEIPT</h2>
@@ -1870,7 +1876,8 @@ async function openReportPrintPreview(reportId) {
       labInchargeQualification: state.labSettings.lab_incharge_qualification,
       reportFooter: state.labSettings.report_footer,
       workingHours: state.labSettings.working_hours,
-      reportTemplate: state.labSettings.letterhead_template || 'classic'
+      reportTemplate: state.labSettings.letterhead_template || 'classic',
+      logoUrl: './assets/logo.png'
     };
 
     const modalContainer = document.getElementById('modal-container');

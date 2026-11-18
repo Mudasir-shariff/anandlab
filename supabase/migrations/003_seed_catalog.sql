@@ -19,11 +19,11 @@ INSERT INTO public.lab_settings (
     report_footer,
     working_hours
 ) VALUES (
-    'Anand Diagnostic Laboratory',
-    'Accurate Diagnostics · Compassionate Care',
+    'Opti-X Labs',
+    'Precision Diagnostics · Clinical Excellence',
     '#42, 10th Main, Vijayanagar, Bangalore - 560040',
     '+91 98450 12345',
-    'contact@anandlab.in',
+    'contact@optixlabs.in',
     'KA-BLR-LAB-2026-089',
     'Dr. Ramesh Kumar',
     'MD (Pathology), DCP',

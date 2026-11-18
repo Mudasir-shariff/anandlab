@@ -42,9 +42,10 @@ function createWindow() {
     height: 860,
     minWidth: 1024,
     minHeight: 700,
-    title: 'Labflow Diagnostics',
+    title: 'Opti-X Labs - Diagnostics & Reports',
     backgroundColor: '#0f172a',
     autoHideMenuBar: true,
+    icon: path.join(__dirname, '../../assets/icon.png'),
     webPreferences: {
       preload: path.join(__dirname, 'preload.cjs'),
       contextIsolation: true,

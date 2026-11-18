@@ -174,7 +174,7 @@ test('Labflow Desktop UI: Login, Billing, Reports, Printing and Settings validat
 
   // 1. Verify Login Screen renders
   assert(w.document.querySelector('#login-form'), 'Login form should render');
-  assert.equal(w.document.querySelector('h1').textContent, 'Labflow Diagnostics');
+  assert.equal(w.document.querySelector('h1').textContent, 'Opti-X Labs');
 
   // 2. Test Invalid Login
   const usernameInput = w.document.querySelector('#username');
