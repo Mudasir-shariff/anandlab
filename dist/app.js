@@ -182,10 +182,11 @@ async function init() {
       window.labflowAPI = {
         getSupabaseConfig: async () => ({
           supabaseUrl: localStorage.getItem('supabase_url') || '',
-          supabaseAnonKey: localStorage.getItem('supabase_anon_key') || ''
+          supabaseAnonKey: localStorage.getItem('supabase_publishable_key') || localStorage.getItem('supabase_anon_key') || ''
         }),
         saveSupabaseConfig: async (cfg) => {
           localStorage.setItem('supabase_url', cfg.supabaseUrl);
+          localStorage.setItem('supabase_publishable_key', cfg.supabaseAnonKey);
           localStorage.setItem('supabase_anon_key', cfg.supabaseAnonKey);
           return { success: true };
         },
@@ -283,8 +284,8 @@ function renderSetupPrompt() {
             <input type="url" id="setup-url" placeholder="https://xxxxxxxxxxxx.supabase.co" required style="background: #0f172a; border-color: #334155; color: #fff;" />
           </div>
           <div class="form-group mb-3">
-            <label style="color: #cbd5e1;">Public Anon Key</label>
-            <textarea id="setup-key" rows="3" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." required style="background: #0f172a; border-color: #334155; color: #fff;"></textarea>
+            <label style="color: #cbd5e1;">Publishable Key (or Legacy Anon Key)</label>
+            <textarea id="setup-key" rows="3" placeholder="sbp_... or eyJhbGciOi..." required style="background: #0f172a; border-color: #334155; color: #fff;"></textarea>
           </div>
           <button type="submit" class="btn btn-primary btn-block">Save &amp; Connect Database</button>
         </form>

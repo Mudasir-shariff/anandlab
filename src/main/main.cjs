@@ -115,11 +115,11 @@ app.on('window-all-closed', () => {
 function setupIPC() {
   const sessionPath = path.join(app.getPath('userData'), 'session.enc');
 
-  // Supabase Public Config (URL & Anon Key ONLY)
+  // Supabase Public Config (URL & Publishable / Anon Key ONLY)
   ipcMain.handle('get-supabase-config', () => {
     return {
       supabaseUrl: process.env.SUPABASE_URL || '',
-      supabaseAnonKey: process.env.SUPABASE_ANON_KEY || ''
+      supabaseAnonKey: process.env.SUPABASE_PUBLISHABLE_KEY || process.env.SUPABASE_ANON_KEY || ''
     };
   });
 
@@ -134,13 +134,15 @@ function setupIPC() {
       let urlFound = false, keyFound = false;
       lines = lines.map(line => {
         if (line.startsWith('SUPABASE_URL=')) { urlFound = true; return `SUPABASE_URL=${supabaseUrl}`; }
+        if (line.startsWith('SUPABASE_PUBLISHABLE_KEY=')) { keyFound = true; return `SUPABASE_PUBLISHABLE_KEY=${supabaseAnonKey}`; }
         if (line.startsWith('SUPABASE_ANON_KEY=')) { keyFound = true; return `SUPABASE_ANON_KEY=${supabaseAnonKey}`; }
         return line;
       });
       if (!urlFound) lines.push(`SUPABASE_URL=${supabaseUrl}`);
-      if (!keyFound) lines.push(`SUPABASE_ANON_KEY=${supabaseAnonKey}`);
+      if (!keyFound) lines.push(`SUPABASE_PUBLISHABLE_KEY=${supabaseAnonKey}`);
       fs.writeFileSync(envPath, lines.join('\n'), 'utf8');
       process.env.SUPABASE_URL = supabaseUrl;
+      process.env.SUPABASE_PUBLISHABLE_KEY = supabaseAnonKey;
       process.env.SUPABASE_ANON_KEY = supabaseAnonKey;
       return { success: true };
     } catch (err) {

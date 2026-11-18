@@ -28,12 +28,12 @@ if (fs.existsSync(envPath)) {
 }
 
 const supabaseUrl = process.env.SUPABASE_URL;
-const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const serviceRoleKey = process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
 const username = process.env.LAB_USERNAME || 'anandlab';
 const password = process.env.LAB_PASSWORD;
 
 if (!supabaseUrl || !serviceRoleKey) {
-  console.error('ERROR: SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY must be set in .env');
+  console.error('ERROR: SUPABASE_URL and SUPABASE_SECRET_KEY (or SUPABASE_SERVICE_ROLE_KEY) must be set in .env');
   process.exit(1);
 }
 
