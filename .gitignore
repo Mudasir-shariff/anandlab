@@ -10,3 +10,6 @@ backups/
 *.lfbackup
 *.partial
 validation/clinical.json
+
+build-out/
+release/
