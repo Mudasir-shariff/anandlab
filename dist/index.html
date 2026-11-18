@@ -1,1 +1,24 @@
-<!doctype html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#0d846c"><meta name="description" content="Create professional laboratory reports with 15 test panels, three letterhead styles, result entry, review and A4 printing."><title>Labflow — Laboratory Reports</title><link rel="stylesheet" href="/style.css"><link rel="stylesheet" href="/report.css"></head><body><div id="app"></div><div id="overlay"></div><div id="toast" role="status"></div><script type="module" src="/app.js"></script></body></html>
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self' https://*.supabase.co wss://*.supabase.co; img-src 'self' data: blob:;">
+  <title>Labflow Diagnostics</title>
+  <link rel="stylesheet" href="./style.css">
+  <link rel="stylesheet" href="./report.css">
+</head>
+<body>
+  <div id="app">
+    <div class="app-loading">
+      <div class="spinner"></div>
+      <p>Initializing Labflow Diagnostics...</p>
+    </div>
+  </div>
+  <div id="modal-container"></div>
+  <div id="toast-container" class="toast-container" role="status" aria-live="polite"></div>
+
+  <script src="./supabase.js"></script>
+  <script type="module" src="./app.js"></script>
+</body>
+</html>

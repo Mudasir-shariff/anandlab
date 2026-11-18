@@ -1,88 +1,2521 @@
-import { TESTS, PARAMETERS, CATALOG_NOTICE, makeDemoOrders } from './catalog.js';
-import { REPORT_TEMPLATES, renderReport } from './report.js';
-import { adminPage, loginScreen, staffForm } from './admin.js';
-import { renderBarcode } from './barcode.js';
-const $ = (s, r = document) => r.querySelector(s), esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-const icons = { grid: '<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>', users: '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2m20 0v-2a4 4 0 0 0-3-3.87M15 3.13a4 4 0 0 1 0 7.75"/><circle cx="9" cy="7" r="4"/>', flask: '<path d="M9 3h6m-5 0v7l-5 8a2 2 0 0 0 2 3h10a2 2 0 0 0 2-3l-5-8V3M8 14h8m-7 3h1m4 1h1"/>', file: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zm0 0v6h6M8 13h8m-8 4h5"/>', wallet: '<path d="M20 8V5a2 2 0 0 0-2-2H5a3 3 0 0 0 0 6h15v12H5a3 3 0 0 1-3-3V6m18 7h-5v4h5m-2-2h.01"/>', chart: '<path d="M3 3v18h18M7 14v3m5-8v8m5-12v12"/>', book: '<path d="M3 3h6a4 4 0 0 1 3 2 4 4 0 0 1 3-2h6v17h-6a4 4 0 0 0-3 2 4 4 0 0 0-3-2H3zm9 2v17"/>', settings: '<path d="m9 3-1 3-3 1-1 3 2 2-1 3 2 2 3-1 2 2 3-1 1-3 3-1 1-3-2-2 1-3-3-1-1-3z"/><circle cx="12" cy="11" r="3"/>', search: '<circle cx="10.5" cy="10.5" r="7"/><path d="m16 16 5 5"/>', bell: '<path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9m-11 12h4"/>', plus: '<path d="M12 5v14M5 12h14"/>', arrow: '<path d="M4 12h16m-6-6 6 6-6 6"/>', chevron: '<path d="m9 6 6 6-6 6"/>', down: '<path d="m6 9 6 6 6-6"/>', download: '<path d="M12 3v12m-5-5 5 5 5-5M4 16v5h16v-5"/>', calendar: '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 11h18"/>', check: '<path d="m5 12 4 4L19 6"/>', clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>', more: '<circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/>', close: '<path d="m6 6 12 12M6 18 18 6"/>', menu: '<path d="M4 6h16M4 12h16M4 18h16"/>', shield: '<path d="m12 2 9 4v6c0 6-9 10-9 10S3 18 3 12V6z"/><path d="m8 12 3 3 5-6"/>', info: '<circle cx="12" cy="12" r="9"/><path d="M12 11v6m0-10h.01"/>', send: '<path d="m22 2-7 20-4-9L2 9zM22 2 11 13"/>', print: '<path d="M6 9V3h12v6M6 18H3v-8h18v8h-3M6 14h12v8H6zm12-2h.01"/>', mail: '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 6 9 7 9-7"/>', building: '<path d="M4 21V5h16v16M9 21v-4h6v4M8 9h1m6 0h1m-8 4h1m6 0h1M2 21h20"/>', help: '<circle cx="12" cy="12" r="9"/><path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3m.1 4h.01"/>', link: '<path d="m10 13 4-4m-7 6-2 2a4 4 0 0 0 6 6l4-4m-1-10 2-2a4 4 0 0 1 6 6l-4 4"/>', refresh: '<path d="M20 7v5h-5M4 17v-5h5M6 6a8 8 0 0 1 13 3M5 15a8 8 0 0 0 13 3"/>' };
-const icon = n => `<svg viewBox="0 0 24 24" aria-hidden="true">${icons[n] || icons.flask}</svg>`;
-const money = v => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 2 }).format(Number(v || 0));
-const initials = n => String(n).split(' ').slice(0, 2).map(x => x[0]).join('').toUpperCase();
-let sessionInfo = { user: null, permissions: [] }, staffRows = [], auditRows = [], readinessInfo = {}, instrumentRows = [], deliveryRows = [], qcControls = {}, workspaceTotals = null;
-const opsPages = ['Team & access', 'Audit trail', 'Readiness', 'Integrations', 'Quality controls'];
-function can(permission) { return mode === 'demo' || sessionInfo.permissions?.includes(permission); }
-const statuses = ['Registered', 'Collected', 'Processing', 'Review', 'Approved'];
-let mode = 'demo', page = 'Report studio', filter = 'All patients', query = '', pageNumber = 1, orders = [], activity = [], settings = { labName: 'Labflow Diagnostics', address: '', phone: '', email: '', registration: '', pathologist: '', website: '', reportTemplate: 'classic', labIncharge: '', labInchargeQualification: '', pathologistQualification: '', reportFooter: 'Please correlate results with clinical findings.', workingHours: '' }, busy = false, selected = null, poll;
-function toast(msg) { $('#toast').innerHTML = `<div class="toast">${esc(msg)}</div>`; setTimeout(() => $('#toast').innerHTML = '', 4500) }
-const resultEdits = new Map(); let settingsEdits = null, submitting = false, connectionLost = false;
-function persist(state = { orders, activity, settings }) { if (mode === 'demo') localStorage.setItem('labflow-v1', JSON.stringify(state)); }
-function catalogSnapshot(order) { const tests = {}, parameters = {}; for (const code of order.tests) { if (!TESTS[code]) continue; tests[code] = JSON.parse(JSON.stringify(TESTS[code])); for (const key of TESTS[code].parameters) parameters[key] = { ...PARAMETERS[key] }; } return { tests, parameters }; }
-function markFormSaving(form, on) { if (!form) return; form.dataset.saving = on ? '1' : ''; document.querySelectorAll(`[form="${form.id}"],#${form.id} button`).forEach(b => b.disabled = on); }
-function finiteInput(raw, label, min = 0, max = 1e9) { if (typeof raw !== 'string' && typeof raw !== 'number') throw new Error(`${label} must be numeric.`); if (String(raw).trim() === '') throw new Error(`${label} is required.`); const value = Number(raw); if (!Number.isFinite(value) || value < min || value > max) throw new Error(`${label} must be between ${min} and ${max}.`); return value; }
-function patientValues(data) { const name = String(data.get('name') || '').trim(); if (!name || name.length > 150) throw new Error('Enter the patient’s full name (up to 150 characters).'); const age = finiteInput(data.get('age'), 'Age', 0, 120), sex = String(data.get('sex')); if (!['Male', 'Female', 'Other'].includes(sex)) throw new Error('Choose the patient’s sex.'); const phone = String(data.get('phone') || '').trim(), email = String(data.get('email') || '').trim(); if (phone && !/^[+()\d\s.-]{6,30}$/.test(phone)) throw new Error('Enter a valid phone number.'); if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new Error('Enter a valid email address.'); return { name, age, sex, phone, email }; }
-function cacheResultEdits() { const form = $('#results-form'); if (!form) return; const values = Object.fromEntries(new FormData(form)), raw = {}; for (const [key, value] of Object.entries(values)) if (PARAMETERS[key]) raw[key] = value; resultEdits.set(form.dataset.id, { results: raw, notes: values.notes || '' }); form.dataset.dirty = '1'; }
+/**
+ * Labflow Diagnostics - Desktop Application Core
+ * Backed by Supabase PostgreSQL
+ */
 
-async function req(url,options={}){const r=await fetch(url,{...options,headers:{'Content-Type':'application/json',...options.headers}});const v=await r.json().catch(()=>null);if(!r.ok){const error=new Error(v?.error||`Request failed (${r.status})`);error.status=r.status;if(r.status===401&&mode==='server'&&!url.includes('/api/login'))showLogin('Please sign in again.');throw error;}return v;}
-async function init(){if(poll)clearInterval(poll);try{const response=await fetch('/api/health',{cache:'no-store'});const isJSON=(response.headers.get('content-type')||'').includes('application/json');if(response.status===404||(!isJSON&&response.ok))throw new Error('STATIC_DEMO');if(!response.ok)throw new Error('The laboratory server is unavailable. Please sign in or contact your administrator.');const h=await response.json();if(!h.ok)throw new Error('The laboratory database is unavailable.');mode='server';try{sessionInfo=await req('/api/session');if((page==='Team & access'&&!can('users:manage'))||(page==='Audit trail'&&!can('audit:read'))||(page==='Integrations'&&!can('integrations:manage')))page='Report studio';}catch(error){if(error.status===401){showLogin();return;}throw error;}const s=await req('/api/state');orders=s.orders;workspaceTotals=s.stats||null;activity=s.activity;settings={...settings,...s.settings};}catch(error){if(error.message!=='STATIC_DEMO'){$('#app').innerHTML='<div style="max-width:500px;margin:15vh auto;padding:30px"><h1>Unable to connect</h1><p style="margin:20px 0;line-height:1.8">'+esc(error.message)+'</p><button class="btn primary" onclick="location.reload()">Reconnect</button></div>';return;}try{const saved=JSON.parse(localStorage.getItem('labflow-v1'));if(saved&&Array.isArray(saved.orders)){orders=saved.orders.filter(o=>!o.sampleReport&&!String(o.id).startsWith('SAMPLE-'));activity=(saved.activity||[]).filter(a=>orders.some(o=>o.id===a.orderId));settings={...settings,...saved.settings};}else{orders=[];activity=[];}}catch{orders=[];activity=[];}persist({orders,activity,settings});}render();if(mode==='server')startPolling();}
-function startPolling(){if(poll)clearInterval(poll);poll=setInterval(async()=>{if(busy||submitting||selected||settingsEdits||document.hidden)return;try{const s=await req('/api/state');orders=s.orders;workspaceTotals=s.stats||null;activity=s.activity;settings={...settings,...s.settings};render();}catch{if(!connectionLost)toast('Connection interrupted. Please check your server.');connectionLost=true;}},15000);}
-function log(message,id,type='Registered'){activity.unshift({message,at:new Date().toISOString(),orderId:id,type});activity=activity.slice(0,100);}
-async function saveOrder(input,isNew=false){if(busy)return null;if(input?.sampleReport||String(input?.id||'').startsWith('SAMPLE-'))return null;busy=true;let order=JSON.parse(JSON.stringify(input));const old=orders.find(o=>o.id===order.id);try{if(mode==='server'){const result=await req(isNew?'/api/orders':`/api/orders/${encodeURIComponent(order.id)}`,{method:isNew?'POST':'PUT',body:JSON.stringify({...order,expectedVersion:order.version})});order=result.order;}else{if(old?.status==='Approved'){for(const key of ['name','age','sex','phone','email','category','referrer','tests','priority','status','results','notes'])if(JSON.stringify(order[key])!==JSON.stringify(old[key]))throw new Error('Approved clinical results are locked.');for(const key of ['approvedAt','approvedBy','collectedAt','processingAt','receivedAt','reportSnapshot','catalogSnapshot']){if(old[key]!==undefined)order[key]=old[key];else delete order[key];}}order.updatedAt=new Date().toISOString();if(order.status==='Collected'&&!order.collectedAt)order.collectedAt=order.updatedAt;if(order.status==='Processing'&&!order.processingAt){order.processingAt=order.updatedAt;order.receivedAt=order.updatedAt;}if(order.status==='Approved'&&old?.status!=='Approved'){order.reportSnapshot={...settings};order.catalogSnapshot=catalogSnapshot(order);order.approvedAt=order.updatedAt;order.approvedBy=sessionInfo.user?.displayName||'Authorized reviewer';}order.version=(order.version||0)+1;}
-const nextOrders=orders.some(o=>o.id===order.id)?orders.map(o=>o.id===order.id?order:o):[order,...orders];const nextActivity=mode==='demo'?[{message:`${order.name} · ${isNew?'Patient registered':order.status==='Approved'?'Report approved':'Record updated'}`,at:order.updatedAt,orderId:order.id,type:order.status},...activity].slice(0,100):activity;persist({orders:nextOrders,activity:nextActivity,settings});orders=nextOrders;activity=nextActivity;render();return order;
-}catch(error){if(error.status===409){try{const state=await req('/api/state');connectionLost=false;orders=state.orders;workspaceTotals=state.stats||null;activity=state.activity;settings={...settings,...state.settings};}catch{}const form=$('#results-form');if(form){const target=$('#result-error');target.innerHTML='Another team member updated this record. Your typed values are kept in this session. <button type="button" class="link-btn" data-action="reload-results" data-id="'+esc(input.id)+'">Discard unsaved edits and reload latest record</button>';}}toast(error.name==='QuotaExceededError'?'Device storage is full. Export a backup and free storage before saving.':error.message);return null;}finally{busy=false;}}
-let selectedReportTemplate=null,reportView=null;
-const nav=[['Report studio','file'],['Overview','grid'],['Patients','users'],['Samples','flask'],['Results & reports','file'],['Billing','wallet'],['Analytics','chart']];
-function render(){const pending=orders.filter(o=>o.status==='Review').length;$('#app').innerHTML=`<div class="menu-backdrop" data-action="close-menu"></div><aside class="sidebar"><div class="brand"><div class="brandmark">${icon('flask')}</div><span>labflow<span style="color:#7ca98c">.</span></span></div><div class="branch"><div class="square">${icon('building')}</div><div><strong>${esc(settings.labName)}</strong><small>Central laboratory</small></div></div><div class="nav-label">WORKSPACE</div><nav class="nav">${nav.map(([n,i])=>`<button data-page="${n}" class="${page===n?'active':''}">${icon(i)}${n}${n==='Results & reports'&&pending?`<span class="count">${pending}</span>`:''}</button>`).join('')}</nav><div class="sidebar-foot"><div class="help-card">${icon('help')}<h3 style="margin-top:8px;font-size:11px">A little help, anytime.</h3><p>Your guide to a smoother<br>day at the lab.</p><button data-action="guide">Open quick guide ${'↗'}</button></div><div class="user"><div class="avatar">${initials(settings.labName||'Central Lab')}</div><div><strong>${esc(mode==='demo'?'Lab administrator':sessionInfo.user?.displayName||sessionInfo.user?.username||'Lab staff')}</strong><small class="session-role">${esc(mode==='demo'?'Active workspace':sessionInfo.user?.role||'Staff account')}</small></div>${mode==='server'?`<button class="icon-btn" data-action="logout" aria-label="Sign out">${icon('arrow')}</button>`:icon('down')}</div></div></aside><div class="main"><header class="topbar"><button class="icon-btn mobile-menu" data-action="menu" aria-label="Open navigation">${icon('menu')}</button><div class="breadcrumb">Workspace <span>/</span><strong>${esc(page)}</strong></div><div class="top-right"><label class="search" title="Search patients">${icon('search')}<input id="global-search" placeholder="Search patients, orders…" aria-label="Search patients" value="${esc(query)}"><kbd>⌘ K</kbd></label><button class="icon-btn notify" data-action="notifications" aria-label="Recent activity">${icon('bell')}</button><div class="avatar top-avatar">${initials(settings.labName||'Central Lab')}</div></div></header><main class="content">${pageHead()}${page==='Report studio'?reportStudio():page==='Overview'?overview():['Patients','Samples','Results & reports','Billing'].includes(page)?recordsPage():page==='Test catalog'?catalogPage():page==='Settings'?settingsPage():opsPages.includes(page)?adminPage({page,mode,session:sessionInfo,staff:staffRows,audit:auditRows,readiness:readinessInfo,instruments:instrumentRows,deliveries:deliveryRows,controls:qcControls}):analyticsPage()}<footer class="bottom-line"><span>${icon('shield')}${mode==='server'?'Shared database · Refreshes every 15 seconds':'Local workspace · Stored on this device'}</span><span>Designed for the way your lab works.</span><span>Labflow v1.3 ${icon('help')}</span></footer></main></div>`;applyPermissions();}
-function pageHead(){const meta={'Quality controls':['QC EVIDENCE','Record and review actual control-run evidence before releasing patient results.'],'Team & access':['NAMED STAFF ACCESS','Give each person the access their role requires.'],'Audit trail':['LABORATORY HISTORY','Trace laboratory actions to their staff member and record.'],Readiness:['DEPLOYMENT READINESS','Make go-live decisions from evidence and verified configuration.'],Integrations:['ANALYZERS & DELIVERY','Import mapped results and track requests without inventing delivery status.'],'Report studio':['LABORATORY REPORTS','Create clear, professional test reports for your patients.'],'Overview':['YOUR LAB, AT A GLANCE','Good things start with a clear overview.'],Patients:['PATIENT MANAGEMENT','Every patient. Every visit. One connected record.'],Samples:['SAMPLE WORKLIST','Track every sample from collection to approval.'],'Results & reports':['RESULTS & REPORTS','Enter results, review findings, and prepare clear reports.'],Billing:['BILLING & PAYMENTS','One view of every invoice, payment, and outstanding balance.'],Analytics:['LAB PERFORMANCE','A clearer picture of your laboratory operations.'],'Test catalog':['TEST DIRECTORY','Your panels, sample requirements, and reference intervals.'],Settings:['LABORATORY SETTINGS','Make this workspace your own.']};return `<section class="page-head"><div><div class="eyebrow"><span class="dot"></span>${meta[page][0]}</div><h1>${page==='Overview'?'Laboratory overview':esc(page)}</h1><p class="subtitle">${meta[page][1]}</p></div><div class="actions">${page==='Overview'?`<button class="btn" data-action="date">${icon('calendar')}${new Date().toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'})}${icon('down')}</button>`:''}${page==='Report studio'?`<button class="btn" data-page="Settings">${icon('settings')}Letterhead settings</button><button class="btn primary" data-action="new-report">${icon('plus')}New report</button>`:(page==='Settings'||opsPages.includes(page))?'':page==='Test catalog'?`<button class="btn" data-action="references">${icon('info')}Reference guidance</button>`:`<button class="btn primary" data-action="new">${icon('plus')}Register patient</button>`}</div></section>`;}
-function stat(title,value,note,ico,extra=''){return `<div class="stat"><div class="stat-top">${title}<span class="stat-icon">${icon(ico)}</span></div><div class="stat-value">${value}</div><div class="stat-bottom">${extra?`<span class="positive">${extra}</span>`:''}${note}</div><svg class="spark" viewBox="0 0 80 30"><path d="M1 26 10 20 20 23 30 10 40 15 50 9 60 12 70 2 79 6"/></svg></div>`;}
-function overview(){const total=workspaceTotals?.totalPaid??orders.reduce((s,o)=>s+Number(o.paid||0),0),pending=workspaceTotals?.statusCounts?.Review??orders.filter(o=>o.status==='Review').length;return `<div class="stats">${stat('Total patients',workspaceTotals?.totalPatients??new Set(orders.map(o=>o.patientId)).size,'registered in workspace','users')}${stat('Samples in progress',workspaceTotals?((workspaceTotals.statusCounts.Collected||0)+(workspaceTotals.statusCounts.Processing||0)):orders.filter(o=>['Collected','Processing'].includes(o.status)).length,'awaiting completion','flask')}${stat('Reports ready',workspaceTotals?.statusCounts?.Approved??orders.filter(o=>o.status==='Approved').length,`${pending} awaiting review`,'file')}${stat('Payments collected',money(total),'across all invoices','wallet')}</div><div class="grid-charts">${workloadChart()}${sampleChart()}</div><div class="grid-bottom"><section class="panel"><div class="panel-head"><div><h2>Patient worklist</h2><p class="panel-sub">A connected view of your lab’s daily workflow</p></div><button class="link-btn" data-page="Patients">View all ${icon('arrow')}</button></div><div class="tabs">${['All patients','In progress','Awaiting review','Completed'].map(t=>`<button data-filter="${t}" class="${filter===t?'active':''}">${t}${t==='All patients'?`<span class="tab-count">${orders.length}</span>`:''}</button>`).join('')}</div>${ordersTable(filtered().slice(0,5))}<div class="table-foot"><span>Showing ${Math.min(filtered().length,5)} of ${filtered().length} patients</span><span>Click a patient to open their record ${'↗'}</span></div></section>${activityPanel()}</div>`;}
-function workloadChart(){const days=Array.from({length:7},(_,i)=>{const d=new Date();d.setDate(d.getDate()-6+i);return d;});const counts=days.map(d=>orders.filter(o=>new Date(o.createdAt).toDateString()===d.toDateString()).length),complete=days.map(d=>orders.filter(o=>o.status==='Approved'&&new Date(o.approvedAt||o.updatedAt||o.createdAt).toDateString()===d.toDateString()).length),max=Math.max(...counts,...complete,4);return `<section class="panel"><div class="panel-head"><div><h2>Laboratory activity</h2><p class="panel-sub">Registrations and reports in the loaded worklist</p></div><div class="legend"><span><i class="dot" style="background:#78a98d"></i>Patients</span><span><i class="dot" style="background:#d4e6d9"></i>Reports</span></div></div><div class="chart-wrap"><div class="axis"><span>${max}</span><span>${Math.round(max*.75)}</span><span>${Math.round(max*.5)}</span><span>0</span></div><div class="bar-chart">${days.map((d,i)=>`<div class="bar-group ${i===6?'current':''}" title="${d.toDateString()}: ${counts[i]} patients, ${complete[i]} reports"><div class="bar" style="height:${counts[i]/max*95}%"></div><div class="bar light" style="height:${complete[i]/max*95}%"></div><span class="bar-label">${d.toLocaleDateString('en',{weekday:'short'})}</span></div>`).join('')}</div></div><div class="chart-foot"><span>Last 7 days · Loaded worklist</span><strong>${counts.reduce((a,b)=>a+b,0)} patients registered this week</strong></div></section>`;}
-function sampleChart(){const groups=[['Awaiting collection',orders.filter(o=>o.status==='Registered').length,'#e8eeea'],['In progress',orders.filter(o=>['Collected','Processing'].includes(o.status)).length,'#74a88b'],['Awaiting review',orders.filter(o=>o.status==='Review').length,'#bad4c2'],['Completed',orders.filter(o=>o.status==='Approved').length,'#166b52']];let start=0;const gradient=groups.map(([,n,c])=>{const end=start+(orders.length?n/orders.length*100:0),s=`${c} ${start}% ${end}%`;start=end;return s;}).join(',');return `<section class="panel"><div class="panel-head"><div><h2>Sample status</h2><p class="panel-sub">Status of loaded worklist</p></div><button class="icon-btn" data-page="Samples" aria-label="Open samples">${icon('more')}</button></div><div class="sample-body"><div class="donut" style="background:conic-gradient(${orders.length?gradient:'#e8eeea 0 100%'})"><div class="donut-value"><strong>${orders.length}</strong><small>Total orders</small></div></div><div class="sample-legend">${groups.map(([n,v,c])=>`<div class="sample-line"><i class="dot" style="background:${c}"></i>${n}<strong>${v}</strong></div>`).join('')}</div></div><div class="chart-foot"><span>Loaded worklist · All categories</span><button class="link-btn" data-page="Samples">Track samples ${icon('arrow')}</button></div></section>`;}
-function ago(v){const m=Math.max(0,Math.floor((Date.now()-new Date(v).getTime())/60000));return m<1?'Just now':m<60?`${m} min ago`:m<1440?`${Math.floor(m/60)} hours ago`:new Date(v).toLocaleDateString('en-IN',{day:'numeric',month:'short'});}
-function activityPanel(){return `<aside class="panel activity"><div style="display:flex;justify-content:space-between"><h2>Recent activity</h2>${icon('clock')}</div><div class="activity-list">${activity.slice(0,4).map(a=>`<div class="event"><div class="event-icon">${icon(a.type==='Approved'?'check':a.type==='Review'?'file':a.type==='Collected'?'flask':'users')}</div><div><p>${esc(a.message)}</p><small>${ago(a.at||a.timestamp)}</small></div></div>`).join('')||'<p class="muted" style="padding:15px 0">No recent activity. Patient registrations and report approvals will appear here.</p>'}</div><div class="activity-footer"><span class="dot"></span>${mode==='server'?'Connected to your lab server':'Central laboratory workspace'}</div></aside>`;}
-function filtered(){return orders.filter(o=>(!query||`${o.name} ${o.id} ${o.patientId} ${o.phone} ${(o.specimens||[]).flatMap(sp=>[sp.id,...(sp.previousIds||[])]).join(' ')}`.toLowerCase().includes(query.toLowerCase()))&&(filter==='All patients'||(filter==='In progress'&&['Registered','Collected','Processing'].includes(o.status))||(filter==='Awaiting review'&&o.status==='Review')||(filter==='Completed'&&o.status==='Approved'))).sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt));}
-function ordersTable(list){if(!list.length)return `<div class="empty">${icon('users')}<h3>No records to show</h3><p>Register a patient or select a test panel in Report studio to begin.</p></div>`;return `<div class="table-wrap"><table><thead><tr><th>PATIENT</th><th>${page==='Samples'?'SAMPLE / ORDER':'TESTS ORDERED'}</th><th>PRIORITY</th><th>${page==='Billing'?'PAYMENT':'STATUS'}</th><th>${page==='Billing'?'BALANCE':'REGISTERED'}</th><th></th></tr></thead><tbody>${list.map(o=>`<tr data-order="${esc(o.id)}" tabindex="0" role="button" aria-label="Open ${esc(o.name)}"><td><div class="person"><div class="avatar">${initials(o.name)}</div><div><strong>${esc(o.name)}</strong><small>${esc(o.patientId)} · ${esc(o.age)}y / ${esc(o.sex)}</small></div></div></td><td>${page==='Samples'?`<strong>${esc(o.id)}</strong><small class="muted" style="display:block;margin-top:5px">${[...new Set(o.tests.map(t=>TESTS[t]?.sample))].map(esc).join(', ')}</small>`:o.tests.map(t=>`<span class="test-pill">${esc(t)}</span>`).join('')}</td><td>${o.priority==='Urgent'?'<span class="urgent">↗ Urgent</span>':'<span class="muted">Routine</span>'}</td><td>${page==='Billing'?`<span class="badge ${o.paid>=o.amount?'Approved':'Review'}">${o.paid>=o.amount?'Paid':o.paid>0?'Partial':'Unpaid'}</span>`:`<span class="badge ${esc(o.status)}">${o.status==='Review'?'Awaiting review':esc(o.status)}</span>`}</td><td>${page==='Billing'?money(o.amount-o.paid):new Date(o.createdAt).toLocaleDateString('en-IN',{day:'2-digit',month:'short'})}</td><td>${icon('chevron')}</td></tr>`).join('')}</tbody></table></div>`;}
-function recordsPage(){const list=filtered(),offset=(pageNumber-1)*10;const stats=page==='Billing'?`<div class="stats">${stat('Total invoiced',money(orders.reduce((s,o)=>s+o.amount,0)),'loaded patient orders','wallet')}${stat('Collected',money(orders.reduce((s,o)=>s+o.paid,0)),'loaded patient orders','check')}${stat('Outstanding',money(orders.reduce((s,o)=>s+o.amount-o.paid,0)),'across patient categories','clock')}${stat('Unpaid invoices',orders.filter(o=>o.paid<o.amount).length,'requiring payment','file')}</div>`:'';return `${stats}${mode==='server'?`<p class="permission-note">${workspaceTotals?.totalOrders||orders.length} total orders · Latest 250 loaded initially. Search checks the full database, including older specimen IDs.</p>`:''}<section class="panel"><div class="filter-bar"><input id="record-search" value="${esc(query)}" placeholder="Search name, patient ID or order…" aria-label="Search records"><select id="status-filter" class="select-small" aria-label="Filter records">${['All patients','In progress','Awaiting review','Completed'].map(t=>`<option ${filter===t?'selected':''}>${t}</option>`).join('')}</select><span style="margin-left:auto;font-size:10px;color:#95a198">${list.length} records</span><button class="btn" data-action="export">${icon('download')}Export CSV</button></div>${ordersTable(list.slice(offset,offset+10))}<div class="table-foot"><span>Showing ${list.length?offset+1:0}–${Math.min(offset+10,list.length)} of ${list.length}</span><div class="pager"><button data-action="prev" ${pageNumber===1?'disabled':''} aria-label="Previous page">‹</button><button class="selected">${pageNumber}</button><button data-action="next" ${offset+10>=list.length?'disabled':''} aria-label="Next page">›</button></div></div></section>`;}
-function catalogPage(){return `<div class="notice">${icon('info')} ${esc(CATALOG_NOTICE)}</div><div class="catalog-grid">${Object.entries(TESTS).map(([code,t])=>`<article class="panel test-card"><div class="stat-icon">${icon('flask')}</div><span class="badge">${esc(t.department)}</span><h2>${esc(t.name)}</h2><p>${esc(code)} · ${t.parameters.length} parameters<br>Sample: ${esc(t.sample)}</p><div class="test-price">${money(t.price)}</div><button class="link-btn" data-test="${code}">View parameters ${icon('arrow')}</button></article>`).join('')}</div>`;}
-function settingsPage(){const profile={...settings,...settingsEdits};return `<div class="settings-grid"><form id="settings-form" class="panel settings-panel"><h2>Laboratory profile</h2>${[['labName','Laboratory name'],['address','Address'],['phone','Contact number'],['email','Laboratory email'],['registration','Registration number'],['website','Website'],['labIncharge','Lab in-charge / checked by'],['labInchargeQualification','Lab in-charge qualification'],['pathologist','Authorizing pathologist'],['pathologistQualification','Pathologist qualification'],['workingHours','Working hours'],['reportFooter','Report footer note']].map(([k,n])=>`<div class="field"><label for="set-${k}">${n}</label><input id="set-${k}" name="${k}" value="${esc(profile[k])}" ${k==='labName'?'required':''} ${k==='email'?'type="email"':''} maxlength="250"></div>`).join('')}<div class="field"><label for="set-reportTemplate">Default report layout</label><select id="set-reportTemplate" name="reportTemplate">${REPORT_TEMPLATES.map(t=>`<option value="${t.id}" ${(profile.reportTemplate||'classic')===t.id?'selected':''}>${esc(t.name)}</option>`).join('')}</select></div><p class="muted" style="font-size:11px;margin-bottom:15px">These details appear on new reports. Approved reports keep their original laboratory profile.</p><button class="btn primary" type="submit">${icon('check')}Save laboratory profile</button></form><div><section class="panel settings-panel"><h2>Connected services</h2>${[['send','WhatsApp delivery','WhatsApp Business provider required'],['mail','Email reports','An email delivery provider is required'],['flask','Analyzer integration','Device-specific interface required']].map(([i,n,d])=>`<div class="integration"><div class="stat-icon">${icon(i)}</div><div><h3 style="font-size:12px">${n}</h3><p>${d}</p></div><span class="badge">Not connected</span></div>`).join('')}<div class="notice">Report approval and printing work here. Automated delivery and analyzer imports require a configured and validated backend connector.</div><button class="btn" data-action="setup">${icon('book')}Deployment guide</button></section><section class="panel settings-panel" style="margin-top:20px"><h2>Workspace data</h2><p class="muted" style="line-height:1.8;font-size:11px">${mode==='server'?'Patient records use your shared server database. Download an authenticated backup for safekeeping.':'This preview saves fictional records in this browser. Use the included server for shared, persistent records across devices.'}</p><div class="detail-actions"><button class="btn" data-action="backup">${icon('download')}Export backup</button>${mode==='demo'?'<button class="btn danger" data-action="reset">Reset demo</button>':''}</div></section></div></div>`;}
-function analyticsPage(){const count=Object.keys(TESTS).map(t=>[t,orders.filter(o=>o.tests.includes(t)).length]).sort((a,b)=>b[1]-a[1]),categories=['Walk-in','Referral','Corporate','Insurance'];return `<div class="stats">${stat('Patient visits',orders.length,'all orders','users')}${stat('Tests ordered',orders.reduce((s,o)=>s+o.tests.length,0),'across 15 panels','flask')}${stat('Report completion',`${orders.length?Math.round(orders.filter(o=>o.status==='Approved').length/orders.length*100):0}%`,'approved orders','file')}${stat('Collection rate',`${orders.reduce((s,o)=>s+o.amount,0)?Math.round(orders.reduce((s,o)=>s+o.paid,0)/orders.reduce((s,o)=>s+o.amount,0)*100):0}%`,'of total invoiced','wallet')}</div><div class="grid-charts">${workloadChart()}${sampleChart()}</div><div class="analytics-grid"><section class="panel analytics-block"><h2>Tests by volume</h2>${count.map(([code,n])=>metric(TESTS[code].name,n,Math.max(...count.map(x=>x[1]),1))).join('')}</section><section class="panel analytics-block"><h2>Patient categories</h2>${categories.map(c=>metric(c,orders.filter(o=>o.category===c).length,orders.length||1)).join('')}</section></div>`;}
-function metric(label,n,max){return `<div class="metric-row"><div class="metric-label"><span>${esc(label)}</span><strong>${n}</strong></div><div class="metric-track"><div class="metric-fill" style="width:${n/max*100}%"></div></div></div>`;}
-function modal(title,body,foot='',wide=false){$('#overlay').innerHTML=`<div class="overlay-backdrop"><section class="modal ${wide?'wide':''}" role="dialog" aria-modal="true" aria-label="${esc(title)}"><div class="modal-head"><h2>${esc(title)}</h2><button class="icon-btn" data-action="close" aria-label="Close dialog">${icon('close')}</button></div><div class="modal-body">${body}</div>${foot?`<div class="modal-foot">${foot}</div>`:''}</section></div>`;applyPermissions();setTimeout(()=>$('.modal input, .modal button')?.focus(),30);}
-function close(){selected=null;$('#overlay').innerHTML='';}
-function register(preselect='',reportMode=false){selected='new';modal(reportMode?'Create a laboratory report':'Register a patient',`<form id="patient-form"><input type="hidden" name="reportMode" value="${reportMode?1:0}"><div class="form-row"><div class="field"><label>Full name *</label><input name="name" required maxlength="100" placeholder="Patient’s full name"></div><div class="field"><label>Patient category</label><select name="category"><option>Walk-in</option><option>Referral</option><option>Corporate</option><option>Insurance</option></select></div></div><div class="form-row"><div class="field"><label>Age (years) *</label><input name="age" type="number" step="any" min="0" max="120" required placeholder="Age"></div><div class="field"><label>Sex *</label><select name="sex"><option>Male</option><option>Female</option><option>Other</option></select></div></div><div class="form-row"><div class="field"><label>Phone number</label><input name="phone" type="tel" maxlength="30" placeholder="+91"></div><div class="field"><label>Email address</label><input name="email" type="email" maxlength="150" placeholder="patient@example.com"></div></div><div class="form-row"><div class="field"><label>Referred by</label><input name="referrer" maxlength="100" placeholder="Self / doctor’s name"></div><div class="field"><label>Priority</label><select name="priority"><option>Routine</option><option>Urgent</option></select></div></div><label style="font-size:11px;font-weight:600">Select tests *</label><div class="test-choices">${Object.entries(TESTS).map(([c,t])=>`<label class="test-choice"><input type="checkbox" name="tests" value="${c}" ${c===preselect?'checked':''}><span>${c}<small>${esc(t.name)}</small></span><b>${money(t.price)}</b></label>`).join('')}</div><div class="form-total"><span>Order total</span><strong id="order-total">${money(TESTS[preselect]?.price||0)}</strong></div>${reportMode?`<label class="sample-confirm"><input type="checkbox" name="sampleConfirmed" required> I confirm the sample has been collected and processing has started.</label>`:''}<div class="error-text" id="form-error" style="margin-top:10px"></div></form>`,`<button class="btn" data-action="close">Cancel</button><button class="btn primary" type="submit" form="patient-form">${icon('plus')}${reportMode?'Continue to results':'Register patient'}</button>`);}
-function orderPanel(order,code){return order.catalogSnapshot?.tests?.[code]||TESTS[code]||{name:code+' (historical panel)',sample:'See original report',price:null,parameters:[]};}
-function panelPricesKnown(order){return order.tests.every(code=>Number.isFinite(orderPanel(order,code).price))&&Math.abs(order.tests.reduce((sum,code)=>sum+orderPanel(order,code).price,0)-order.amount)<0.001;}
-function record(id){const o=orders.find(o=>o.id===id);if(!o)return;selected=id;const step=statuses.indexOf(o.status);const previousVisits=orders.filter(item=>item.patientId===o.patientId&&item.id!==o.id);modal('Patient record',`${o.originalOrderId?`<div class="notice" style="margin-bottom:15px">Amended report: linked to original order <strong>${esc(o.originalOrderId)}</strong>. Reason: ${esc(o.amendmentReason||'Clinical amendment')}.</div>`:''}<div class="detail-top"><div class="avatar">${initials(o.name)}</div><div><h2>${esc(o.name)}</h2><p>${esc(o.patientId)} · ${o.age} years · ${esc(o.sex)}</p></div><span class="badge ${o.status}">${o.status==='Review'?'Awaiting review':o.status}</span></div><div class="steps">${statuses.map((s,i)=>`<div class="step ${i<=step?'done':''}">${s==='Review'?'Review':s}</div>`).join('')}</div><dl class="detail-grid">${[['Order ID',o.id],['Registered',new Date(o.createdAt).toLocaleString('en-IN')],['Category',o.category],['Referred by',o.referrer||'Self'],['Phone',o.phone||'Not provided'],['Email',o.email||'Not provided'],['Priority',o.priority],['Tests',o.tests.join(', ')]].map(([k,v])=>`<div><dt>${k}</dt><dd>${esc(v)}</dd></div>`).join('')}</dl><div class="detail-actions">${o.status==='Registered'?`<button class="btn primary" data-action="advance" data-id="${id}">${icon('flask')}Mark sample collected</button>`:''}${o.status==='Collected'?`<button class="btn primary" data-action="advance" data-id="${id}">${icon('refresh')}Start processing</button>`:''}${['Processing','Review'].includes(o.status)?`<button class="btn primary" data-action="results" data-id="${id}">${icon('file')}${o.status==='Review'?'Review results':'Enter results'}</button>`:''}${o.status==='Approved'?`<button class="btn primary" data-action="report" data-id="${id}">${icon('file')}View report</button>`:''}${o.status==='Approved'&&can('results:write')?`<button class="btn" data-action="amend-report" data-id="${id}">${icon('refresh')}Amend report</button>`:''}<button class="btn" data-action="invoice" data-id="${id}">${icon('wallet')}Billing & payment</button><button class="btn" data-action="label" data-id="${id}">${icon('print')}Sample label</button></div>${specimenSummary(o)}<h3 style="margin:24px 0 12px">Order summary</h3><div class="table-wrap"><table><thead><tr><th>TEST</th><th>SAMPLE</th><th>AMOUNT</th></tr></thead><tbody>${o.tests.map(t=>`<tr><td>${esc(orderPanel(o,t).name)}</td><td>${esc(orderPanel(o,t).sample)}</td><td>${panelPricesKnown(o)?money(orderPanel(o,t).price):'—'}</td></tr>`).join('')}</tbody></table></div><div class="form-total"><span>Total ${money(o.amount)} · Paid ${money(o.paid)}</span><strong>Due ${money(o.amount-o.paid)}</strong></div>${previousVisits.length?`<h3 style="margin:24px 0 12px">Patient visit history (${previousVisits.length} other visit${previousVisits.length>1?'s':''})</h3><div class="table-wrap"><table><thead><tr><th>ORDER ID</th><th>DATE</th><th>TESTS</th><th>STATUS</th><th></th></tr></thead><tbody>${previousVisits.map(v=>`<tr><td><strong>${esc(v.id)}</strong></td><td>${new Date(v.createdAt).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'})}</td><td>${v.tests.join(', ')}</td><td><span class="badge ${esc(v.status)}">${esc(v.status)}</span></td><td><button class="link-btn" data-action="record" data-id="${esc(v.id)}">Open</button></td></tr>`).join('')}</tbody></table></div>`:''}`);}
-function readResultForm(o,complete=false){const form=$('#results-form');if(!form)return null;const data=new FormData(form),values={};try{for(const key of new Set(o.tests.flatMap(t=>TESTS[t].parameters))){const input=form.elements.namedItem(key),raw=data.get(key);if(input?.validity?.badInput)throw new Error(`Enter a valid numeric ${PARAMETERS[key].name}.`);if(raw===null||String(raw).trim()===''){if(complete)throw new Error('Complete every ordered result before submitting for review or approval.');continue;}values[key]=finiteInput(raw,PARAMETERS[key].name);}return {results:values,notes:String(data.get('notes')||'')};}catch(error){$('#result-error').textContent=error.message;return null;}}
-async function saveResultsAction(action,id){const o=orders.find(o=>o.id===id);if(!o||!['Processing','Review'].includes(o.status))return;const entered=readResultForm(o,action==='submit-results'||action==='approve');if(!entered)return;if(action==='approve'&&!$('#review-check')?.checked){$('#result-error').textContent='Confirm that you have reviewed and verified all results.';return;}if(submitting)return;submitting=true;const form=$('#results-form');markFormSaving(form,true);try{const status=action==='approve'?'Approved':action==='submit-results'?'Review':action==='return-processing'?'Processing':o.status;const saved=await saveOrder({...o,...entered,status});if(!saved)return;resultEdits.delete(id);if(action==='approve'){report(id);toast('Report approved.');}else if(action==='return-processing'){results(id);toast('Report returned to editing.');}else if(action==='preview-results'){showReport(saved);toast('Draft saved.');}else{record(id);toast(action==='submit-results'?'Results submitted for review.':'Draft results saved.');}}finally{submitting=false;markFormSaving(form,false);}}
-function results(id){const stored=orders.find(x=>x.id===id);const o=stored?{...stored,...(resultEdits.get(id)||{})}:null;if(!o||!['Processing','Review'].includes(o.status))return;selected=id;const seen=new Set();modal(o.status==='Review'?'Review laboratory results':'Enter laboratory results',`<p class="muted" style="font-size:12px;margin-bottom:15px">${esc(o.name)} · ${esc(o.id)}</p><div class="notice">${esc(CATALOG_NOTICE)} ${o.status==='Review'?'Confirm patient identity, units, reference intervals, and all results before approval.':''}</div><div id="release-check" class="release-status" data-order="${id}">${mode==='server'?'Checking release conditions…':'Clinical release requires laboratory validation and authorized review.'}</div><form id="results-form" data-id="${id}" data-dirty="${resultEdits.has(id)?1:''}">${resultEdits.has(id)?'<p class="session-draft-note">Unsaved result edits restored from this session. Save to keep them.</p>':''}${o.tests.map(t=>{const keys=TESTS[t].parameters.filter(k=>{if(seen.has(k))return false;seen.add(k);return true;});return `<div class="result-heading">${esc(TESTS[t].department)} · ${esc(TESTS[t].name)}</div>${t==='KFT'&&o.results&&o.results.creatinine&&o.age?`<div class="notice" style="font-size:11px;margin:4px 0 8px">Estimated GFR (Cockcroft-Gault, illustrative only — validate before use): <strong>${eGFR(o.results.creatinine,o.age,o.sex)} mL/min/1.73m²</strong></div>`:''}${keys.length?`<div class="table-wrap"><table class="result-table"><thead><tr><th>PARAMETER</th><th>RESULT *</th><th>UNIT</th><th>REFERENCE</th><th>FLAG</th></tr></thead><tbody>${keys.map(k=>{const p=PARAMETERS[k];return `<tr><td>${esc(p.name)}</td><td><input type="number" step="any" min="0" name="${k}" data-param="${k}" value="${esc(o.results?.[k]??'')}" aria-label="${esc(p.name)}"></td><td>${esc(p.unit)}</td><td>${esc((o.sex==='Male'&&p.referenceM)||(o.sex==='Female'&&p.referenceF)||p.reference||`${p.min} – ${p.max}`)}</td><td class="flag" id="flag-${k}">${flag(k,o.results?.[k])}</td></tr>`;}).join('')}</tbody></table></div>`:'<p class="muted" style="font-size:11px">This panel uses results already entered above.</p>'}`;}).join('')}<div class="field" style="margin-top:20px"><label>Clinical notes</label><textarea name="notes" maxlength="4000">${esc(o.notes||'')}</textarea></div><div id="result-error" class="error-text"></div>${o.status==='Review'?`<div class="field"><label><input type="checkbox" id="review-check" style="width:auto"> I have reviewed and verified these results.</label></div>`:''}</form>`,`<button class="btn" data-action="record" data-id="${id}">Back</button>${o.status==='Processing'?`<button class="btn" data-action="preview-results" data-id="${id}">${icon('file')}Save & preview draft</button><button class="btn" data-action="save-results" data-id="${id}">Save draft</button><button class="btn primary" data-action="submit-results" data-id="${id}">Submit for review ${icon('arrow')}</button>`:`<button class="btn" data-action="return-processing" data-id="${id}">Return to editing</button><button class="btn primary" data-action="approve" data-id="${id}">${icon('check')}Approve & generate report</button>`}`,true);applyPermissions();if(mode==='server')loadReleaseCheck(id);}
-function flag(k,v){if(v===''||v==null)return '';const p=PARAMETERS[k];const n=Number(v);if(typeof p.criticalMin==='number'&&n<p.criticalMin)return '⚠ Crit-L';if(typeof p.criticalMax==='number'&&n>p.criticalMax)return '⚠ Crit-H';return n<p.min?'L':n>p.max?'H':'';}
-function eGFR(cr,age,sex){const c=Number(cr),a=Number(age);if(!c||!a||c<=0||a<=0)return '—';return ((140-a)*a/(72*c)*(sex==='Female'?0.85:1)).toFixed(1);}
-function invoice(id){const o=orders.find(x=>x.id===id);selected=id;modal('Billing & payment',`<div class="detail-top"><div class="avatar">${initials(o.name)}</div><div><h2>${esc(o.name)}</h2><p>${esc(o.id)} · ${esc(o.category)}</p></div><span class="badge ${o.paid>=o.amount?'Approved':'Review'}">${o.paid>=o.amount?'Paid':'Payment due'}</span></div><table><thead><tr><th>DESCRIPTION</th><th>AMOUNT</th></tr></thead><tbody>${o.tests.map(t=>`<tr><td>${esc(orderPanel(o,t).name)}</td><td>${panelPricesKnown(o)?money(orderPanel(o,t).price):'—'}</td></tr>`).join('')}</tbody></table>${!panelPricesKnown(o)?'<p class="muted" style="font-size:11px;margin-top:12px">Original panel prices were not captured for this historical order. The saved invoice total below is preserved.</p>':''}<div class="form-total"><span>Total ${money(o.amount)} · Received ${money(o.paid)}</span><strong>Balance ${money(o.amount-o.paid)}</strong></div>${o.paid<o.amount?`<form id="payment-form" data-id="${id}" style="margin-top:25px"><div class="form-row"><div class="field"><label>Amount to collect *</label><input name="payment" type="number" step="0.01" min="0.01" max="${o.amount-o.paid}" value="${o.amount-o.paid}" required></div><div class="field"><label>Payment method</label><select name="paymentMethod"><option>Cash</option><option>UPI</option><option>Card</option><option>Bank transfer</option></select></div></div><p class="muted" style="font-size:11px">Record a payment already received. This does not process a payment.</p></form>`:`<p class="muted" style="margin-top:20px">Payment recorded via ${esc(o.paymentMethod||'Cash')}.</p>`}`,`<button class="btn" data-action="record" data-id="${id}">Back to record</button>${o.paid<o.amount?'<button class="btn primary" form="payment-form" type="submit">Record payment</button>':''}`);}
-function report(id){const o=orders.find(x=>x.id===id);if(!o||o.status!=='Approved')return toast('A report must be approved before printing.');selected=id;showReport(o);}
-function showReport(o,chosenTemplate=null){const template=chosenTemplate||o.reportSnapshot?.reportTemplate||selectedReportTemplate||settings.reportTemplate||'classic';reportView={order:o,template};selected=o.id;modal('Laboratory report',`<div class="report-toolbar no-print"><div><strong>${esc(o.name)}</strong><small>${esc(o.id)} · ${o.status==='Approved'?'Approved report':'Draft report'}</small></div><label>Layout <select id="report-template-select" aria-label="Report layout">${REPORT_TEMPLATES.map(t=>`<option value="${t.id}" ${template===t.id?'selected':''}>${esc(t.name)}</option>`).join('')}</select></label></div><div class="report-scroll">${renderReport(o,settings,{template,demo:mode==='demo'})}</div>`,`<button class="btn" data-action="${o.status==='Approved'?'record':'results'}" data-id="${esc(o.id)}">${o.status==='Approved'?'Back to record':'Back to results'}</button><button class="btn primary" data-action="print">${icon('print')}Print / save PDF</button>`,true);}
-function templateThumbnail(id){const labName=(settings&&settings.labName&&settings.labName.trim())?settings.labName.trim():'YOUR LABORATORY';return `<div class="template-thumb ${id}"><div class="thumb-head"><div class="thumb-logo">${icon('flask')}</div><div><b>${esc(labName)}</b><i></i></div></div><div class="thumb-patient"><i></i><i></i><i></i><i></i></div><div class="thumb-title"><i></i></div><div class="thumb-table">${Array.from({length:6},(_,i)=>`<div><i style="width:${60-i*4}%"></i><i></i><i></i></div>`).join('')}</div><div class="thumb-sign"><i></i><i></i></div></div>`;}
-function reportStudio(){const template=selectedReportTemplate||settings.reportTemplate||'classic',approved=orders.filter(o=>o.status==='Approved'&&!o.sampleReport&&!String(o.id).startsWith('SAMPLE-')),review=orders.filter(o=>o.status==='Review'&&!o.sampleReport&&!String(o.id).startsWith('SAMPLE-'));return `<section class="report-intro"><div class="report-intro-icon">${icon('file')}</div><div><h2>A professional report. Every time.</h2><p>Choose a letterhead, enter your patient’s results, and print a report ready to share.</p></div><div class="report-intro-stats"><strong>15</strong><span>test panels</span><strong>3</strong><span>report styles</span></div></section><div class="studio-section-heading"><div><h2>Choose your report style</h2><p>Three letterheads inspired by your reference reports.</p></div><button class="link-btn" data-page="Settings">Customize lab details ${icon('arrow')}</button></div><div class="report-template-grid">${REPORT_TEMPLATES.map(t=>`<article class="template-card ${template===t.id?'selected':''}"><button class="template-preview" data-action="choose-template" data-template="${t.id}" aria-label="Use ${esc(t.name)} layout" aria-pressed="${template===t.id}">${templateThumbnail(t.id)}<span class="template-check">${icon('check')}</span></button><div class="template-caption"><div><h3>${esc(t.name)}</h3><p>${esc(t.description)}</p></div></div></article>`).join('')}</div><div class="studio-section-heading"><div><h2>Test report library <span class="library-count">15 panels</span></h2><p>Select a test panel to start a new patient report.</p></div><span class="muted" style="font-size:10px">Reference intervals require laboratory validation</span></div><div class="report-library">${Object.entries(TESTS).map(([code,t],i)=>`<article class="panel report-test-card"><div class="report-test-head"><span class="test-number">${String(i+1).padStart(2,'0')}</span><span class="test-department">${esc(t.department)}</span></div><h3>${esc(t.name)}</h3><p>${t.parameters.length} ${t.parameters.length===1?'parameter':'parameters'} · ${esc(t.sample)}</p><div class="report-test-actions"><button class="start-report-btn" data-action="new-report" data-code="${code}" aria-label="Create ${esc(t.name)} report">Create report ${icon('plus')}</button></div></article>`).join('')}</div><section class="panel reports-worklist"><div class="panel-head"><div><h2>Patient reports</h2><p class="panel-sub">${review.length} awaiting review · ${approved.length} approved and ready to print</p></div><button class="link-btn" data-page="Results & reports">All patient records ${icon('arrow')}</button></div>${orders.length?`<div class="report-recent-list">${orders.filter(o=>['Approved','Review','Processing'].includes(o.status)&&!o.sampleReport&&!String(o.id).startsWith('SAMPLE-')).slice(0,5).map(o=>`<div class="report-recent-item"><div class="person"><div class="avatar">${initials(o.name)}</div><div><strong>${esc(o.name)}</strong><small>${esc(o.id)} · ${o.tests.join(', ')}</small></div></div><span class="badge ${o.status}">${o.status==='Review'?'Awaiting review':o.status}</span><button class="btn" data-action="${o.status==='Approved'?'report':'results'}" data-id="${esc(o.id)}">${icon(o.status==='Approved'?'print':'file')}${o.status==='Approved'?'Open report':o.status==='Review'?'Review':'Enter results'}</button></div>`).join('')||'<div class="empty">No reports in progress. Choose a panel above to start.</div>'}</div>`:'<div class="empty">Start your first report from any test panel above.</div>'}</section>`;}
-function setup(){modal('Set up your laboratory',`<h3>Your cloud or on-premise workspace</h3><p class="muted" style="font-size:12px;line-height:1.9;margin:12px 0">This hosted preview uses browser-local demonstration records. The source includes a Node.js server with a shared SQLite database, authentication, version conflict checks, and an audit trail.</p><ol style="padding-left:18px;color:#768a7b;font-size:12px;line-height:2"><li>Download the application source below.</li><li>Install Node.js 24 on your server.</li><li>Set LAB_USER and LAB_PASSWORD in your server environment.</li><li>Run <code>npm start</code> behind an HTTPS reverse proxy.</li><li>Open the same server address on desktops and phones.</li></ol><div class="notice">Before clinical use: validate the test catalog and reference intervals, configure authorized staff access and backups, and validate reports and instrument interfaces. WhatsApp, email, and analyzer providers still need implementation and credentials. See SELF-HOSTING.md for details.</div>${mode==='demo'?`<a class="btn primary" href="/labflow-source.zip" download>${icon('download')}Download application source</a>`:'<p class="muted">See README.md and docs/OPERATIONS.md in your application source.</p>'}`);}
-function download(name,text,type='text/plain'){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([text],{type}));a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}
-function exportCSV(){const q=v=>'"'+String(v??'').replace(/"/g,'""')+'"';const header=['Order ID','Patient ID','Name','Age','Sex','Category','Tests','Status','Amount','Paid','Balance','Registered'];download('labflow-orders.csv',[header,...filtered().map(o=>[o.id,o.patientId,o.name,o.age,o.sex,o.category,o.tests.join('; '),o.status,o.amount,o.paid,o.amount-o.paid,o.createdAt])].map(r=>r.map(v=>q(typeof v==='string'&&/^[=+\-@]/.test(v)?`'${v}`:v)).join(',')).join('\r\n'),'text/csv');toast('CSV exported. Contains patient information; store securely.');}
-document.addEventListener('click',async e=>{const t=e.target.closest('button,a,[data-order],[data-test],[data-action]');if(!t)return;if(t.dataset.page){page=t.dataset.page;filter='All patients';pageNumber=1;query='';await loadOpsPage(page);render();return;}if(t.dataset.filter){filter=t.dataset.filter;pageNumber=1;render();return;}if(t.dataset.order)return record(t.dataset.order);if(t.dataset.test){const test=TESTS[t.dataset.test];modal(test.name,(()=>{const rows=test.parameters.map(k=>{const p=PARAMETERS[k];const crit=[];if(typeof p.criticalMin==='number')crit.push('<'+p.criticalMin);if(typeof p.criticalMax==='number')crit.push('>'+p.criticalMax);return '<tr><td>'+esc(p.name)+'</td><td>'+esc(p.unit)+'</td><td>'+esc(p.reference)+'</td><td>'+esc(p.referenceM||'—')+'</td><td>'+esc(p.referenceF||'—')+'</td><td>'+esc(crit.join(' / ')||'Not configured')+'</td></tr>';}).join('');return '<div class="notice">'+esc(CATALOG_NOTICE)+'</div><div style="overflow-x:auto"><table><thead><tr><th>PARAMETER</th><th>UNIT</th><th>REFERENCE</th><th>MALE</th><th>FEMALE</th><th>CRITICAL¹</th></tr></thead><tbody>'+rows+'</tbody></table></div><p class="muted" style="font-size:10px;margin-top:8px">¹ Illustrative critical alert thresholds — validate before clinical use.</p>';})());return;}const action=t.dataset.action,id=t.dataset.id,o=orders.find(o=>o.id===id);if(!action)return;try{if(await handleOpsAction(action,t,o))return;}catch(error){toast(error.message);return;}if(action==='close')close();if(action==='new')register();if(action==='new-report')register(t.dataset.code||'',true);if(action==='choose-template'){selectedReportTemplate=t.dataset.template;render();}if(action==='menu'){$('.sidebar').classList.add('open');$('.menu-backdrop').classList.add('open');}if(action==='close-menu'){$('.sidebar').classList.remove('open');$('.menu-backdrop').classList.remove('open');}if(action==='record')record(id);if(action==='results')results(id);if(action==='invoice')invoice(id);if(action==='report')report(id);if(action==='amend-report'&&o){if(mode==='demo'){toast('Report amendments require the shared server.');return;}modal('Amend approved report',`<form id="amend-form" data-id="${esc(o.id)}"><p class="muted" style="font-size:12px;margin-bottom:15px">${esc(o.name)} · ${esc(o.id)}</p><div class="field"><label>Reason for report amendment *</label><textarea name="reason" required maxlength="1000" placeholder="State the clinical or laboratory reason for amending this report (e.g. sample re-tested, corrected transcription)."></textarea></div><div class="notice">The original approved report remains permanently locked. A new linked corrected report will be initialized in processing for re-entry and pathologist re-authorization.</div></form>`,`<button class="btn" data-action="record" data-id="${esc(o.id)}">Back</button><button class="btn primary" form="amend-form" type="submit">Create amended report</button>`);return;}if(action==='print')window.print();if(action==='setup')setup();if(action==='guide')modal('A smoother day at the lab',`<div style="font-size:12px;line-height:2;color:#74887b"><p><strong>1. Register.</strong> Add the patient and choose ordered test panels.</p><p><strong>2. Collect.</strong> Open the record, print the sample label, and mark the sample collected.</p><p><strong>3. Process.</strong> Start processing, enter all results, and submit for review.</p><p><strong>4. Review.</strong> Verify findings and approve the report.</p><p><strong>5. Deliver.</strong> Print the approved report or save it as a PDF.</p><p><strong>6. Collect payment.</strong> Record payments from the Billing page or patient record.</p></div><div class="notice">Automatic report delivery and analyzer interfaces require configuration. No messages are sent by this preview.</div>`);if(action==='notifications')modal('Recent activity',activityPanel());if(action==='date')toast('The overview shows current workspace totals and the last 7 days of activity.');if(action==='references')modal('Reference interval guidance',`<div class="notice">${esc(CATALOG_NOTICE)}</div><p style="font-size:12px;line-height:1.9;color:#7e8c81">Ranges vary with method, age, sex, pregnancy and patient population. The starter intervals do not apply to every patient. Validate and update catalog.js against your laboratory’s SOPs before clinical use. Abnormal flags are numeric comparisons, not diagnoses.</p>`);if(action==='advance'&&o){const next={...o,status:statuses[statuses.indexOf(o.status)+1]};const saved=await saveOrder(next);if(saved){record(id);toast(`Sample marked ${saved.status.toLowerCase()}.`);}}if(['save-results','submit-results','preview-results','approve','return-processing'].includes(action)&&o)await saveResultsAction(action,id);if(action==='reload-results'){resultEdits.delete(id);results(id);}if(action==='label'&&o)openSpecimenLabels(o);if(action==='export')exportCSV();if(action==='prev'){pageNumber=Math.max(1,pageNumber-1);render();}if(action==='next'){pageNumber++;render();}if(action==='backup'){if(mode==='server'){try{const data=await req('/api/backup');download('labflow-backup.json',JSON.stringify(data,null,2),'application/json');}catch(e){toast(e.message);}}else download('labflow-demo-backup.json',JSON.stringify({orders,activity,settings},null,2),'application/json');}if(action==='reset'){modal('Reset demo workspace?',`<p class="muted" style="font-size:12px;line-height:1.8">This removes changes made to the fictional demo records on this device and loads the original examples.</p>`,`<button class="btn" data-action="close">Keep changes</button><button class="btn danger" data-action="confirm-reset">Reset demo</button>`);}if(action==='confirm-reset'){localStorage.removeItem('labflow-v1');orders=makeDemoOrders();activity=[];resultEdits.clear();settingsEdits=null;persist();close();render();toast('Demo records reset.');}});
-document.addEventListener('submit',async event=>{const form=event.target;if(!['patient-form','payment-form','settings-form','results-form','amend-form'].includes(form.id))return;event.preventDefault();if(form.id==='results-form'){const order=orders.find(o=>o.id===form.dataset.id);if(order?.status==='Processing')await saveResultsAction('save-results',order.id);return;}if(submitting)return;submitting=true;markFormSaving(form,true);try{const data=new FormData(form);if(form.id==='amend-form'){const o=orders.find(o=>o.id===form.dataset.id);const reason=String(data.get('reason')||'').trim();if(!reason)throw new Error('Provide an amendment reason.');const result=await req(`/api/orders/${encodeURIComponent(o.id)}/amend`,{method:'POST',body:JSON.stringify({reason,expectedVersion:o.version})});await reloadState();record(result.order.id);toast(`Amended report ${result.order.id} created. Enter corrected results.`);return;}if(form.id==='patient-form'){let patient;try{patient=patientValues(data);}catch(error){$('#form-error').textContent=error.message;return;}const tests=[...new Set(data.getAll('tests'))];if(!tests.length||tests.some(code=>!TESTS[code])){$('#form-error').textContent='Select at least one valid test.';return;}const reportMode=data.get('reportMode')==='1';if(reportMode&&!data.get('sampleConfirmed')){$('#form-error').textContent='Confirm that the sample has been collected and processing started.';return;}const now=new Date().toISOString(),uid=crypto.randomUUID().slice(0,8).toUpperCase();const order={...patient,id:`LF-${uid}`,patientId:`PT-${uid}`,category:data.get('category'),referrer:data.get('referrer')||'Self',priority:data.get('priority'),tests,amount:tests.reduce((sum,code)=>sum+TESTS[code].price,0),paid:0,paymentMethod:'',status:'Registered',createdAt:now,updatedAt:now,results:{},notes:'',version:0};let saved=await saveOrder(order,true);if(!saved)return;const createdId=saved.id;if(reportMode){const collected=await saveOrder({...saved,status:'Collected'});if(!collected){record(createdId);toast('Patient was registered. Open this saved record to continue sample collection; a second patient was not created.');return;}saved=collected;const processing=await saveOrder({...saved,status:'Processing'});if(!processing){record(createdId);toast('Sample was collected. Continue processing from this saved record.');return;}results(processing.id);toast('Patient report created. Enter the test results.');}else{record(saved.id);toast('Patient registered and order created.');}}
-if(form.id==='payment-form'){const o=orders.find(o=>o.id===form.dataset.id);const amount=finiteInput(data.get('payment'),'Payment',0.01,o.amount-o.paid);if(Math.abs(amount*100-Math.round(amount*100))>1e-7)throw new Error('Use no more than two decimal places for payments.');const saved=await saveOrder({...o,paid:Math.round((o.paid+amount)*100)/100,paymentMethod:data.get('paymentMethod')});if(saved){invoice(saved.id);toast('Payment recorded.');}}
-if(form.id==='settings-form'){const next={...settings,...Object.fromEntries(data)};if(!String(next.labName).trim())throw new Error('Laboratory name is required.');if(next.email&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(next.email))throw new Error('Enter a valid laboratory email address.');if(!REPORT_TEMPLATES.some(t=>t.id===next.reportTemplate))throw new Error('Choose a valid report layout.');if(mode==='server'){const saved=await req('/api/settings',{method:'PUT',body:JSON.stringify(next)});settings=saved.settings;}else{persist({orders,activity,settings:next});settings=next;}settingsEdits=null;selectedReportTemplate=settings.reportTemplate||'classic';render();toast('Laboratory profile saved.');}}
-catch(error){const inline=$('#form-error');if(inline)inline.textContent=error.message;toast(error.message);}finally{submitting=false;markFormSaving(form,false);}});
-document.addEventListener('change',e=>{if(e.target.id==='report-template-select'){if(reportView)showReport(reportView.order,e.target.value);}if(e.target.name==='tests'){const sum=[...document.querySelectorAll('[name="tests"]:checked')].reduce((s,c)=>s+TESTS[c.value].price,0);$('#order-total').textContent=money(sum);}if(e.target.id==='status-filter'){filter=e.target.value;pageNumber=1;render();}});
-let searchTimer;document.addEventListener('input',e=>{if(e.target.closest('#results-form'))cacheResultEdits();if(e.target.closest('#settings-form'))settingsEdits=Object.fromEntries(new FormData($('#settings-form')));if(e.target.dataset.param){const k=e.target.dataset.param;$('#flag-'+k).textContent=flag(k,e.target.value);}if(['record-search','global-search'].includes(e.target.id)){const id=e.target.id,value=e.target.value,pos=e.target.selectionStart;clearTimeout(searchTimer);searchTimer=setTimeout(async()=>{query=value;pageNumber=1;if(id==='global-search')page='Patients';if(mode==='server'&&value.trim().length>=2){try{const found=await req('/api/orders?q='+encodeURIComponent(value.trim()));if(query!==value)return;const merged=new Map(orders.map(o=>[o.id,o]));for(const o of found.orders)merged.set(o.id,o);orders=[...merged.values()];if(found.hasMore)toast('More than 100 matching records. Refine your search.');}catch(error){toast(error.message);}}render();const input=$('#'+(id==='global-search'?'record-search':id));input?.focus();input?.setSelectionRange(pos,pos);},180);}});
-document.addEventListener('keydown',e=>{if(e.key==='Escape'){close();$('.sidebar')?.classList.remove('open');$('.menu-backdrop')?.classList.remove('open');}if((e.metaKey||e.ctrlKey)&&e.key==='k'){e.preventDefault();if(innerWidth<760){page='Patients';render();$('#record-search')?.focus();}else $('#global-search')?.focus();}if(e.key==='Enter'&&e.target.matches('[data-order]'))record(e.target.dataset.order);if(e.key==='Tab'&&$('.modal')){const focusable=[...$('.modal').querySelectorAll('button,a,input,select,textarea')].filter(x=>!x.disabled&&x.offsetParent!==null);const first=focusable[0],last=focusable.at(-1);if(e.shiftKey&&document.activeElement===first){e.preventDefault();last?.focus();}else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first?.focus();}}});
-window.addEventListener('pagehide',()=>{if(poll)clearInterval(poll);});
-window.addEventListener('pageshow',event=>{if(event.persisted&&mode==='server'&&!$('#login-form'))startPolling();});
-window.addEventListener('beforeunload',event=>{if(resultEdits.size||settingsEdits){event.preventDefault();event.returnValue='';}});
-function applyPermissions(){if(mode!=='server')return;const actionPermissions={'new':'orders:create','new-report':'orders:create','approve':'reports:approve','save-results':'results:write','submit-results':'results:write','preview-results':'results:write','return-processing':'results:write','backup':'backup:read'};for(const button of document.querySelectorAll('[data-action]')){const permission=actionPermissions[button.dataset.action];if(permission&&!can(permission))button.hidden=true;if(button.dataset.action==='new-report'&&!can('workflow:process'))button.hidden=true;if(button.dataset.action==='advance'){const order=orders.find(o=>o.id===button.dataset.id);const permission=order?.status==='Registered'?'samples:write':'workflow:process';if(!can(permission))button.hidden=true;}}if(!can('settings:write'))document.querySelectorAll('#settings-form input,#settings-form select,#settings-form button,#settings-form textarea').forEach(el=>el.disabled=true);if(!can('results:write'))document.querySelectorAll('#results-form input,#results-form textarea').forEach(el=>el.disabled=true);if(!can('billing:write'))document.querySelectorAll('#payment-form input,#payment-form select,[form="payment-form"]').forEach(el=>el.disabled=true);}
-function showLogin(message=''){if(poll)clearInterval(poll);selected=null;$('#overlay').innerHTML='';$('#app').innerHTML=loginScreen(message);}
-async function reloadState(){const state=await req('/api/state');orders=state.orders;workspaceTotals=state.stats||null;activity=state.activity;settings={...settings,...state.settings};render();return state;}
-async function loadOpsPage(name){if(mode==='demo')return;try{if(name==='Team & access'){const value=await req('/api/users');staffRows=value.users||[];}if(name==='Audit trail'){const value=await req('/api/audit?limit=100');auditRows=value.events||value.entries||value.audit||[];}if(name==='Readiness')readinessInfo=await req('/api/readiness');if(name==='Quality controls'){const value=await req('/api/quality-controls');qcControls=value.controls||{};}if(name==='Integrations'){const values=await Promise.all([req('/api/instruments'),req('/api/deliveries')]);instrumentRows=values[0].instruments||[];deliveryRows=values[1].deliveries||[];}}catch(error){toast(error.message);}}
-function specimenSummary(o){const rejected=o.specimen?.state==='rejected';return `<section class="release-status"><strong>Specimen & release controls</strong><p>${rejected?'Sample rejected · '+esc(o.specimen.reason):o.specimen?.state==='recollected'?'Sample recollected · Cycle '+esc(o.specimen.cycle):'Sample state: '+esc(o.status)}</p>${o.specimens?.length?`<div>${o.specimens.map(sp=>`<p><code>${esc(sp.id)}</code> · ${esc(sp.kind)} · ${esc(sp.status)} ${mode==='server'&&o.status!=='Approved'&&can('samples:write')&&(sp.status==='Registered'||sp.status==='Recollected'||sp.status==='Collected')?`<button class="link-btn" data-action="specimen-action" data-id="${esc(o.id)}" data-specimen-id="${esc(sp.id)}" data-spec-action="${sp.status==='Collected'?'receive':'collect'}">${sp.status==='Collected'?'Record received':'Record collection'}</button>`:''}</p>`).join('')}</div>`:''}<div class="specimen-actions">${o.status!=='Approved'&&can('samples:write')?`<button class="btn" data-action="specimen-action" data-id="${esc(o.id)}" data-spec-action="${rejected?'recollect':'reject'}">${rejected?'Record recollection':'Reject sample'}</button>`:''}${['Review','Processing'].includes(o.status)&&can('quality:manage')?`<button class="btn" data-action="release-check" data-id="${esc(o.id)}">Check release conditions</button>`:''}${o.status==='Approved'&&can('orders:read')?`<button class="btn" data-action="delivery-intent" data-id="${esc(o.id)}">Queue report delivery</button>`:''}</div></section>`;}
-async function loadReleaseCheck(id){try{const check=await req(`/api/orders/${encodeURIComponent(id)}/release-check`);const target=$('#release-check');if(!target||target.dataset.order!==id)return;target.innerHTML=releaseDetails(check,id);}catch(error){const target=$('#release-check');if(target)target.textContent=error.message;}}
-function releaseDetails(check,id){return `<strong>${check.canRelease?'Quality conditions are clear':'Release conditions need attention'}</strong>${(check.blockers||[]).length?`<ul>${check.blockers.map(item=>`<li>${esc(item.message)}</li>`).join('')}</ul>`:''}${(check.warnings||[]).length?`<p class="muted">${check.warnings.map(item=>esc(item.message)).join(' · ')}</p>`:''}${(check.criticalFindings||[]).filter(item=>!item.acknowledged).map(item=>`<button class="btn" data-action="critical-ack" data-id="${esc(id)}" data-key="${esc(item.parameterKey)}" data-fingerprint="${esc(check.resultFingerprint)}">Record callback: ${esc(item.parameterName)}</button>`).join('')}`;}
-async function handleOpsAction(action,button,o){if(action==='logout'){await req('/api/logout',{method:'POST',body:'{}'});orders=[];activity=[];resultEdits.clear();settingsEdits=null;sessionInfo={user:null,permissions:[]};showLogin();return true;}if(action==='record-qc'){const code=button.dataset.code||Object.keys(TESTS)[0];modal('Record control-run evidence',`<form id="qc-form"><div class="field"><label>Test panel</label><select name="testCode">${Object.entries(TESTS).map(([c,t])=>`<option value="${c}" ${code===c?'selected':''}>${esc(t.name)}</option>`).join('')}</select></div><div class="field"><label>Decision</label><select name="status"><option value="rejected">Rejected / hold</option><option value="accepted">Accepted</option></select></div><div class="field"><label>Control run ID *</label><input name="runId" required maxlength="150"></div><div class="field"><label>Evidence reference *</label><input name="evidence" required maxlength="1000" placeholder="Control lot, worksheet or reviewed run record"></div><div class="form-row"><div class="field"><label>Run accepted at (if accepted)</label><input name="acceptedAt" type="datetime-local"></div><div class="field"><label>Valid until (if accepted)</label><input name="expiresAt" type="datetime-local"></div></div><div class="field"><label>Reviewer notes *</label><textarea name="reason" required maxlength="1000"></textarea></div><div class="notice">Record an actual reviewed control run. Rejected or expired QC evidence holds report release. This is not an automated QC calculation or instrument validation.</div></form>`,`<button class="btn" data-action="close">Cancel</button><button class="btn primary" type="submit" form="qc-form">Record QC evidence</button>`);return true;}if(action==='toggle-instrument'){const device=instrumentRows.find(i=>i.id===button.dataset.id);await req(`/api/instruments/${encodeURIComponent(device.id)}`,{method:'PATCH',body:JSON.stringify({enabled:!device.enabled,expectedVersion:device.version})});await loadOpsPage('Integrations');render();return true;}if(action==='new-user'){modal('Add staff member',staffForm(),'<button class="btn" data-action="close">Cancel</button><button class="btn primary" form="staff-form" type="submit">Create individual account</button>');return true;}if(action==='toggle-user'){await req(`/api/users/${encodeURIComponent(button.dataset.id)}`,{method:'PATCH',body:JSON.stringify({disabled:button.dataset.disabled==='1'})});await loadOpsPage(page);render();return true;}if(action==='refresh-admin'){await loadOpsPage(page);render();return true;}if(action==='audit-detail'){const entry=auditRows.find(row=>String(row.id)===String(button.dataset.id));modal('Audit entry',`<pre class="audit-json">${esc(JSON.stringify(entry,null,2))}</pre>`);return true;}if(action==='new-instrument'){modal('Register an analyzer mapping',`<form id="instrument-form"><div class="field"><label>Instrument ID *</label><input name="id" required pattern="[A-Za-z0-9_-]+"></div><div class="field"><label>Display name *</label><input name="name" required></div><div class="field"><label>Validated mapping JSON *</label><textarea name="mappings" required rows="10" placeholder='{"CBC":{"testCode":"CBC","parameters":{"HGB":{"parameterCode":"hb","unit":"g/dL"}}}}'></textarea></div><label class="sample-confirm"><input type="checkbox" name="validated" required>I confirm this mapping and units were verified against this analyzer’s actual output. This record does not certify the device.</label></form>`,`<button class="btn" data-action="close">Cancel</button><button class="btn primary" form="instrument-form" type="submit">Save mapping</button>`);return true;}if(action==='analyzer-import'){modal('Import analyzer draft results',`<form id="analyzer-form"><div class="field"><label>Instrument</label><select name="instrumentId">${instrumentRows.filter(i=>i.enabled).map(i=>`<option value="${esc(i.id)}">${esc(i.name||i.id)}</option>`).join('')}</select></div><div class="field"><label>CSV file *</label><input name="file" type="file" accept=".csv,text/csv" required></div><p class="muted" style="line-height:1.8">Required columns: order_id, test_code, parameter_code, value, unit, instrument_id, run_id. All rows are validated before any draft result is changed. Re-importing the same run does not duplicate it.</p></form>`,`<button class="btn" data-action="close">Cancel</button><button class="btn primary" form="analyzer-form" type="submit">Validate & import drafts</button>`);return true;}if(action==='specimen-action'&&o){if(mode==='demo'){toast('Specimen controls require the shared server. The demo record is unchanged.');return true;}modal(({reject:'Reject specimen',recollect:'Record recollection',collect:'Record specimen collection',receive:'Record specimen receipt'})[button.dataset.specAction],`<form id="specimen-form" data-id="${esc(o.id)}"><input type="hidden" name="action" value="${esc(button.dataset.specAction)}">${o.specimens?.length?`<div class="field"><label>Specimen</label><select name="specimenId"><option value="" ${!button.dataset.specimenId?'selected':''}>All specimens for this order</option>${o.specimens.map(sp=>`<option value="${esc(sp.id)}" ${button.dataset.specimenId===sp.id?'selected':''}>${esc(sp.id)} · ${esc(sp.kind)}</option>`).join('')}</select></div>`:''}<div class="field"><label>Reason / documentation</label><textarea name="reason" ${['reject','recollect'].includes(button.dataset.specAction)?'required':''} maxlength="1000"></textarea></div></form>`,`<button class="btn" data-action="record" data-id="${esc(o.id)}">Back</button><button class="btn primary" form="specimen-form" type="submit">Record sample action</button>`);return true;}if(action==='release-check'&&o){if(mode==='demo'){toast('Live release checks require the shared server.');return true;}const check=await req(`/api/orders/${encodeURIComponent(o.id)}/release-check`);modal('Release conditions',releaseDetails(check,o.id));return true;}if(action==='critical-ack'&&o){modal('Record critical-result notification',`<form id="critical-form" data-id="${esc(o.id)}"><input type="hidden" name="parameterKey" value="${esc(button.dataset.key)}"><input type="hidden" name="resultFingerprint" value="${esc(button.dataset.fingerprint)}"><div class="field"><label>Person notified *</label><input name="notifiedPerson" required maxlength="150"></div><div class="field"><label>Contact / destination *</label><input name="contact" required maxlength="200"></div><div class="field"><label>Notification notes *</label><textarea name="reason" required maxlength="1000"></textarea></div><label class="sample-confirm"><input type="checkbox" name="readBackConfirmed" required>The notified clinician completed a read-back of the critical result.</label><p class="muted" style="font-size:11px">Record an actual notification you completed. Changing results invalidates this acknowledgment.</p></form>`,`<button class="btn" data-action="close">Cancel</button><button class="btn primary" form="critical-form" type="submit">Record notification</button>`);return true;}if(action==='delivery-intent'&&o){if(mode==='demo'){toast('Provider delivery is not connected in the demo.');return true;}modal('Queue approved report delivery',`<form id="delivery-form" data-id="${esc(o.id)}"><div class="field"><label>Channel</label><select name="channel"><option value="whatsapp">WhatsApp</option><option value="email">Email</option></select></div><div class="field"><label>Consented destination *</label><input name="destination" required placeholder="+919876543210 or patient@example.com"></div><label class="sample-confirm"><input type="checkbox" name="consent" required>The patient explicitly consented to report delivery to this recipient on this channel.</label><div class="notice">No provider is connected. This records the request and consent; it sends no message.</div></form>`,`<button class="btn" data-action="record" data-id="${esc(o.id)}">Back</button><button class="btn primary" form="delivery-form" type="submit">Record delivery request</button>`);return true;}return false;}
-document.addEventListener('submit',async event=>{const form=event.target;if(!['login-form','staff-form','instrument-form','analyzer-form','specimen-form','critical-form','delivery-form','qc-form'].includes(form.id))return;event.preventDefault();if(form.dataset.saving==='1')return;markFormSaving(form,true);const data=new FormData(form);try{if(form.id==='login-form'){const value=await req('/api/login',{method:'POST',body:JSON.stringify({username:data.get('username'),password:data.get('password')})});sessionInfo=value;await init();return;}if(form.id==='qc-form'){const code=data.get('testCode'),payload={...Object.fromEntries(data),expectedVersion:qcControls[code]?.version||0};delete payload.testCode;for(const key of ['acceptedAt','expiresAt']){if(payload[key]){const when=new Date(payload[key]);if(!Number.isFinite(when.getTime()))throw new Error('Enter valid QC timestamps.');payload[key]=when.toISOString();}else delete payload[key];}await req(`/api/quality-controls/${encodeURIComponent(code)}`,{method:'PUT',body:JSON.stringify(payload)});close();await loadOpsPage('Quality controls');render();toast('Control-run evidence recorded.');}if(form.id==='staff-form'){await req('/api/users',{method:'POST',body:JSON.stringify(Object.fromEntries(data))});close();await loadOpsPage('Team & access');render();toast('Individual staff account created.');}if(form.id==='instrument-form'){await req('/api/instruments',{method:'POST',body:JSON.stringify({id:data.get('id'),name:data.get('name'),enabled:true,mappings:JSON.parse(data.get('mappings')),validationConfirmed:data.get('validated')==='on'})});close();await loadOpsPage('Integrations');render();toast('Analyzer mapping recorded. Validate a real run before clinical use.');}if(form.id==='analyzer-form'){const file=data.get('file');if(!file||file.size>512000)throw new Error('Choose a CSV file no larger than 500 KB.');const csv=await file.text();const value=await req('/api/analyzer-imports',{method:'POST',body:JSON.stringify({instrumentId:data.get('instrumentId'),csv})});close();await reloadState();toast(value.duplicate?'This run was already imported.':`Imported ${value.changedOrders} draft orders. Review results before release.`);}if(['specimen-form','critical-form','delivery-form'].includes(form.id)){const o=orders.find(o=>o.id===form.dataset.id),body={...Object.fromEntries(data),expectedVersion:o.version};let route='specimen';if(form.id==='critical-form'){route='critical-acknowledgments';body.notifiedAt=new Date().toISOString();body.readBackConfirmed=data.get('readBackConfirmed')==='on';}if(form.id==='delivery-form'){route='delivery-intents';body.consent={granted:data.get('consent')==='on',scope:'report_delivery',channel:body.channel,destination:body.destination,patientId:o.patientId,recordedAt:new Date().toISOString(),recordedBy:sessionInfo.user?.id};}await req(`/api/orders/${encodeURIComponent(o.id)}/${route}`,{method:'POST',body:JSON.stringify(body)});await reloadState();record(o.id);toast('Action recorded in the audit trail.');}}catch(error){const target=$('#login-error')||$('#staff-error');if(target)target.textContent=error.message;else toast(error.message);}finally{markFormSaving(form,false);}});
-function openSpecimenLabels(o){selected=o.id;const samples=o.specimens?.length?o.specimens:[{id:o.id,kind:'Order lookup · specimen IDs were not captured',testCodes:o.tests,status:o.status}];modal('Specimen identification labels',`<div class="notice no-print">Print at 100% scale. Confirm the label stock, quiet zones and scanner readability before clinical use. A replacement specimen has a new barcode; discard the rejected tube’s label.</div><div class="specimen-labels">${samples.map(sp=>{let barcode;try{barcode=renderBarcode(sp.id);}catch(error){barcode=`<p class="error-text">Barcode unavailable: ${esc(error.message)}</p><code>${esc(sp.id)}</code>`;}return `<section class="report specimen-label"><h2>${esc(o.name)}</h2><p>${o.age}y / ${esc(o.sex)} · ${esc(o.patientId)}</p><div class="barcode-label">${barcode}</div><strong>${esc(sp.kind)}</strong><p>${(sp.testCodes||o.tests).map(esc).join(' · ')}<br>Order ${esc(o.id)} · ${esc(sp.status)}<br>Collected: ${sp.collectedAt?esc(new Date(sp.collectedAt).toLocaleString('en-IN')):'Not recorded'}</p>${mode==='demo'?'<small>DEMO · NOT FOR CLINICAL USE</small>':''}</section>`;}).join('')}</div>`,`<button class="btn" data-action="record" data-id="${esc(o.id)}">Back</button><button class="btn primary" data-action="print">Print specimen labels</button>`,true);}
-init();
+import { TESTS, PARAMETERS, reportNotes } from './catalog.js';
+import { renderReport, REPORT_TEMPLATES } from './report.js';
+
+// Application State
+const state = {
+  supabase: null,
+  user: null,
+  config: null,
+  currentPage: 'billing', // 'billing' | 'reports' | 'settings'
+  billingSubTab: 'new',   // 'new' | 'list'
+  reportsSubTab: 'pending', // 'pending' | 'completed' | 'all'
+  settingsSubTab: 'profile', // 'profile' | 'doctors' | 'referrals' | 'catalog' | 'security'
+
+  // Reference Data
+  labSettings: {},
+  doctors: [],
+  referralLabs: [],
+  referralHospitals: [],
+  testsCatalog: [],
+
+  // New Bill Form State
+  newBill: {
+    selectedPatientId: null,
+    patient: {
+      title: 'Mr',
+      fullName: '',
+      sex: 'Male',
+      ageValue: '',
+      ageUnit: 'Y',
+      mobile: '',
+      altMobile: '',
+      email: '',
+      height: '',
+      weight: '',
+      area: '',
+      city: 'Bangalore',
+      pincode: ''
+    },
+    doctorId: '',
+    referralLabId: '',
+    referralHospitalId: '',
+    selectedTestIds: [],
+    discount: 0,
+    paidAmount: 0,
+    paymentMode: 'Cash',
+    paymentNotes: ''
+  },
+
+  // Lists & Filters
+  billsList: [],
+  billsFilter: {
+    search: '',
+    status: 'All',
+    dateRange: 'Today'
+  },
+
+  reportsList: [],
+  reportsFilter: {
+    search: '',
+    dateRange: 'Today'
+  },
+
+  // Active Report Result Entry
+  activeReport: null,
+
+  // Lockout & Inactivity
+  failedLoginAttempts: 0,
+  lockoutUntil: 0,
+  idleTimer: null
+};
+
+// -------------------------------------------------------------
+// Indian Currency to Words Utility
+// -------------------------------------------------------------
+function numberToWords(amount) {
+  const num = Math.floor(amount || 0);
+  if (num === 0) return 'Rupees Zero Only';
+
+  const units = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine'];
+  const teens = ['Ten', 'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen', 'Seventeen', 'Eighteen', 'Nineteen'];
+  const tens = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
+
+  function convertTwoDigits(n) {
+    if (n < 10) return units[n];
+    if (n < 20) return teens[n - 10];
+    const u = n % 10;
+    return tens[Math.floor(n / 10)] + (u ? ' ' + units[u] : '');
+  }
+
+  function convertThreeDigits(n) {
+    const h = Math.floor(n / 100);
+    const rem = n % 100;
+    let res = '';
+    if (h) res += units[h] + ' Hundred';
+    if (rem) res += (res ? ' ' : '') + convertTwoDigits(rem);
+    return res;
+  }
+
+  let words = '';
+  const crore = Math.floor(num / 10000000);
+  let rem = num % 10000000;
+  const lakh = Math.floor(rem / 100000);
+  rem = rem % 100000;
+  const thousand = Math.floor(rem / 1000);
+  rem = rem % 1000;
+
+  if (crore) words += convertTwoDigits(crore) + ' Crore ';
+  if (lakh) words += convertTwoDigits(lakh) + ' Lakh ';
+  if (thousand) words += convertTwoDigits(thousand) + ' Thousand ';
+  if (rem) words += convertThreeDigits(rem);
+
+  return 'Rupees ' + words.trim() + ' Only';
+}
+
+function formatCurrency(val) {
+  const n = Number(val || 0);
+  return '₹ ' + n.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function formatDate(isoString) {
+  if (!isoString) return '—';
+  const d = new Date(isoString);
+  if (isNaN(d.getTime())) return '—';
+  return d.toLocaleDateString('en-IN', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: true
+  });
+}
+
+function escapeHTML(str) {
+  return String(str ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
+// -------------------------------------------------------------
+// Toast Notifications
+// -------------------------------------------------------------
+function showToast(message, type = 'info') {
+  const container = document.getElementById('toast-container');
+  if (!container) return;
+  const toast = document.createElement('div');
+  toast.className = `toast toast-${type}`;
+  toast.innerHTML = `<span>${escapeHTML(message)}</span>`;
+  container.appendChild(toast);
+  setTimeout(() => {
+    toast.classList.add('toast-fadeout');
+    setTimeout(() => toast.remove(), 300);
+  }, 3500);
+}
+
+// -------------------------------------------------------------
+// Inactivity & Auto-Logout (30 minutes)
+// -------------------------------------------------------------
+function resetIdleTimer() {
+  if (state.idleTimer) clearTimeout(state.idleTimer);
+  if (state.user) {
+    state.idleTimer = setTimeout(() => {
+      handleLogout('Session expired due to 30 minutes of inactivity.');
+    }, 30 * 60 * 1000);
+  }
+}
+
+['mousemove', 'mousedown', 'keydown', 'touchstart', 'scroll'].forEach(evt => {
+  window.addEventListener(evt, resetIdleTimer, { passive: true });
+});
+
+// -------------------------------------------------------------
+// Core Initialization & Supabase Setup
+// -------------------------------------------------------------
+async function init() {
+  try {
+    if (!window.labflowAPI) {
+      document.getElementById('app').innerHTML = `
+        <div class="setup-container">
+          <h2>Browser Runtime Warning</h2>
+          <p>Please run Labflow inside the Electron Desktop Application for full security and printing access.</p>
+        </div>`;
+      return;
+    }
+
+    state.config = await window.labflowAPI.getSupabaseConfig();
+
+    if (!state.config || !state.config.supabaseUrl || !state.config.supabaseAnonKey) {
+      renderSetupPrompt();
+      return;
+    }
+
+    // Initialize Supabase Client (UMD bundle)
+    if (typeof window.supabase === 'undefined' || !window.supabase.createClient) {
+      throw new Error('Supabase library failed to load.');
+    }
+
+    state.supabase = window.supabase.createClient(state.config.supabaseUrl, state.config.supabaseAnonKey, {
+      auth: {
+        persistSession: false,
+        autoRefreshToken: true
+      }
+    });
+
+    // Check saved encrypted session from safeStorage
+    const savedSession = await window.labflowAPI.loadSession();
+    if (savedSession) {
+      try {
+        const sessionObj = JSON.parse(savedSession);
+        const { data, error } = await state.supabase.auth.setSession({
+          access_token: sessionObj.access_token,
+          refresh_token: sessionObj.refresh_token
+        });
+        if (!error && data?.user) {
+          state.user = data.user;
+          await loadReferenceData();
+          renderApp();
+          resetIdleTimer();
+          return;
+        }
+      } catch (e) {
+        console.warn('Failed to restore saved session:', e);
+      }
+    }
+
+    renderLogin();
+  } catch (err) {
+    console.error('Initialization error:', err);
+    document.getElementById('app').innerHTML = `
+      <div class="setup-container">
+        <h2>Initialization Error</h2>
+        <p>${escapeHTML(err.message)}</p>
+      </div>`;
+  }
+}
+
+function renderSetupPrompt() {
+  document.getElementById('app').innerHTML = `
+    <div class="setup-container">
+      <div class="setup-card">
+        <div class="brand-badge">Labflow Desktop</div>
+        <h2>Supabase Connection Required</h2>
+        <p>Please configure your Supabase project credentials in <code>.env</code> file:</p>
+        <pre>SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_ANON_KEY=your-anon-key-here</pre>
+        <p class="muted">Once configured, restart the application to connect.</p>
+      </div>
+    </div>`;
+}
+
+// -------------------------------------------------------------
+// Authentication (Login / Logout)
+// -------------------------------------------------------------
+function renderLogin(errorMessage = '') {
+  const isLocked = Date.now() < state.lockoutUntil;
+  const remainingSecs = Math.ceil((state.lockoutUntil - Date.now()) / 1000);
+
+  document.getElementById('app').innerHTML = `
+    <div class="login-wrapper">
+      <div class="login-card">
+        <div class="login-header">
+          <div class="login-logo">
+            <svg viewBox="0 0 48 48" width="40" height="40" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 5h10m-8 0v15L10 37a4 4 0 0 0 3 6h22a4 4 0 0 0 3-6L27 20V5M16 29h16"/><circle cx="22" cy="34" r="1.5"/><circle cx="28" cy="38" r="1"/></svg>
+          </div>
+          <h1>Labflow Diagnostics</h1>
+          <p class="subtitle">Diagnostic Laboratory Management System</p>
+        </div>
+
+        ${errorMessage ? `<div class="login-error-banner" role="alert">${escapeHTML(errorMessage)}</div>` : ''}
+        ${isLocked ? `<div class="login-error-banner">Too many failed attempts. Locked for ${remainingSecs} seconds.</div>` : ''}
+
+        <form id="login-form" class="login-form">
+          <div class="form-group">
+            <label for="username">Username</label>
+            <input type="text" id="username" name="username" placeholder="anandlab" required autocomplete="username" ${isLocked ? 'disabled' : ''} />
+          </div>
+
+          <div class="form-group">
+            <label for="password">Password</label>
+            <input type="password" id="password" name="password" placeholder="••••••••" required autocomplete="current-password" ${isLocked ? 'disabled' : ''} />
+          </div>
+
+          <button type="submit" id="login-submit-btn" class="btn btn-primary btn-block" ${isLocked ? 'disabled' : ''}>
+            Sign In to Labflow
+          </button>
+        </form>
+
+        <div class="login-footer">
+          <span>Protected by Supabase Auth &amp; SafeStorage</span>
+        </div>
+      </div>
+    </div>`;
+
+  const form = document.getElementById('login-form');
+  form.addEventListener('submit', handleLogin);
+}
+
+async function handleLogin(e) {
+  e.preventDefault();
+  if (Date.now() < state.lockoutUntil) return;
+
+  const submitBtn = document.getElementById('login-submit-btn');
+  const usernameInput = document.getElementById('username');
+  const passwordInput = document.getElementById('password');
+
+  const username = usernameInput.value.trim().toLowerCase();
+  const password = passwordInput.value;
+
+  if (!username || !password) return;
+
+  // Map username to internal auth email
+  const email = `${username}@labflow.local`;
+
+  submitBtn.disabled = true;
+  submitBtn.textContent = 'Verifying credentials...';
+
+  try {
+    const { data, error } = await state.supabase.auth.signInWithPassword({
+      email,
+      password
+    });
+
+    if (error || !data?.user || !data?.session) {
+      state.failedLoginAttempts++;
+      if (state.failedLoginAttempts >= 5) {
+        state.lockoutUntil = Date.now() + 60 * 1000;
+        state.failedLoginAttempts = 0;
+      }
+      renderLogin('Invalid username or password.');
+      return;
+    }
+
+    state.failedLoginAttempts = 0;
+    state.user = data.user;
+
+    // Encrypt and persist session token via safeStorage
+    await window.labflowAPI.saveSession(JSON.stringify({
+      access_token: data.session.access_token,
+      refresh_token: data.session.refresh_token
+    }));
+
+    await loadReferenceData();
+    renderApp();
+    resetIdleTimer();
+    showToast('Signed in successfully', 'success');
+  } catch (err) {
+    console.error('Login error:', err);
+    renderLogin('An error occurred during authentication. Please retry.');
+  }
+}
+
+async function handleLogout(toastMsg = '') {
+  if (state.supabase) {
+    try { await state.supabase.auth.signOut(); } catch (e) {}
+  }
+  if (window.labflowAPI) {
+    await window.labflowAPI.clearSession();
+  }
+  state.user = null;
+  state.activeReport = null;
+  if (state.idleTimer) clearTimeout(state.idleTimer);
+  renderLogin(toastMsg);
+}
+
+// -------------------------------------------------------------
+// Data Fetching & Reference Cache
+// -------------------------------------------------------------
+async function loadReferenceData() {
+  try {
+    // 1. Settings
+    const { data: settings } = await state.supabase.from('lab_settings').select('*').limit(1).maybeSingle();
+    if (settings) state.labSettings = settings;
+
+    // 2. Doctors
+    const { data: docs } = await state.supabase.from('doctors').select('*').order('name');
+    if (docs) state.doctors = docs;
+
+    // 3. Referral Labs & Hospitals
+    const { data: labs } = await state.supabase.from('referral_labs').select('*').order('name');
+    if (labs) state.referralLabs = labs;
+
+    const { data: hosps } = await state.supabase.from('referral_hospitals').select('*').order('name');
+    if (hosps) state.referralHospitals = hosps;
+
+    // 4. Tests & Parameters
+    const { data: tests } = await state.supabase.from('tests').select('*, test_parameters(*)').order('name');
+    if (tests) state.testsCatalog = tests;
+  } catch (err) {
+    console.error('Error loading reference data:', err);
+    showToast('Could not load some laboratory reference data.', 'error');
+  }
+}
+
+// -------------------------------------------------------------
+// Main Application Frame
+// -------------------------------------------------------------
+function renderApp() {
+  const container = document.getElementById('app');
+  container.innerHTML = `
+    <div class="app-layout">
+      <!-- Sidebar -->
+      <aside class="app-sidebar">
+        <div class="sidebar-brand">
+          <div class="sidebar-logo">
+            <svg viewBox="0 0 48 48" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 5h10m-8 0v15L10 37a4 4 0 0 0 3 6h22a4 4 0 0 0 3-6L27 20V5M16 29h16"/><circle cx="22" cy="34" r="1.5"/><circle cx="28" cy="38" r="1"/></svg>
+          </div>
+          <div class="sidebar-title">
+            <h2>${escapeHTML(state.labSettings.lab_name || 'Labflow Diagnostics')}</h2>
+            <span>${escapeHTML(state.labSettings.registration_no || 'KA-BLR-LAB')}</span>
+          </div>
+        </div>
+
+        <nav class="sidebar-nav">
+          <button class="nav-item ${state.currentPage === 'billing' ? 'active' : ''}" data-nav="billing">
+            <span class="nav-icon">💳</span>
+            <span class="nav-label">Billing</span>
+          </button>
+
+          <button class="nav-item ${state.currentPage === 'reports' ? 'active' : ''}" data-nav="reports">
+            <span class="nav-icon">📋</span>
+            <span class="nav-label">Reports</span>
+          </button>
+
+          <button class="nav-item ${state.currentPage === 'settings' ? 'active' : ''}" data-nav="settings">
+            <span class="nav-icon">⚙️</span>
+            <span class="nav-label">Settings</span>
+          </button>
+        </nav>
+
+        <div class="sidebar-footer">
+          <div class="user-info">
+            <span class="user-icon">👤</span>
+            <div class="user-details">
+              <strong>${escapeHTML(state.user?.user_metadata?.username || 'anandlab')}</strong>
+              <small>Staff Operator</small>
+            </div>
+          </div>
+          <button id="logout-btn" class="btn btn-outline-danger btn-sm" title="Sign out">
+            Logout
+          </button>
+        </div>
+      </aside>
+
+      <!-- Main Content Area -->
+      <main class="app-main" id="main-content">
+        <!-- Rendered based on state.currentPage -->
+      </main>
+    </div>`;
+
+  // Attach Sidebar Listeners
+  document.querySelectorAll('.sidebar-nav .nav-item').forEach(btn => {
+    btn.addEventListener('click', () => {
+      state.currentPage = btn.dataset.nav;
+      renderApp();
+    });
+  });
+
+  document.getElementById('logout-btn').addEventListener('click', () => {
+    if (confirm('Are you sure you want to sign out of Labflow?')) {
+      handleLogout();
+    }
+  });
+
+  // Render Sub-Page
+  const mainContent = document.getElementById('main-content');
+  if (state.currentPage === 'billing') {
+    renderBillingModule(mainContent);
+  } else if (state.currentPage === 'reports') {
+    renderReportsModule(mainContent);
+  } else if (state.currentPage === 'settings') {
+    renderSettingsModule(mainContent);
+  }
+}
+
+// -------------------------------------------------------------
+// MODULE 1: BILLING
+// -------------------------------------------------------------
+function renderBillingModule(container) {
+  container.innerHTML = `
+    <div class="module-header">
+      <div class="module-title">
+        <h1>Patient Billing &amp; Invoices</h1>
+        <p>Register patients, select tests, collect payments and print receipts</p>
+      </div>
+      <div class="module-tabs">
+        <button class="tab-btn ${state.billingSubTab === 'new' ? 'active' : ''}" id="tab-new-bill">New Registration / Bill</button>
+        <button class="tab-btn ${state.billingSubTab === 'list' ? 'active' : ''}" id="tab-bills-list">All Invoices &amp; Ledger</button>
+      </div>
+    </div>
+    <div class="module-body" id="billing-body"></div>`;
+
+  document.getElementById('tab-new-bill').addEventListener('click', () => {
+    state.billingSubTab = 'new';
+    renderBillingModule(container);
+  });
+  document.getElementById('tab-bills-list').addEventListener('click', () => {
+    state.billingSubTab = 'list';
+    renderBillingModule(container);
+  });
+
+  const body = document.getElementById('billing-body');
+  if (state.billingSubTab === 'new') {
+    renderNewBillForm(body);
+  } else {
+    renderBillsList(body);
+  }
+}
+
+function renderNewBillForm(container) {
+  const activeTests = state.testsCatalog.filter(t => t.active);
+  const selectedTests = activeTests.filter(t => state.newBill.selectedTestIds.includes(t.id));
+
+  const subtotal = selectedTests.reduce((sum, t) => sum + Number(t.price), 0);
+  const discount = Math.max(0, Math.min(subtotal, Number(state.newBill.discount || 0)));
+  const total = Math.max(0, subtotal - discount);
+  const paid = Math.max(0, Math.min(total, Number(state.newBill.paidAmount ?? total)));
+  const balance = total - paid;
+
+  container.innerHTML = `
+    <div class="billing-grid">
+      <!-- Left Column: Patient & Referral -->
+      <div class="billing-pane">
+        <div class="card">
+          <div class="card-header">
+            <h3>1. Patient Registration</h3>
+            <div class="patient-search-box">
+              <input type="text" id="patient-lookup-input" placeholder="🔍 Search existing patient by mobile or name..." autocomplete="off" />
+              <div id="patient-lookup-results" class="lookup-dropdown hidden"></div>
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="form-row">
+              <div class="form-group col-3">
+                <label>Title *</label>
+                <select id="patient-title">
+                  ${['Mr', 'Mrs', 'Ms', 'Master', 'Miss', 'Baby', 'B/O', 'Dr', 'Prof'].map(t =>
+                    `<option value="${t}" ${state.newBill.patient.title === t ? 'selected' : ''}>${t}</option>`
+                  ).join('')}
+                </select>
+              </div>
+              <div class="form-group col-9">
+                <label>Full Patient Name *</label>
+                <input type="text" id="patient-fullname" placeholder="Enter patient full name" value="${escapeHTML(state.newBill.patient.fullName)}" required />
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group col-6">
+                <label>Gender *</label>
+                <div class="radio-toggle-group">
+                  ${['Male', 'Female', 'Other'].map(g => `
+                    <label class="radio-label">
+                      <input type="radio" name="patient-sex" value="${g}" ${state.newBill.patient.sex === g ? 'checked' : ''} />
+                      <span>${g}</span>
+                    </label>
+                  `).join('')}
+                </div>
+              </div>
+              <div class="form-group col-6">
+                <label>Age *</label>
+                <div class="input-unit-group">
+                  <input type="number" id="patient-age-val" min="0" max="150" placeholder="Age" value="${escapeHTML(state.newBill.patient.ageValue)}" required />
+                  <select id="patient-age-unit">
+                    <option value="Y" ${state.newBill.patient.ageUnit === 'Y' ? 'selected' : ''}>Years</option>
+                    <option value="M" ${state.newBill.patient.ageUnit === 'M' ? 'selected' : ''}>Months</option>
+                    <option value="D" ${state.newBill.patient.ageUnit === 'D' ? 'selected' : ''}>Days</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group col-6">
+                <label>Primary Mobile *</label>
+                <input type="tel" id="patient-mobile" placeholder="10-digit mobile" maxlength="10" value="${escapeHTML(state.newBill.patient.mobile)}" />
+              </div>
+              <div class="form-group col-6">
+                <label>Alternate Mobile</label>
+                <input type="tel" id="patient-alt-mobile" placeholder="Optional phone" value="${escapeHTML(state.newBill.patient.altMobile)}" />
+              </div>
+            </div>
+
+            <details class="collapsible-section">
+              <summary>Additional Patient Details (Height, Weight, Address)</summary>
+              <div class="collapsible-content">
+                <div class="form-row">
+                  <div class="form-group col-6">
+                    <label>Height (cm)</label>
+                    <input type="number" id="patient-height" placeholder="e.g. 170" value="${escapeHTML(state.newBill.patient.height)}" />
+                  </div>
+                  <div class="form-group col-6">
+                    <label>Weight (kg)</label>
+                    <input type="number" id="patient-weight" placeholder="e.g. 68" value="${escapeHTML(state.newBill.patient.weight)}" />
+                  </div>
+                </div>
+                <div class="form-row">
+                  <div class="form-group col-12">
+                    <label>Area / Locality</label>
+                    <input type="text" id="patient-area" placeholder="e.g. Vijayanagar" value="${escapeHTML(state.newBill.patient.area)}" />
+                  </div>
+                </div>
+                <div class="form-row">
+                  <div class="form-group col-6">
+                    <label>City</label>
+                    <input type="text" id="patient-city" value="${escapeHTML(state.newBill.patient.city)}" />
+                  </div>
+                  <div class="form-group col-6">
+                    <label>Pincode</label>
+                    <input type="text" id="patient-pincode" placeholder="560040" value="${escapeHTML(state.newBill.patient.pincode)}" />
+                  </div>
+                </div>
+              </div>
+            </details>
+          </div>
+        </div>
+
+        <!-- Referral Information -->
+        <div class="card mt-3">
+          <div class="card-header">
+            <h3>2. Referral Sources</h3>
+          </div>
+          <div class="card-body">
+            <div class="form-row">
+              <div class="form-group col-12">
+                <label>Referred By (Doctor)</label>
+                <div class="select-with-add">
+                  <select id="bill-doctor">
+                    <option value="">Self / Walk-in</option>
+                    ${state.doctors.filter(d => d.active).map(d =>
+                      `<option value="${d.id}" ${state.newBill.doctorId === d.id ? 'selected' : ''}>${escapeHTML(d.name)}${d.qualification ? ' (' + escapeHTML(d.qualification) + ')' : ''}</option>`
+                    ).join('')}
+                  </select>
+                  <button type="button" class="btn btn-primary-outline btn-icon" id="btn-add-doctor" title="Add New Doctor">+</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group col-6">
+                <label>Referral Lab</label>
+                <div class="select-with-add">
+                  <select id="bill-referral-lab">
+                    <option value="">Direct / None</option>
+                    ${state.referralLabs.filter(l => l.active).map(l =>
+                      `<option value="${l.id}" ${state.newBill.referralLabId === l.id ? 'selected' : ''}>${escapeHTML(l.name)}</option>`
+                    ).join('')}
+                  </select>
+                  <button type="button" class="btn btn-primary-outline btn-icon" id="btn-add-ref-lab" title="Add Referral Lab">+</button>
+                </div>
+              </div>
+
+              <div class="form-group col-6">
+                <label>Referral Hospital</label>
+                <div class="select-with-add">
+                  <select id="bill-referral-hosp">
+                    <option value="">Direct / None</option>
+                    ${state.referralHospitals.filter(h => h.active).map(h =>
+                      `<option value="${h.id}" ${state.newBill.referralHospitalId === h.id ? 'selected' : ''}>${escapeHTML(h.name)}</option>`
+                    ).join('')}
+                  </select>
+                  <button type="button" class="btn btn-primary-outline btn-icon" id="btn-add-ref-hosp" title="Add Referral Hospital">+</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right Column: Test Selection, Cart & Payment -->
+      <div class="billing-pane">
+        <div class="card">
+          <div class="card-header">
+            <h3>3. Test Catalog Selection</h3>
+            <input type="text" id="test-search-filter" class="table-search" placeholder="Filter tests..." />
+          </div>
+          <div class="card-body">
+            <div class="test-pill-container" id="test-catalog-pills">
+              ${activeTests.map(t => {
+                const isSelected = state.newBill.selectedTestIds.includes(t.id);
+                return `
+                  <button type="button" class="test-pill ${isSelected ? 'selected' : ''}" data-test-id="${t.id}">
+                    <span class="test-pill-code">${escapeHTML(t.code)}</span>
+                    <span class="test-pill-name">${escapeHTML(t.name)}</span>
+                    <span class="test-pill-price">₹${t.price}</span>
+                  </button>`;
+              }).join('')}
+            </div>
+
+            <!-- Selected Cart Table -->
+            <div class="cart-section mt-4">
+              <h4>Selected Tests (${selectedTests.length})</h4>
+              ${selectedTests.length === 0 ? `
+                <div class="empty-cart-notice">No tests selected. Click tests above to add.</div>
+              ` : `
+                <table class="data-table cart-table">
+                  <thead>
+                    <tr>
+                      <th>Test Panel</th>
+                      <th>Specimen</th>
+                      <th class="text-right">Price</th>
+                      <th class="text-center">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${selectedTests.map(t => `
+                      <tr>
+                        <td><strong>${escapeHTML(t.name)}</strong> (${escapeHTML(t.code)})</td>
+                        <td><small>${escapeHTML(t.sample_type)}</small></td>
+                        <td class="text-right">${formatCurrency(t.price)}</td>
+                        <td class="text-center">
+                          <button type="button" class="btn-remove-test" data-test-id="${t.id}" title="Remove test">&times;</button>
+                        </td>
+                      </tr>
+                    `).join('')}
+                  </tbody>
+                </table>
+              `}
+            </div>
+
+            <!-- Financial Summary & Checkout -->
+            <div class="billing-summary-box mt-4">
+              <div class="summary-line">
+                <span>Subtotal:</span>
+                <strong>${formatCurrency(subtotal)}</strong>
+              </div>
+
+              <div class="summary-line">
+                <span>Discount (₹):</span>
+                <input type="number" id="bill-discount" min="0" max="${subtotal}" value="${state.newBill.discount}" class="summary-input" />
+              </div>
+
+              <div class="summary-line highlight">
+                <span>Net Total:</span>
+                <strong class="total-amount">${formatCurrency(total)}</strong>
+              </div>
+
+              <div class="summary-line">
+                <span>Paid Amount (₹):</span>
+                <input type="number" id="bill-paid" min="0" max="${total}" value="${state.newBill.paidAmount !== undefined ? state.newBill.paidAmount : total}" class="summary-input" />
+              </div>
+
+              <div class="summary-line">
+                <span>Payment Mode:</span>
+                <select id="bill-payment-mode" class="summary-input">
+                  ${['Cash', 'UPI', 'Card', 'Net Banking', 'Other'].map(m =>
+                    `<option value="${m}" ${state.newBill.paymentMode === m ? 'selected' : ''}>${m}</option>`
+                  ).join('')}
+                </select>
+              </div>
+
+              <div class="summary-line ${balance > 0 ? 'text-danger' : 'text-success'}">
+                <span>Balance Due:</span>
+                <strong>${formatCurrency(balance)}</strong>
+              </div>
+            </div>
+
+            <div class="mt-4">
+              <button type="button" id="btn-submit-bill" class="btn btn-primary btn-lg btn-block" ${selectedTests.length === 0 ? 'disabled' : ''}>
+                💳 Create Bill &amp; Print Receipt
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>`;
+
+  // Attach New Bill Listeners
+  attachNewBillListeners(container);
+}
+
+function attachNewBillListeners(container) {
+  // Test Selection Pills
+  container.querySelectorAll('.test-pill').forEach(pill => {
+    pill.addEventListener('click', () => {
+      const id = pill.dataset.testId;
+      const idx = state.newBill.selectedTestIds.indexOf(id);
+      if (idx > -1) {
+        state.newBill.selectedTestIds.splice(idx, 1);
+      } else {
+        state.newBill.selectedTestIds.push(id);
+      }
+      renderNewBillForm(container);
+    });
+  });
+
+  // Remove test from cart table
+  container.querySelectorAll('.btn-remove-test').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const id = btn.dataset.testId;
+      state.newBill.selectedTestIds = state.newBill.selectedTestIds.filter(tid => tid !== id);
+      renderNewBillForm(container);
+    });
+  });
+
+  // Filter test pills
+  const searchFilter = container.querySelector('#test-search-filter');
+  if (searchFilter) {
+    searchFilter.addEventListener('input', (e) => {
+      const q = e.target.value.toLowerCase();
+      container.querySelectorAll('.test-pill').forEach(pill => {
+        const text = pill.textContent.toLowerCase();
+        pill.style.display = text.includes(q) ? 'inline-flex' : 'none';
+      });
+    });
+  }
+
+  // Discount & Paid Inputs
+  const discountInput = container.querySelector('#bill-discount');
+  if (discountInput) {
+    discountInput.addEventListener('input', (e) => {
+      state.newBill.discount = Number(e.target.value || 0);
+      renderNewBillForm(container);
+    });
+  }
+
+  const paidInput = container.querySelector('#bill-paid');
+  if (paidInput) {
+    paidInput.addEventListener('input', (e) => {
+      state.newBill.paidAmount = Number(e.target.value || 0);
+    });
+  }
+
+  const modeSelect = container.querySelector('#bill-payment-mode');
+  if (modeSelect) {
+    modeSelect.addEventListener('change', (e) => {
+      state.newBill.paymentMode = e.target.value;
+    });
+  }
+
+  // Doctor & Referral Quick Add Modals
+  container.querySelector('#btn-add-doctor')?.addEventListener('click', () => openAddDoctorModal());
+  container.querySelector('#btn-add-ref-lab')?.addEventListener('click', () => openAddReferralLabModal());
+  container.querySelector('#btn-add-ref-hosp')?.addEventListener('click', () => openAddReferralHospitalModal());
+
+  // Patient Lookup Input
+  const lookupInput = container.querySelector('#patient-lookup-input');
+  const lookupDropdown = container.querySelector('#patient-lookup-results');
+  if (lookupInput && lookupDropdown) {
+    let debounceTimer;
+    lookupInput.addEventListener('input', (e) => {
+      clearTimeout(debounceTimer);
+      const query = e.target.value.trim();
+      if (query.length < 2) {
+        lookupDropdown.classList.add('hidden');
+        return;
+      }
+      debounceTimer = setTimeout(async () => {
+        const { data: patients } = await state.supabase
+          .from('patients')
+          .select('*')
+          .or(`mobile.ilike.%${query}%,full_name.ilike.%${query}%`)
+          .limit(5);
+
+        if (patients && patients.length > 0) {
+          lookupDropdown.innerHTML = patients.map(p => `
+            <div class="lookup-item" data-id="${p.id}">
+              <strong>${escapeHTML(p.full_name)}</strong> (${p.patient_no}) - ${p.sex}, ${p.age_value}${p.age_unit}
+              <div><small>📱 ${escapeHTML(p.mobile || 'No mobile')} | ${escapeHTML(p.area || p.city || '')}</small></div>
+            </div>
+          `).join('');
+          lookupDropdown.classList.remove('hidden');
+
+          lookupDropdown.querySelectorAll('.lookup-item').forEach(item => {
+            item.addEventListener('click', () => {
+              const selected = patients.find(p => p.id === item.dataset.id);
+              if (selected) {
+                state.newBill.selectedPatientId = selected.id;
+                state.newBill.patient = {
+                  title: selected.title,
+                  fullName: selected.full_name,
+                  sex: selected.sex,
+                  ageValue: selected.age_value,
+                  ageUnit: selected.age_unit,
+                  mobile: selected.mobile || '',
+                  altMobile: selected.alt_mobile || '',
+                  email: selected.email || '',
+                  height: selected.height || '',
+                  weight: selected.weight || '',
+                  area: selected.area || '',
+                  city: selected.city || '',
+                  pincode: selected.pincode || ''
+                };
+                showToast(`Loaded patient: ${selected.full_name}`, 'info');
+                renderNewBillForm(container);
+              }
+            });
+          });
+        } else {
+          lookupDropdown.innerHTML = '<div class="lookup-empty">No matching patients found.</div>';
+          lookupDropdown.classList.remove('hidden');
+        }
+      }, 300);
+    });
+  }
+
+  // Submit Bill
+  container.querySelector('#btn-submit-bill')?.addEventListener('click', handleCreateBill);
+}
+
+async function handleCreateBill() {
+  const submitBtn = document.getElementById('btn-submit-bill');
+  submitBtn.disabled = true;
+  submitBtn.textContent = 'Processing transaction...';
+
+  // Harvest patient values from DOM
+  const title = document.getElementById('patient-title').value;
+  const fullName = document.getElementById('patient-fullname').value.trim();
+  const sex = document.querySelector('input[name="patient-sex"]:checked')?.value || 'Male';
+  const ageValue = parseInt(document.getElementById('patient-age-val').value, 10);
+  const ageUnit = document.getElementById('patient-age-unit').value;
+  const mobile = document.getElementById('patient-mobile').value.trim();
+  const altMobile = document.getElementById('patient-alt-mobile')?.value.trim() || '';
+  const height = document.getElementById('patient-height')?.value.trim() || null;
+  const weight = document.getElementById('patient-weight')?.value.trim() || null;
+  const area = document.getElementById('patient-area')?.value.trim() || '';
+  const city = document.getElementById('patient-city')?.value.trim() || 'Bangalore';
+  const pincode = document.getElementById('patient-pincode')?.value.trim() || '';
+
+  if (!fullName) {
+    showToast('Please enter patient full name.', 'error');
+    submitBtn.disabled = false;
+    submitBtn.textContent = '💳 Create Bill & Print Receipt';
+    return;
+  }
+  if (isNaN(ageValue) || ageValue < 0) {
+    showToast('Please enter a valid age.', 'error');
+    submitBtn.disabled = false;
+    submitBtn.textContent = '💳 Create Bill & Print Receipt';
+    return;
+  }
+  if (state.newBill.selectedTestIds.length === 0) {
+    showToast('Please select at least one test.', 'error');
+    submitBtn.disabled = false;
+    submitBtn.textContent = '💳 Create Bill & Print Receipt';
+    return;
+  }
+
+  const doctorId = document.getElementById('bill-doctor').value || null;
+  const refLabId = document.getElementById('bill-referral-lab').value || null;
+  const refHospId = document.getElementById('bill-referral-hosp').value || null;
+
+  const patientPayload = {
+    title,
+    full_name: fullName,
+    sex,
+    age_value: ageValue,
+    age_unit: ageUnit,
+    mobile,
+    alt_mobile: altMobile,
+    height,
+    weight,
+    area,
+    city,
+    pincode
+  };
+
+  try {
+    // Call Supabase Atomic Billing RPC
+    const { data: result, error } = await state.supabase.rpc('create_bill_transaction', {
+      p_patient_id: state.newBill.selectedPatientId,
+      p_patient_data: patientPayload,
+      p_doctor_id: doctorId,
+      p_referral_lab_id: refLabId,
+      p_referral_hospital_id: refHospId,
+      p_test_ids: state.newBill.selectedTestIds,
+      p_discount: state.newBill.discount,
+      p_paid_amount: state.newBill.paidAmount,
+      p_payment_mode: state.newBill.paymentMode,
+      p_payment_notes: ''
+    });
+
+    if (error) throw error;
+
+    showToast(`Bill ${result.bill_no} created successfully!`, 'success');
+
+    // Fetch full bill details for receipt printing
+    await openReceiptModal(result.bill_id);
+
+    // Reset Form
+    state.newBill.selectedPatientId = null;
+    state.newBill.selectedTestIds = [];
+    state.newBill.discount = 0;
+    state.newBill.paidAmount = 0;
+    state.newBill.patient = {
+      title: 'Mr',
+      fullName: '',
+      sex: 'Male',
+      ageValue: '',
+      ageUnit: 'Y',
+      mobile: '',
+      altMobile: '',
+      email: '',
+      height: '',
+      weight: '',
+      area: '',
+      city: 'Bangalore',
+      pincode: ''
+    };
+  } catch (err) {
+    console.error('Failed to create bill:', err);
+    showToast('Billing error: ' + (err.message || 'Database transaction failed.'), 'error');
+    submitBtn.disabled = false;
+    submitBtn.textContent = '💳 Create Bill & Print Receipt';
+  }
+}
+
+// -------------------------------------------------------------
+// Bills Ledger & Receipt Generation
+// -------------------------------------------------------------
+async function renderBillsList(container) {
+  container.innerHTML = `
+    <div class="card">
+      <div class="card-header">
+        <div class="filter-bar">
+          <input type="text" id="bills-search" placeholder="Search by Bill ID, Patient Name or Phone..." value="${escapeHTML(state.billsFilter.search)}" class="table-search" />
+          <select id="bills-filter-status" class="filter-select">
+            <option value="All" ${state.billsFilter.status === 'All' ? 'selected' : ''}>All Payment Statuses</option>
+            <option value="Paid" ${state.billsFilter.status === 'Paid' ? 'selected' : ''}>Paid</option>
+            <option value="Partial" ${state.billsFilter.status === 'Partial' ? 'selected' : ''}>Partial</option>
+            <option value="Unpaid" ${state.billsFilter.status === 'Unpaid' ? 'selected' : ''}>Unpaid</option>
+          </select>
+          <select id="bills-filter-date" class="filter-select">
+            <option value="Today" ${state.billsFilter.dateRange === 'Today' ? 'selected' : ''}>Today</option>
+            <option value="Yesterday" ${state.billsFilter.dateRange === 'Yesterday' ? 'selected' : ''}>Yesterday</option>
+            <option value="Week" ${state.billsFilter.dateRange === 'Week' ? 'selected' : ''}>Last 7 Days</option>
+            <option value="All" ${state.billsFilter.dateRange === 'All' ? 'selected' : ''}>All Time</option>
+          </select>
+          <button id="btn-refresh-bills" class="btn btn-outline btn-sm">🔄 Refresh</button>
+        </div>
+      </div>
+      <div class="card-body">
+        <div id="bills-table-container">
+          <div class="loading-state">Loading billing ledger...</div>
+        </div>
+      </div>
+    </div>`;
+
+  await loadBillsTable();
+
+  // Attach search and filter listeners
+  document.getElementById('bills-search')?.addEventListener('input', (e) => {
+    state.billsFilter.search = e.target.value;
+    loadBillsTable();
+  });
+  document.getElementById('bills-filter-status')?.addEventListener('change', (e) => {
+    state.billsFilter.status = e.target.value;
+    loadBillsTable();
+  });
+  document.getElementById('bills-filter-date')?.addEventListener('change', (e) => {
+    state.billsFilter.dateRange = e.target.value;
+    loadBillsTable();
+  });
+  document.getElementById('btn-refresh-bills')?.addEventListener('click', loadBillsTable);
+}
+
+async function loadBillsTable() {
+  const container = document.getElementById('bills-table-container');
+  if (!container) return;
+
+  try {
+    let query = state.supabase
+      .from('bills')
+      .select('*, patients(*), doctors(*), bill_items(*)')
+      .order('created_at', { ascending: false });
+
+    if (state.billsFilter.status !== 'All') {
+      query = query.eq('payment_status', state.billsFilter.status);
+    }
+
+    if (state.billsFilter.dateRange === 'Today') {
+      const startOfDay = new Date();
+      startOfDay.setHours(0, 0, 0, 0);
+      query = query.gte('created_at', startOfDay.toISOString());
+    } else if (state.billsFilter.dateRange === 'Yesterday') {
+      const yStart = new Date();
+      yStart.setDate(yStart.getDate() - 1);
+      yStart.setHours(0, 0, 0, 0);
+      const yEnd = new Date();
+      yEnd.setDate(yEnd.getDate() - 1);
+      yEnd.setHours(23, 59, 59, 999);
+      query = query.gte('created_at', yStart.toISOString()).lte('created_at', yEnd.toISOString());
+    } else if (state.billsFilter.dateRange === 'Week') {
+      const pastWeek = new Date();
+      pastWeek.setDate(pastWeek.getDate() - 7);
+      query = query.gte('created_at', pastWeek.toISOString());
+    }
+
+    const { data: bills, error } = await query;
+    if (error) throw error;
+
+    let filtered = bills || [];
+    if (state.billsFilter.search) {
+      const q = state.billsFilter.search.toLowerCase();
+      filtered = filtered.filter(b =>
+        b.bill_no.toLowerCase().includes(q) ||
+        b.patients?.full_name?.toLowerCase().includes(q) ||
+        b.patients?.mobile?.includes(q) ||
+        b.patients?.patient_no?.toLowerCase().includes(q)
+      );
+    }
+
+    if (filtered.length === 0) {
+      container.innerHTML = '<div class="empty-state">No matching bills found.</div>';
+      return;
+    }
+
+    container.innerHTML = `
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Bill ID</th>
+            <th>Date &amp; Time</th>
+            <th>Patient Details</th>
+            <th>Referred By</th>
+            <th class="text-right">Total</th>
+            <th class="text-right">Paid</th>
+            <th class="text-right">Balance</th>
+            <th class="text-center">Status</th>
+            <th class="text-center">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${filtered.map(b => `
+            <tr>
+              <td><strong>${escapeHTML(b.bill_no)}</strong></td>
+              <td>${formatDate(b.created_at)}</td>
+              <td>
+                <strong>${escapeHTML(b.patients?.title || '')} ${escapeHTML(b.patients?.full_name || '—')}</strong>
+                <div><small>${b.patients?.patient_no} · ${b.patients?.sex}, ${b.patients?.age_value}${b.patients?.age_unit}</small></div>
+              </td>
+              <td>${escapeHTML(b.doctors?.name || 'Self / Walk-in')}</td>
+              <td class="text-right">${formatCurrency(b.total)}</td>
+              <td class="text-right text-success">${formatCurrency(b.paid_amount)}</td>
+              <td class="text-right ${b.balance > 0 ? 'text-danger font-bold' : ''}">${formatCurrency(b.balance)}</td>
+              <td class="text-center">
+                <span class="badge badge-${b.payment_status.toLowerCase()}">${b.payment_status}</span>
+              </td>
+              <td class="text-center">
+                <div class="table-actions">
+                  <button class="btn btn-outline btn-xs btn-print-receipt" data-id="${b.id}" title="Print Receipt">🖨️ Receipt</button>
+                  ${b.balance > 0 ? `
+                    <button class="btn btn-primary-outline btn-xs btn-collect-payment" data-id="${b.id}" data-balance="${b.balance}" title="Collect Balance">💵 Pay</button>
+                  ` : ''}
+                </div>
+              </td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>`;
+
+    // Attach row action listeners
+    container.querySelectorAll('.btn-print-receipt').forEach(btn => {
+      btn.addEventListener('click', () => openReceiptModal(btn.dataset.id));
+    });
+
+    container.querySelectorAll('.btn-collect-payment').forEach(btn => {
+      btn.addEventListener('click', () => openCollectPaymentModal(btn.dataset.id, Number(btn.dataset.balance)));
+    });
+  } catch (err) {
+    console.error('Error loading bills:', err);
+    container.innerHTML = `<div class="error-state">Failed to load bills: ${escapeHTML(err.message)}</div>`;
+  }
+}
+
+// -------------------------------------------------------------
+// MODULE 2: REPORTS
+// -------------------------------------------------------------
+function renderReportsModule(container) {
+  if (state.activeReport) {
+    renderResultEntryForm(container);
+    return;
+  }
+
+  container.innerHTML = `
+    <div class="module-header">
+      <div class="module-title">
+        <h1>Laboratory Reports</h1>
+        <p>Result entry, automated reference interval flagging, and multi-template printing</p>
+      </div>
+      <div class="module-tabs">
+        <button class="tab-btn ${state.reportsSubTab === 'pending' ? 'active' : ''}" id="tab-rep-pending">Pending Reports</button>
+        <button class="tab-btn ${state.reportsSubTab === 'completed' ? 'active' : ''}" id="tab-rep-completed">Completed Reports</button>
+        <button class="tab-btn ${state.reportsSubTab === 'all' ? 'active' : ''}" id="tab-rep-all">All Reports</button>
+      </div>
+    </div>
+    <div class="module-body">
+      <div class="card">
+        <div class="card-header">
+          <div class="filter-bar">
+            <input type="text" id="reports-search" placeholder="Search by patient, bill no..." class="table-search" value="${escapeHTML(state.reportsFilter.search)}" />
+            <select id="reports-filter-date" class="filter-select">
+              <option value="Today" ${state.reportsFilter.dateRange === 'Today' ? 'selected' : ''}>Today</option>
+              <option value="Yesterday" ${state.reportsFilter.dateRange === 'Yesterday' ? 'selected' : ''}>Yesterday</option>
+              <option value="Week" ${state.reportsFilter.dateRange === 'Week' ? 'selected' : ''}>Last 7 Days</option>
+              <option value="All" ${state.reportsFilter.dateRange === 'All' ? 'selected' : ''}>All Time</option>
+            </select>
+            <button id="btn-refresh-reports" class="btn btn-outline btn-sm">🔄 Refresh</button>
+          </div>
+        </div>
+        <div class="card-body">
+          <div id="reports-table-container">
+            <div class="loading-state">Loading reports...</div>
+          </div>
+        </div>
+      </div>
+    </div>`;
+
+  document.getElementById('tab-rep-pending').addEventListener('click', () => {
+    state.reportsSubTab = 'pending';
+    renderReportsModule(container);
+  });
+  document.getElementById('tab-rep-completed').addEventListener('click', () => {
+    state.reportsSubTab = 'completed';
+    renderReportsModule(container);
+  });
+  document.getElementById('tab-rep-all').addEventListener('click', () => {
+    state.reportsSubTab = 'all';
+    renderReportsModule(container);
+  });
+
+  document.getElementById('reports-search')?.addEventListener('input', (e) => {
+    state.reportsFilter.search = e.target.value;
+    loadReportsTable();
+  });
+  document.getElementById('reports-filter-date')?.addEventListener('change', (e) => {
+    state.reportsFilter.dateRange = e.target.value;
+    loadReportsTable();
+  });
+  document.getElementById('btn-refresh-reports')?.addEventListener('click', loadReportsTable);
+
+  loadReportsTable();
+}
+
+async function loadReportsTable() {
+  const container = document.getElementById('reports-table-container');
+  if (!container) return;
+
+  try {
+    let query = state.supabase
+      .from('reports')
+      .select('*, bills(*, doctors(*)), patients(*), report_results(*)')
+      .order('created_at', { ascending: false });
+
+    if (state.reportsSubTab === 'pending') {
+      query = query.eq('status', 'Pending');
+    } else if (state.reportsSubTab === 'completed') {
+      query = query.eq('status', 'Completed');
+    }
+
+    if (state.reportsFilter.dateRange === 'Today') {
+      const s = new Date(); s.setHours(0,0,0,0);
+      query = query.gte('created_at', s.toISOString());
+    } else if (state.reportsFilter.dateRange === 'Week') {
+      const w = new Date(); w.setDate(w.getDate() - 7);
+      query = query.gte('created_at', w.toISOString());
+    }
+
+    const { data: reports, error } = await query;
+    if (error) throw error;
+
+    let filtered = reports || [];
+    if (state.reportsFilter.search) {
+      const q = state.reportsFilter.search.toLowerCase();
+      filtered = filtered.filter(r =>
+        r.bills?.bill_no?.toLowerCase().includes(q) ||
+        r.patients?.full_name?.toLowerCase().includes(q) ||
+        r.patients?.patient_no?.toLowerCase().includes(q) ||
+        r.patients?.mobile?.includes(q)
+      );
+    }
+
+    if (filtered.length === 0) {
+      container.innerHTML = `<div class="empty-state">No ${state.reportsSubTab} reports found.</div>`;
+      return;
+    }
+
+    container.innerHTML = `
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Bill / Order</th>
+            <th>Date</th>
+            <th>Patient Details</th>
+            <th>Doctor</th>
+            <th>Tests</th>
+            <th class="text-center">Status</th>
+            <th class="text-center">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${filtered.map(r => {
+            const uniqueTestCodes = [...new Set(r.report_results?.map(res => res.test_code) || [])];
+            return `
+              <tr>
+                <td><strong>${escapeHTML(r.bills?.bill_no || '—')}</strong></td>
+                <td>${formatDate(r.created_at)}</td>
+                <td>
+                  <strong>${escapeHTML(r.patients?.full_name || '—')}</strong>
+                  <div><small>${r.patients?.patient_no} · ${r.patients?.sex}, ${r.patients?.age_value}${r.patients?.age_unit}</small></div>
+                </td>
+                <td>${escapeHTML(r.bills?.doctors?.name || 'Self / Walk-in')}</td>
+                <td><span class="test-codes-badge">${uniqueTestCodes.join(', ')}</span></td>
+                <td class="text-center">
+                  <span class="badge badge-${r.status.toLowerCase()}">${r.status}</span>
+                </td>
+                <td class="text-center">
+                  ${r.status === 'Pending' ? `
+                    <button class="btn btn-primary btn-sm btn-enter-results" data-id="${r.id}">
+                      ✍️ Enter Results
+                    </button>
+                  ` : `
+                    <div class="table-actions">
+                      <button class="btn btn-outline btn-sm btn-print-report" data-id="${r.id}">
+                        🖨️ View / Print
+                      </button>
+                      <button class="btn btn-outline-danger btn-xs btn-reopen-report" data-id="${r.id}" title="Reopen for editing">
+                        ✏️ Edit
+                      </button>
+                    </div>
+                  `}
+                </td>
+              </tr>
+            `;
+          }).join('')}
+        </tbody>
+      </table>`;
+
+    container.querySelectorAll('.btn-enter-results').forEach(btn => {
+      btn.addEventListener('click', () => openResultEntry(btn.dataset.id));
+    });
+
+    container.querySelectorAll('.btn-print-report').forEach(btn => {
+      btn.addEventListener('click', () => openReportPrintPreview(btn.dataset.id));
+    });
+
+    container.querySelectorAll('.btn-reopen-report').forEach(btn => {
+      btn.addEventListener('click', () => handleReopenReport(btn.dataset.id));
+    });
+  } catch (err) {
+    console.error('Error loading reports:', err);
+    container.innerHTML = `<div class="error-state">Failed to load reports: ${escapeHTML(err.message)}</div>`;
+  }
+}
+
+// -------------------------------------------------------------
+// Result Entry View with Real-Time Flags
+// -------------------------------------------------------------
+async function openResultEntry(reportId) {
+  try {
+    const { data: report, error } = await state.supabase
+      .from('reports')
+      .select('*, bills(*, doctors(*)), patients(*), report_results(*)')
+      .eq('id', reportId)
+      .single();
+
+    if (error || !report) throw error || new Error('Report not found');
+
+    state.activeReport = report;
+    renderApp();
+  } catch (err) {
+    showToast('Failed to open result entry: ' + err.message, 'error');
+  }
+}
+
+function renderResultEntryForm(container) {
+  const r = state.activeReport;
+  if (!r) return;
+
+  // Group results by test_code
+  const grouped = {};
+  r.report_results.sort((a, b) => a.sort_order - b.sort_order).forEach(row => {
+    if (!grouped[row.test_code]) grouped[row.test_code] = [];
+    grouped[row.test_code].push(row);
+  });
+
+  // Default clinical notes from catalog if empty
+  let defaultNotes = r.clinical_notes || '';
+  if (!defaultNotes) {
+    const testKeys = Object.keys(grouped);
+    defaultNotes = testKeys.map(k => reportNotes[k]).filter(Boolean).join('\n\n');
+  }
+
+  container.innerHTML = `
+    <div class="result-entry-container">
+      <div class="result-entry-header card">
+        <div class="patient-banner">
+          <div>
+            <h2>${escapeHTML(r.patients.title)} ${escapeHTML(r.patients.full_name)}</h2>
+            <p>Patient ID: <strong>${r.patients.patient_no}</strong> | Age/Sex: <strong>${r.patients.age_value} ${r.patients.age_unit} / ${r.patients.sex}</strong></p>
+          </div>
+          <div>
+            <p>Bill No: <strong>${r.bills.bill_no}</strong> | Date: <strong>${formatDate(r.created_at)}</strong></p>
+            <p>Referred By: <strong>${escapeHTML(r.bills.doctors?.name || 'Self / Walk-in')}</strong></p>
+          </div>
+          <div class="banner-actions">
+            <button id="btn-back-to-reports" class="btn btn-outline btn-sm">← Back to Reports</button>
+          </div>
+        </div>
+      </div>
+
+      <form id="result-entry-form" class="mt-4">
+        ${Object.entries(grouped).map(([code, rows]) => {
+          const testMeta = state.testsCatalog.find(t => t.code === code) || TESTS[code] || {};
+          return `
+            <div class="card mb-4">
+              <div class="card-header bg-subtle">
+                <h3>${escapeHTML(testMeta.name || code)} <small>(${escapeHTML(testMeta.department || 'Clinical Lab')} · ${escapeHTML(testMeta.sample_type || testMeta.sample || 'Specimen')})</small></h3>
+              </div>
+              <div class="card-body">
+                <table class="data-table result-input-table">
+                  <thead>
+                    <tr>
+                      <th style="width: 35%">Parameter</th>
+                      <th style="width: 25%">Result Value</th>
+                      <th style="width: 15%">Unit</th>
+                      <th style="width: 25%">Biological Reference Interval</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${rows.map(row => {
+                      const initialFlag = row.flag || '';
+                      return `
+                        <tr class="result-param-row ${initialFlag ? 'row-abnormal' : ''}" data-param-id="${row.id}">
+                          <td>
+                            <strong>${escapeHTML(row.parameter_name)}</strong>
+                          </td>
+                          <td>
+                            <div class="result-input-wrapper">
+                              <input
+                                type="text"
+                                class="result-value-input"
+                                data-id="${row.id}"
+                                data-min="${row.min_val ?? ''}"
+                                data-max="${row.max_val ?? ''}"
+                                data-crit-min="${row.critical_min ?? ''}"
+                                data-crit-max="${row.critical_max ?? ''}"
+                                value="${escapeHTML(row.value || '')}"
+                                placeholder="Enter value"
+                              />
+                              <span class="flag-badge flag-${initialFlag.toLowerCase()}" id="flag-${row.id}">${initialFlag}</span>
+                            </div>
+                          </td>
+                          <td>${escapeHTML(row.unit || '—')}</td>
+                          <td>${escapeHTML(row.reference_range || '—')}</td>
+                        </tr>
+                      `;
+                    }).join('')}
+                  </tbody>
+                </table>
+              </div>
+            </div>`;
+        }).join('')}
+
+        <div class="card mb-4">
+          <div class="card-header">
+            <h3>Clinical Notes &amp; Interpretation</h3>
+          </div>
+          <div class="card-body">
+            <textarea id="report-clinical-notes" rows="4" class="form-control">${escapeHTML(defaultNotes)}</textarea>
+            <small class="muted">Standard clinical panel notes. Editable prior to final authorization.</small>
+          </div>
+        </div>
+
+        <div class="form-actions sticky-actions">
+          <button type="button" id="btn-save-progress" class="btn btn-outline btn-lg">💾 Save Progress</button>
+          <button type="button" id="btn-complete-report" class="btn btn-primary btn-lg">✅ Mark as Completed &amp; Print</button>
+        </div>
+      </form>
+    </div>`;
+
+  // Attach Result Live Flag Listeners
+  container.querySelectorAll('.result-value-input').forEach(input => {
+    input.addEventListener('input', () => evaluateLiveFlag(input));
+  });
+
+  container.querySelector('#btn-back-to-reports')?.addEventListener('click', () => {
+    state.activeReport = null;
+    renderApp();
+  });
+
+  container.querySelector('#btn-save-progress')?.addEventListener('click', () => handleSaveReport(false));
+  container.querySelector('#btn-complete-report')?.addEventListener('click', () => handleSaveReport(true));
+}
+
+function evaluateLiveFlag(input) {
+  const rowId = input.dataset.id;
+  const flagBadge = document.getElementById(`flag-${rowId}`);
+  const rowElement = input.closest('.result-param-row');
+  const valStr = input.value.trim();
+
+  if (!valStr || isNaN(Number(valStr))) {
+    flagBadge.textContent = '';
+    flagBadge.className = 'flag-badge';
+    rowElement.classList.remove('row-abnormal', 'row-critical');
+    return '';
+  }
+
+  const val = Number(valStr);
+  const min = input.dataset.min ? Number(input.dataset.min) : null;
+  const max = input.dataset.max ? Number(input.dataset.max) : null;
+  const critMin = input.dataset.critMin ? Number(input.dataset.critMin) : null;
+  const critMax = input.dataset.critMax ? Number(input.dataset.critMax) : null;
+
+  let flag = '';
+  if (critMin !== null && val < critMin) flag = 'C';
+  else if (critMax !== null && val > critMax) flag = 'C';
+  else if (min !== null && val < min) flag = 'L';
+  else if (max !== null && val > max) flag = 'H';
+
+  flagBadge.textContent = flag;
+  flagBadge.className = `flag-badge flag-${flag.toLowerCase()}`;
+
+  rowElement.classList.toggle('row-abnormal', flag === 'L' || flag === 'H');
+  rowElement.classList.toggle('row-critical', flag === 'C');
+  return flag;
+}
+
+async function handleSaveReport(markCompleted = false) {
+  if (!state.activeReport) return;
+
+  const notes = document.getElementById('report-clinical-notes').value.trim();
+  const inputs = document.querySelectorAll('.result-value-input');
+
+  const updates = [];
+  inputs.forEach(input => {
+    const id = input.dataset.id;
+    const value = input.value.trim();
+    const flag = evaluateLiveFlag(input);
+    updates.push({ id, value, flag });
+  });
+
+  try {
+    // 1. Batch update report_results
+    for (const u of updates) {
+      await state.supabase
+        .from('report_results')
+        .update({ value: u.value, flag: u.flag })
+        .eq('id', u.id);
+    }
+
+    // 2. Update report status and notes
+    const updatePayload = {
+      clinical_notes: notes,
+      updated_at: new Date().toISOString()
+    };
+
+    if (markCompleted) {
+      updatePayload.status = 'Completed';
+      updatePayload.completed_at = new Date().toISOString();
+      updatePayload.completed_by = state.user.id;
+    }
+
+    const { error: repErr } = await state.supabase
+      .from('reports')
+      .update(updatePayload)
+      .eq('id', state.activeReport.id);
+
+    if (repErr) throw repErr;
+
+    if (markCompleted) {
+      showToast('Report completed and finalized!', 'success');
+      const repId = state.activeReport.id;
+      state.activeReport = null;
+      renderApp();
+      openReportPrintPreview(repId);
+    } else {
+      showToast('Progress saved successfully', 'success');
+    }
+  } catch (err) {
+    console.error('Failed to save report:', err);
+    showToast('Failed to save report: ' + err.message, 'error');
+  }
+}
+
+async function handleReopenReport(reportId) {
+  if (!confirm('Reopening will set the report status back to Pending. Do you wish to continue?')) return;
+  try {
+    const { error } = await state.supabase
+      .from('reports')
+      .update({ status: 'Pending', completed_at: null })
+      .eq('id', reportId);
+    if (error) throw error;
+    showToast('Report reopened for editing', 'info');
+    openResultEntry(reportId);
+  } catch (err) {
+    showToast('Error reopening report: ' + err.message, 'error');
+  }
+}
+
+// -------------------------------------------------------------
+// MODULE 3: PRINTING & PDF EXPORT
+// -------------------------------------------------------------
+async function openReceiptModal(billId) {
+  try {
+    const { data: bill, error } = await state.supabase
+      .from('bills')
+      .select('*, patients(*), doctors(*), bill_items(*), payments(*)')
+      .eq('id', billId)
+      .single();
+
+    if (error || !bill) throw error || new Error('Bill not found');
+
+    const modalContainer = document.getElementById('modal-container');
+    modalContainer.innerHTML = `
+      <div class="modal-overlay">
+        <div class="modal-dialog modal-lg">
+          <div class="modal-header">
+            <h3>Invoice &amp; Payment Receipt</h3>
+            <button class="modal-close" id="modal-close-btn">&times;</button>
+          </div>
+          <div class="modal-body">
+            <div class="receipt-preview-controls mb-3">
+              <label>Print Format:</label>
+              <select id="receipt-format-select" class="form-control" style="width: auto; display: inline-block;">
+                <option value="thermal">80mm Thermal Receipt (POS Roll)</option>
+                <option value="a4">A4 Full Sheet Invoice</option>
+              </select>
+            </div>
+            <div id="receipt-rendered-content" class="receipt-preview-box">
+              <!-- Rendered receipt -->
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button class="btn btn-outline" id="receipt-close-btn">Close</button>
+            <button class="btn btn-primary" id="btn-do-print-receipt">🖨️ Print Receipt</button>
+          </div>
+        </div>
+      </div>`;
+
+    const formatSelect = document.getElementById('receipt-format-select');
+    const previewBox = document.getElementById('receipt-rendered-content');
+
+    function updatePreview() {
+      const format = formatSelect.value;
+      previewBox.innerHTML = generateReceiptHTML(bill, state.labSettings, format);
+    }
+    updatePreview();
+    formatSelect.addEventListener('change', updatePreview);
+
+    document.getElementById('modal-close-btn').addEventListener('click', () => modalContainer.innerHTML = '');
+    document.getElementById('receipt-close-btn').addEventListener('click', () => modalContainer.innerHTML = '');
+
+    document.getElementById('btn-do-print-receipt').addEventListener('click', async () => {
+      const format = formatSelect.value;
+      const html = generateReceiptHTML(bill, state.labSettings, format, true);
+      const res = await window.labflowAPI.printReceipt({ html, format });
+      if (res.success) {
+        showToast('Receipt printed successfully', 'success');
+        modalContainer.innerHTML = '';
+      } else {
+        showToast('Print error: ' + (res.failureReason || 'Failed'), 'error');
+      }
+    });
+  } catch (err) {
+    showToast('Failed to load receipt: ' + err.message, 'error');
+  }
+}
+
+function generateReceiptHTML(bill, lab, format = 'thermal', fullPage = false) {
+  const inWords = numberToWords(bill.paid_amount || bill.total);
+  const labName = lab.lab_name || 'Anand Diagnostic Laboratory';
+  const labAddr = lab.address || 'Bangalore, Karnataka';
+  const labPhone = lab.phone || '+91 98765 43210';
+  const labReg = lab.registration_no || 'KA-BLR-LAB';
+
+  const itemsRows = bill.bill_items.map(item => `
+    <tr>
+      <td>${escapeHTML(item.test_name)}</td>
+      <td class="text-right">${formatCurrency(item.price)}</td>
+    </tr>
+  `).join('');
+
+  if (format === 'thermal') {
+    return `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          @page { size: 80mm auto; margin: 2mm; }
+          body { font-family: monospace, sans-serif; width: 72mm; margin: 0 auto; font-size: 11px; line-height: 1.3; color: #000; }
+          .center { text-align: center; }
+          .text-right { text-align: right; }
+          .bold { font-weight: bold; }
+          .divider { border-top: 1px dashed #000; margin: 4px 0; }
+          .double-divider { border-top: 2px solid #000; margin: 4px 0; }
+          table { width: 100%; border-collapse: collapse; font-size: 11px; }
+          th, td { padding: 2px 0; }
+          .words { font-size: 10px; font-style: italic; margin-top: 4px; }
+          .signature-box { margin-top: 18px; text-align: right; }
+        </style>
+      </head>
+      <body>
+        <div class="center bold" style="font-size: 13px;">${escapeHTML(labName)}</div>
+        <div class="center" style="font-size: 10px;">${escapeHTML(labAddr)}</div>
+        <div class="center" style="font-size: 10px;">Phone: ${escapeHTML(labPhone)} | Reg: ${escapeHTML(labReg)}</div>
+        <div class="double-divider"></div>
+        <div class="center bold">DIAGNOSTIC PAYMENT RECEIPT</div>
+        <div class="divider"></div>
+        <div>Receipt No: <strong>${escapeHTML(bill.bill_no)}</strong></div>
+        <div>Date &amp; Time: ${formatDate(bill.created_at)}</div>
+        <div>Patient: <strong>${escapeHTML(bill.patients?.title)} ${escapeHTML(bill.patients?.full_name)}</strong></div>
+        <div>ID / Sex / Age: ${bill.patients?.patient_no} / ${bill.patients?.sex} / ${bill.patients?.age_value}${bill.patients?.age_unit}</div>
+        <div>Ref Doctor: ${escapeHTML(bill.doctors?.name || 'Self / Walk-in')}</div>
+        <div class="divider"></div>
+        <table>
+          <thead>
+            <tr><th style="text-align: left;">Test Description</th><th class="text-right">Price</th></tr>
+          </thead>
+          <tbody>${itemsRows}</tbody>
+        </table>
+        <div class="divider"></div>
+        <table>
+          <tr><td>Subtotal:</td><td class="text-right">${formatCurrency(bill.subtotal)}</td></tr>
+          ${bill.discount > 0 ? `<tr><td>Discount:</td><td class="text-right">-${formatCurrency(bill.discount)}</td></tr>` : ''}
+          <tr class="bold"><td>Total:</td><td class="text-right">${formatCurrency(bill.total)}</td></tr>
+          <tr class="bold"><td>Amount Paid:</td><td class="text-right">${formatCurrency(bill.paid_amount)}</td></tr>
+          <tr><td>Balance Due:</td><td class="text-right">${formatCurrency(bill.balance)}</td></tr>
+          <tr><td>Mode:</td><td class="text-right">${escapeHTML(bill.payments?.[0]?.mode || 'Cash')}</td></tr>
+        </table>
+        <div class="divider"></div>
+        <div class="words">${escapeHTML(inWords)}</div>
+        <div class="signature-box">
+          <p>Authorized Signatory</p>
+        </div>
+        <div class="center" style="margin-top: 10px; font-size: 9px;">Thank you for choosing ${escapeHTML(labName)}</div>
+      </body>
+      </html>`;
+  } else {
+    // A4 Format
+    return `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          @page { size: A4; margin: 15mm; }
+          body { font-family: 'DM Sans', Arial, sans-serif; font-size: 13px; color: #1e293b; line-height: 1.5; }
+          .header { display: flex; justify-content: space-between; border-bottom: 2px solid #0d9488; padding-bottom: 12px; }
+          .lab-name { font-size: 20px; font-weight: bold; color: #0f766e; }
+          .text-right { text-align: right; }
+          .patient-box { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 12px; margin: 15px 0; display: flex; justify-content: space-between; }
+          table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+          th { background: #f1f5f9; padding: 8px; text-align: left; border-bottom: 1px solid #cbd5e1; }
+          td { padding: 8px; border-bottom: 1px solid #e2e8f0; }
+          .summary-table { width: 45%; margin-left: auto; margin-top: 15px; }
+          .summary-table td { padding: 4px 8px; }
+          .total-row { font-weight: bold; font-size: 14px; border-top: 1px solid #000; border-bottom: 1px solid #000; }
+          .footer { margin-top: 40px; display: flex; justify-content: space-between; align-items: flex-end; }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <div>
+            <div class="lab-name">${escapeHTML(labName)}</div>
+            <div>${escapeHTML(labAddr)}</div>
+            <div>Phone: ${escapeHTML(labPhone)} | Email: ${escapeHTML(lab.email || '')}</div>
+          </div>
+          <div class="text-right">
+            <h2>TAX INVOICE / RECEIPT</h2>
+            <div><strong>Bill No:</strong> ${escapeHTML(bill.bill_no)}</div>
+            <div><strong>Date:</strong> ${formatDate(bill.created_at)}</div>
+          </div>
+        </div>
+
+        <div class="patient-box">
+          <div>
+            <div><strong>Patient Name:</strong> ${escapeHTML(bill.patients?.title)} ${escapeHTML(bill.patients?.full_name)}</div>
+            <div><strong>Patient ID:</strong> ${bill.patients?.patient_no}</div>
+            <div><strong>Age / Sex:</strong> ${bill.patients?.age_value} ${bill.patients?.age_unit} / ${bill.patients?.sex}</div>
+          </div>
+          <div>
+            <div><strong>Mobile:</strong> ${escapeHTML(bill.patients?.mobile || '—')}</div>
+            <div><strong>Referred By:</strong> ${escapeHTML(bill.doctors?.name || 'Self / Walk-in')}</div>
+            <div><strong>Payment Status:</strong> ${bill.payment_status}</div>
+          </div>
+        </div>
+
+        <table>
+          <thead>
+            <tr>
+              <th style="width: 10%">Sl.</th>
+              <th>Test Panel Description</th>
+              <th>Specimen</th>
+              <th class="text-right" style="width: 20%">Amount (₹)</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${bill.bill_items.map((item, idx) => `
+              <tr>
+                <td>${idx + 1}</td>
+                <td><strong>${escapeHTML(item.test_name)}</strong></td>
+                <td>${escapeHTML(item.test_sample_type)}</td>
+                <td class="text-right">${formatCurrency(item.price)}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+
+        <table class="summary-table">
+          <tr><td>Subtotal:</td><td class="text-right">${formatCurrency(bill.subtotal)}</td></tr>
+          ${bill.discount > 0 ? `<tr><td>Discount:</td><td class="text-right">-${formatCurrency(bill.discount)}</td></tr>` : ''}
+          <tr class="total-row"><td>Total Amount:</td><td class="text-right">${formatCurrency(bill.total)}</td></tr>
+          <tr><td>Amount Paid:</td><td class="text-right">${formatCurrency(bill.paid_amount)}</td></tr>
+          <tr style="font-weight: bold;"><td>Balance Due:</td><td class="text-right">${formatCurrency(bill.balance)}</td></tr>
+        </table>
+
+        <div style="margin-top: 10px; font-weight: 500;">
+          Amount in Words: <em>${escapeHTML(inWords)}</em>
+        </div>
+
+        <div class="footer">
+          <div>
+            <small>This is a computer generated diagnostic receipt.</small>
+          </div>
+          <div class="text-right">
+            <p>For ${escapeHTML(labName)}</p>
+            <br><br>
+            <p><strong>Authorized Signatory</strong></p>
+          </div>
+        </div>
+      </body>
+      </html>`;
+  }
+}
+
+// -------------------------------------------------------------
+// Report Printing with 3 Letterhead Styles
+// -------------------------------------------------------------
+async function openReportPrintPreview(reportId) {
+  try {
+    const { data: report, error } = await state.supabase
+      .from('reports')
+      .select('*, bills(*, doctors(*)), patients(*), report_results(*)')
+      .eq('id', reportId)
+      .single();
+
+    if (error || !report) throw error || new Error('Report not found');
+
+    // Adapt database report structure to renderReport format
+    const orderAdapter = {
+      id: report.bills?.bill_no,
+      patientId: report.patients?.patient_no,
+      name: `${report.patients?.title} ${report.patients?.full_name}`,
+      age: report.patients?.age_value,
+      sex: report.patients?.sex,
+      referrer: report.bills?.doctors?.name || 'Self',
+      createdAt: report.created_at,
+      collectedAt: report.created_at,
+      receivedAt: report.created_at,
+      approvedAt: report.completed_at,
+      status: report.status === 'Completed' ? 'Approved' : 'Draft',
+      notes: report.clinical_notes,
+      tests: [...new Set(report.report_results?.map(r => r.test_code) || [])],
+      results: Object.fromEntries(report.report_results?.map(r => [r.parameter_code, r.value]) || [])
+    };
+
+    const settingsAdapter = {
+      labName: state.labSettings.lab_name,
+      address: state.labSettings.address,
+      phone: state.labSettings.phone,
+      email: state.labSettings.email,
+      registration: state.labSettings.registration_no,
+      pathologist: state.labSettings.pathologist_name,
+      pathologistQualification: state.labSettings.pathologist_qualification,
+      labIncharge: state.labSettings.lab_incharge,
+      labInchargeQualification: state.labSettings.lab_incharge_qualification,
+      reportFooter: state.labSettings.report_footer,
+      workingHours: state.labSettings.working_hours,
+      reportTemplate: state.labSettings.letterhead_template || 'classic'
+    };
+
+    const modalContainer = document.getElementById('modal-container');
+    modalContainer.innerHTML = `
+      <div class="modal-overlay">
+        <div class="modal-dialog modal-xl">
+          <div class="modal-header">
+            <h3>Diagnostic Clinical Report - ${escapeHTML(report.bills?.bill_no)}</h3>
+            <div class="template-selector">
+              <label>Letterhead Style:</label>
+              <select id="report-template-select">
+                ${REPORT_TEMPLATES.map(tpl =>
+                  `<option value="${tpl.id}" ${tpl.id === settingsAdapter.reportTemplate ? 'selected' : ''}>${tpl.name}</option>`
+                ).join('')}
+              </select>
+            </div>
+            <button class="modal-close" id="modal-close-btn">&times;</button>
+          </div>
+          <div class="modal-body">
+            <div id="report-rendered-view" class="report-preview-frame"></div>
+          </div>
+          <div class="modal-footer">
+            <button class="btn btn-outline" id="btn-close-rep-modal">Close</button>
+            <button class="btn btn-outline" id="btn-export-pdf">📥 Export PDF</button>
+            <button class="btn btn-primary" id="btn-print-report-now">🖨️ Print Clinical Report</button>
+          </div>
+        </div>
+      </div>`;
+
+    const tplSelect = document.getElementById('report-template-select');
+    const viewContainer = document.getElementById('report-rendered-view');
+
+    function renderActiveHTML() {
+      const template = tplSelect.value;
+      const html = renderReport(orderAdapter, settingsAdapter, { template });
+      viewContainer.innerHTML = html;
+      return `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Report ${orderAdapter.id}</title><link rel="stylesheet" href="./report.css"></head><body>${html}</body></html>`;
+    }
+
+    renderActiveHTML();
+    tplSelect.addEventListener('change', renderActiveHTML);
+
+    document.getElementById('modal-close-btn').addEventListener('click', () => modalContainer.innerHTML = '');
+    document.getElementById('btn-close-rep-modal').addEventListener('click', () => modalContainer.innerHTML = '');
+
+    document.getElementById('btn-print-report-now').addEventListener('click', async () => {
+      const fullHtml = renderActiveHTML();
+      const res = await window.labflowAPI.printReport({ html: fullHtml });
+      if (res.success) {
+        showToast('Report printed successfully', 'success');
+      } else {
+        showToast('Print failed: ' + (res.failureReason || 'Error'), 'error');
+      }
+    });
+
+    document.getElementById('btn-export-pdf').addEventListener('click', async () => {
+      const fullHtml = renderActiveHTML();
+      const filename = `Report-${orderAdapter.id}-${orderAdapter.name.replace(/\s+/g, '_')}.pdf`;
+      const res = await window.labflowAPI.printToPDF({ html: fullHtml, defaultFilename: filename });
+      if (res.success) {
+        showToast('Saved PDF to ' + res.filePath, 'success');
+      } else if (!res.canceled) {
+        showToast('Failed to export PDF: ' + res.error, 'error');
+      }
+    });
+  } catch (err) {
+    showToast('Failed to load report preview: ' + err.message, 'error');
+  }
+}
+
+// -------------------------------------------------------------
+// MODULE 4: SETTINGS (Minimal)
+// -------------------------------------------------------------
+function renderSettingsModule(container) {
+  container.innerHTML = `
+    <div class="module-header">
+      <div class="module-title">
+        <h1>Laboratory Settings</h1>
+        <p>Lab profile, doctors, referral sources, test catalog pricing and account security</p>
+      </div>
+      <div class="module-tabs">
+        <button class="tab-btn ${state.settingsSubTab === 'profile' ? 'active' : ''}" id="tab-set-profile">Lab Details &amp; Letterhead</button>
+        <button class="tab-btn ${state.settingsSubTab === 'doctors' ? 'active' : ''}" id="tab-set-doctors">Doctors Directory</button>
+        <button class="tab-btn ${state.settingsSubTab === 'referrals' ? 'active' : ''}" id="tab-set-referrals">Referral Sources</button>
+        <button class="tab-btn ${state.settingsSubTab === 'catalog' ? 'active' : ''}" id="tab-set-catalog">Test Catalog &amp; Pricing</button>
+        <button class="tab-btn ${state.settingsSubTab === 'security' ? 'active' : ''}" id="tab-set-security">Account Security</button>
+      </div>
+    </div>
+    <div class="module-body" id="settings-body"></div>`;
+
+  document.getElementById('tab-set-profile').addEventListener('click', () => { state.settingsSubTab = 'profile'; renderSettingsModule(container); });
+  document.getElementById('tab-set-doctors').addEventListener('click', () => { state.settingsSubTab = 'doctors'; renderSettingsModule(container); });
+  document.getElementById('tab-set-referrals').addEventListener('click', () => { state.settingsSubTab = 'referrals'; renderSettingsModule(container); });
+  document.getElementById('tab-set-catalog').addEventListener('click', () => { state.settingsSubTab = 'catalog'; renderSettingsModule(container); });
+  document.getElementById('tab-set-security').addEventListener('click', () => { state.settingsSubTab = 'security'; renderSettingsModule(container); });
+
+  const body = document.getElementById('settings-body');
+  if (state.settingsSubTab === 'profile') renderLabProfileSettings(body);
+  else if (state.settingsSubTab === 'doctors') renderDoctorsSettings(body);
+  else if (state.settingsSubTab === 'referrals') renderReferralsSettings(body);
+  else if (state.settingsSubTab === 'catalog') renderCatalogSettings(body);
+  else if (state.settingsSubTab === 'security') renderSecuritySettings(body);
+}
+
+function renderLabProfileSettings(container) {
+  const lab = state.labSettings;
+  container.innerHTML = `
+    <div class="card">
+      <div class="card-header">
+        <h3>Laboratory Profile &amp; Letterhead Customization</h3>
+      </div>
+      <div class="card-body">
+        <form id="lab-profile-form">
+          <div class="form-row">
+            <div class="form-group col-6">
+              <label>Laboratory Name *</label>
+              <input type="text" id="lab-name" value="${escapeHTML(lab.lab_name || '')}" required />
+            </div>
+            <div class="form-group col-6">
+              <label>Tagline / Motto</label>
+              <input type="text" id="lab-tagline" value="${escapeHTML(lab.tagline || '')}" />
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group col-12">
+              <label>Full Physical Address</label>
+              <input type="text" id="lab-address" value="${escapeHTML(lab.address || '')}" />
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group col-4">
+              <label>Phone Number</label>
+              <input type="text" id="lab-phone" value="${escapeHTML(lab.phone || '')}" />
+            </div>
+            <div class="form-group col-4">
+              <label>Official Email</label>
+              <input type="email" id="lab-email" value="${escapeHTML(lab.email || '')}" />
+            </div>
+            <div class="form-group col-4">
+              <label>Registration / License No.</label>
+              <input type="text" id="lab-reg" value="${escapeHTML(lab.registration_no || '')}" />
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group col-6">
+              <label>Consultant Pathologist Name</label>
+              <input type="text" id="lab-pathologist" value="${escapeHTML(lab.pathologist_name || '')}" />
+            </div>
+            <div class="form-group col-6">
+              <label>Pathologist Qualifications</label>
+              <input type="text" id="lab-pathologist-deg" value="${escapeHTML(lab.pathologist_qualification || '')}" />
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group col-6">
+              <label>Laboratory In-Charge / Technologist</label>
+              <input type="text" id="lab-incharge" value="${escapeHTML(lab.lab_incharge || '')}" />
+            </div>
+            <div class="form-group col-6">
+              <label>In-Charge Qualifications</label>
+              <input type="text" id="lab-incharge-deg" value="${escapeHTML(lab.lab_incharge_qualification || '')}" />
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group col-6">
+              <label>Default Letterhead Theme</label>
+              <select id="lab-template">
+                ${REPORT_TEMPLATES.map(t =>
+                  `<option value="${t.id}" ${t.id === lab.letterhead_template ? 'selected' : ''}>${t.name} (${t.description})</option>`
+                ).join('')}
+              </select>
+            </div>
+            <div class="form-group col-6">
+              <label>Working Hours</label>
+              <input type="text" id="lab-hours" value="${escapeHTML(lab.working_hours || '')}" />
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group col-12">
+              <label>Report Footer Disclaimer</label>
+              <input type="text" id="lab-footer" value="${escapeHTML(lab.report_footer || '')}" />
+            </div>
+          </div>
+
+          <div class="mt-3">
+            <button type="submit" class="btn btn-primary">Save Laboratory Settings</button>
+          </div>
+        </form>
+      </div>
+    </div>`;
+
+  document.getElementById('lab-profile-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const payload = {
+      lab_name: document.getElementById('lab-name').value.trim(),
+      tagline: document.getElementById('lab-tagline').value.trim(),
+      address: document.getElementById('lab-address').value.trim(),
+      phone: document.getElementById('lab-phone').value.trim(),
+      email: document.getElementById('lab-email').value.trim(),
+      registration_no: document.getElementById('lab-reg').value.trim(),
+      pathologist_name: document.getElementById('lab-pathologist').value.trim(),
+      pathologist_qualification: document.getElementById('lab-pathologist-deg').value.trim(),
+      lab_incharge: document.getElementById('lab-incharge').value.trim(),
+      lab_incharge_qualification: document.getElementById('lab-incharge-deg').value.trim(),
+      letterhead_template: document.getElementById('lab-template').value,
+      working_hours: document.getElementById('lab-hours').value.trim(),
+      report_footer: document.getElementById('lab-footer').value.trim(),
+      updated_at: new Date().toISOString()
+    };
+
+    try {
+      const { error } = await state.supabase.from('lab_settings').upsert({ id: lab.id, ...payload });
+      if (error) throw error;
+      state.labSettings = { ...lab, ...payload };
+      showToast('Lab profile updated successfully', 'success');
+      renderApp();
+    } catch (err) {
+      showToast('Failed to save settings: ' + err.message, 'error');
+    }
+  });
+}
+
+function renderDoctorsSettings(container) {
+  container.innerHTML = `
+    <div class="card">
+      <div class="card-header">
+        <h3>Referring Doctors Directory</h3>
+        <button class="btn btn-primary btn-sm" id="btn-add-doc-modal">+ Add Doctor</button>
+      </div>
+      <div class="card-body">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Doctor Name</th>
+              <th>Qualifications</th>
+              <th>Phone</th>
+              <th class="text-center">Status</th>
+              <th class="text-center">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${state.doctors.map(d => `
+              <tr>
+                <td><strong>${escapeHTML(d.name)}</strong></td>
+                <td>${escapeHTML(d.qualification || '—')}</td>
+                <td>${escapeHTML(d.phone || '—')}</td>
+                <td class="text-center">
+                  <span class="badge ${d.active ? 'badge-paid' : 'badge-unpaid'}">${d.active ? 'Active' : 'Inactive'}</span>
+                </td>
+                <td class="text-center">
+                  <button class="btn btn-outline btn-xs btn-toggle-doctor" data-id="${d.id}" data-active="${d.active}">
+                    ${d.active ? 'Deactivate' : 'Activate'}
+                  </button>
+                </td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>`;
+
+  document.getElementById('btn-add-doc-modal').addEventListener('click', openAddDoctorModal);
+
+  container.querySelectorAll('.btn-toggle-doctor').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const id = btn.dataset.id;
+      const nextActive = btn.dataset.active === 'false';
+      await state.supabase.from('doctors').update({ active: nextActive }).eq('id', id);
+      await loadReferenceData();
+      renderDoctorsSettings(container);
+    });
+  });
+}
+
+function renderReferralsSettings(container) {
+  container.innerHTML = `
+    <div class="form-row">
+      <div class="col-6">
+        <div class="card">
+          <div class="card-header">
+            <h3>Referral Laboratories</h3>
+            <button class="btn btn-primary btn-sm" id="btn-add-lab-modal">+ Add Lab</button>
+          </div>
+          <div class="card-body">
+            <table class="data-table">
+              <thead><tr><th>Name</th><th class="text-center">Status</th></tr></thead>
+              <tbody>
+                ${state.referralLabs.map(l => `
+                  <tr>
+                    <td><strong>${escapeHTML(l.name)}</strong></td>
+                    <td class="text-center"><span class="badge ${l.active ? 'badge-paid' : 'badge-unpaid'}">${l.active ? 'Active' : 'Inactive'}</span></td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      <div class="col-6">
+        <div class="card">
+          <div class="card-header">
+            <h3>Referral Hospitals</h3>
+            <button class="btn btn-primary btn-sm" id="btn-add-hosp-modal">+ Add Hospital</button>
+          </div>
+          <div class="card-body">
+            <table class="data-table">
+              <thead><tr><th>Name</th><th class="text-center">Status</th></tr></thead>
+              <tbody>
+                ${state.referralHospitals.map(h => `
+                  <tr>
+                    <td><strong>${escapeHTML(h.name)}</strong></td>
+                    <td class="text-center"><span class="badge ${h.active ? 'badge-paid' : 'badge-unpaid'}">${h.active ? 'Active' : 'Inactive'}</span></td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>`;
+
+  document.getElementById('btn-add-lab-modal').addEventListener('click', openAddReferralLabModal);
+  document.getElementById('btn-add-hosp-modal').addEventListener('click', openAddReferralHospitalModal);
+}
+
+function renderCatalogSettings(container) {
+  container.innerHTML = `
+    <div class="card">
+      <div class="card-header">
+        <h3>Diagnostic Test Catalog &amp; Prices</h3>
+      </div>
+      <div class="card-body">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Code</th>
+              <th>Test Panel Name</th>
+              <th>Department</th>
+              <th>Sample Type</th>
+              <th style="width: 140px;">Price (₹)</th>
+              <th class="text-center">Status</th>
+              <th class="text-center">Save</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${state.testsCatalog.map(t => `
+              <tr data-test-id="${t.id}">
+                <td><strong>${escapeHTML(t.code)}</strong></td>
+                <td>${escapeHTML(t.name)}</td>
+                <td>${escapeHTML(t.department)}</td>
+                <td><small>${escapeHTML(t.sample_type)}</small></td>
+                <td>
+                  <input type="number" class="form-control price-edit-input" data-id="${t.id}" value="${t.price}" min="0" />
+                </td>
+                <td class="text-center">
+                  <span class="badge ${t.active ? 'badge-paid' : 'badge-unpaid'}">${t.active ? 'Active' : 'Inactive'}</span>
+                </td>
+                <td class="text-center">
+                  <button class="btn btn-primary-outline btn-xs btn-save-test-price" data-id="${t.id}">Update</button>
+                </td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>`;
+
+  container.querySelectorAll('.btn-save-test-price').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const id = btn.dataset.id;
+      const input = container.querySelector(`.price-edit-input[data-id="${id}"]`);
+      const newPrice = Number(input.value || 0);
+      try {
+        const { error } = await state.supabase.from('tests').update({ price: newPrice }).eq('id', id);
+        if (error) throw error;
+        showToast('Test price updated', 'success');
+        await loadReferenceData();
+      } catch (err) {
+        showToast('Error updating price: ' + err.message, 'error');
+      }
+    });
+  });
+}
+
+function renderSecuritySettings(container) {
+  container.innerHTML = `
+    <div class="card" style="max-width: 500px;">
+      <div class="card-header">
+        <h3>Change Staff Password</h3>
+      </div>
+      <div class="card-body">
+        <form id="change-pwd-form">
+          <div class="form-group mb-3">
+            <label>New Password</label>
+            <input type="password" id="new-password" placeholder="••••••••" required minlength="8" />
+          </div>
+          <div class="form-group mb-3">
+            <label>Confirm New Password</label>
+            <input type="password" id="confirm-password" placeholder="••••••••" required minlength="8" />
+          </div>
+          <button type="submit" class="btn btn-primary">Update Password</button>
+        </form>
+      </div>
+    </div>`;
+
+  document.getElementById('change-pwd-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const p1 = document.getElementById('new-password').value;
+    const p2 = document.getElementById('confirm-password').value;
+    if (p1 !== p2) {
+      showToast('Passwords do not match.', 'error');
+      return;
+    }
+    try {
+      const { error } = await state.supabase.auth.updateUser({ password: p1 });
+      if (error) throw error;
+      showToast('Password updated successfully', 'success');
+      document.getElementById('change-pwd-form').reset();
+    } catch (err) {
+      showToast('Password change failed: ' + err.message, 'error');
+    }
+  });
+}
+
+// -------------------------------------------------------------
+// Quick Add Modals (Doctors, Labs, Hospitals, Payment)
+// -------------------------------------------------------------
+function openAddDoctorModal() {
+  const modalContainer = document.getElementById('modal-container');
+  modalContainer.innerHTML = `
+    <div class="modal-overlay">
+      <div class="modal-dialog">
+        <div class="modal-header">
+          <h3>Add Referring Doctor</h3>
+          <button class="modal-close" id="modal-close-btn">&times;</button>
+        </div>
+        <form id="quick-add-doc-form">
+          <div class="modal-body">
+            <div class="form-group mb-3">
+              <label>Doctor Full Name *</label>
+              <input type="text" id="new-doc-name" placeholder="Dr. Firstname Lastname" required />
+            </div>
+            <div class="form-group mb-3">
+              <label>Degrees / Speciality</label>
+              <input type="text" id="new-doc-qual" placeholder="MBBS, MD" />
+            </div>
+            <div class="form-group">
+              <label>Phone Number</label>
+              <input type="tel" id="new-doc-phone" placeholder="+91 ..." />
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-outline" id="modal-cancel-btn">Cancel</button>
+            <button type="submit" class="btn btn-primary">Save Doctor</button>
+          </div>
+        </form>
+      </div>
+    </div>`;
+
+  document.getElementById('modal-close-btn').addEventListener('click', () => modalContainer.innerHTML = '');
+  document.getElementById('modal-cancel-btn').addEventListener('click', () => modalContainer.innerHTML = '');
+
+  document.getElementById('quick-add-doc-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const name = document.getElementById('new-doc-name').value.trim();
+    const qualification = document.getElementById('new-doc-qual').value.trim();
+    const phone = document.getElementById('new-doc-phone').value.trim();
+
+    try {
+      const { data, error } = await state.supabase.from('doctors').insert({ name, qualification, phone }).select().single();
+      if (error) throw error;
+      showToast('Doctor added successfully', 'success');
+      await loadReferenceData();
+      modalContainer.innerHTML = '';
+      if (state.currentPage === 'billing' && state.billingSubTab === 'new') {
+        state.newBill.doctorId = data.id;
+        renderNewBillForm(document.getElementById('billing-body'));
+      }
+    } catch (err) {
+      showToast('Error: ' + err.message, 'error');
+    }
+  });
+}
+
+function openAddReferralLabModal() {
+  const modalContainer = document.getElementById('modal-container');
+  modalContainer.innerHTML = `
+    <div class="modal-overlay">
+      <div class="modal-dialog">
+        <div class="modal-header">
+          <h3>Add Referral Laboratory</h3>
+          <button class="modal-close" id="modal-close-btn">&times;</button>
+        </div>
+        <form id="quick-add-lab-form">
+          <div class="modal-body">
+            <div class="form-group">
+              <label>Lab Name *</label>
+              <input type="text" id="new-lab-name" required />
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-outline" id="modal-cancel-btn">Cancel</button>
+            <button type="submit" class="btn btn-primary">Save</button>
+          </div>
+        </form>
+      </div>
+    </div>`;
+
+  document.getElementById('modal-close-btn').addEventListener('click', () => modalContainer.innerHTML = '');
+  document.getElementById('modal-cancel-btn').addEventListener('click', () => modalContainer.innerHTML = '');
+
+  document.getElementById('quick-add-lab-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const name = document.getElementById('new-lab-name').value.trim();
+    try {
+      const { data, error } = await state.supabase.from('referral_labs').insert({ name }).select().single();
+      if (error) throw error;
+      showToast('Referral Lab added', 'success');
+      await loadReferenceData();
+      modalContainer.innerHTML = '';
+      if (state.currentPage === 'billing' && state.billingSubTab === 'new') {
+        state.newBill.referralLabId = data.id;
+        renderNewBillForm(document.getElementById('billing-body'));
+      }
+    } catch (err) {
+      showToast('Error: ' + err.message, 'error');
+    }
+  });
+}
+
+function openAddReferralHospitalModal() {
+  const modalContainer = document.getElementById('modal-container');
+  modalContainer.innerHTML = `
+    <div class="modal-overlay">
+      <div class="modal-dialog">
+        <div class="modal-header">
+          <h3>Add Referral Hospital</h3>
+          <button class="modal-close" id="modal-close-btn">&times;</button>
+        </div>
+        <form id="quick-add-hosp-form">
+          <div class="modal-body">
+            <div class="form-group">
+              <label>Hospital Name *</label>
+              <input type="text" id="new-hosp-name" required />
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-outline" id="modal-cancel-btn">Cancel</button>
+            <button type="submit" class="btn btn-primary">Save</button>
+          </div>
+        </form>
+      </div>
+    </div>`;
+
+  document.getElementById('modal-close-btn').addEventListener('click', () => modalContainer.innerHTML = '');
+  document.getElementById('modal-cancel-btn').addEventListener('click', () => modalContainer.innerHTML = '');
+
+  document.getElementById('quick-add-hosp-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const name = document.getElementById('new-hosp-name').value.trim();
+    try {
+      const { data, error } = await state.supabase.from('referral_hospitals').insert({ name }).select().single();
+      if (error) throw error;
+      showToast('Referral Hospital added', 'success');
+      await loadReferenceData();
+      modalContainer.innerHTML = '';
+      if (state.currentPage === 'billing' && state.billingSubTab === 'new') {
+        state.newBill.referralHospitalId = data.id;
+        renderNewBillForm(document.getElementById('billing-body'));
+      }
+    } catch (err) {
+      showToast('Error: ' + err.message, 'error');
+    }
+  });
+}
+
+function openCollectPaymentModal(billId, maxBalance) {
+  const modalContainer = document.getElementById('modal-container');
+  modalContainer.innerHTML = `
+    <div class="modal-overlay">
+      <div class="modal-dialog">
+        <div class="modal-header">
+          <h3>Collect Balance Payment</h3>
+          <button class="modal-close" id="modal-close-btn">&times;</button>
+        </div>
+        <form id="collect-pay-form">
+          <div class="modal-body">
+            <div class="form-group mb-3">
+              <label>Payment Amount (₹) *</label>
+              <input type="number" id="pay-amount" min="1" max="${maxBalance}" value="${maxBalance}" required />
+            </div>
+            <div class="form-group mb-3">
+              <label>Payment Mode</label>
+              <select id="pay-mode">
+                ${['Cash', 'UPI', 'Card', 'Net Banking', 'Other'].map(m => `<option value="${m}">${m}</option>`).join('')}
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Payment Notes</label>
+              <input type="text" id="pay-notes" placeholder="Optional transaction ID or note" />
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-outline" id="modal-cancel-btn">Cancel</button>
+            <button type="submit" class="btn btn-primary">Record Payment</button>
+          </div>
+        </form>
+      </div>
+    </div>`;
+
+  document.getElementById('modal-close-btn').addEventListener('click', () => modalContainer.innerHTML = '');
+  document.getElementById('modal-cancel-btn').addEventListener('click', () => modalContainer.innerHTML = '');
+
+  document.getElementById('collect-pay-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const amount = Number(document.getElementById('pay-amount').value);
+    const mode = document.getElementById('pay-mode').value;
+    const notes = document.getElementById('pay-notes').value.trim();
+
+    try {
+      const { data, error } = await state.supabase.rpc('collect_bill_payment', {
+        p_bill_id: billId,
+        p_amount: amount,
+        p_mode: mode,
+        p_notes: notes
+      });
+
+      if (error) throw error;
+      showToast('Payment recorded successfully', 'success');
+      modalContainer.innerHTML = '';
+      loadBillsTable();
+      openReceiptModal(billId);
+    } catch (err) {
+      showToast('Payment error: ' + err.message, 'error');
+    }
+  });
+}
+
+// -------------------------------------------------------------
+// Launch on DOM Ready
+// -------------------------------------------------------------
+window.addEventListener('DOMContentLoaded', init);
