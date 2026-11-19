@@ -2011,15 +2011,15 @@ async function openReceiptModal(billId) {
       <div class="modal-overlay">
         <div class="modal-dialog modal-lg">
           <div class="modal-header">
-            <h3>Invoice &amp; Payment Receipt</h3>
+            <h3>Diagnostic Bill &amp; Payment Receipt</h3>
             <button class="modal-close" id="modal-close-btn">&times;</button>
           </div>
           <div class="modal-body">
             <div class="receipt-preview-controls mb-3">
               <label>Print Format:</label>
               <select id="receipt-format-select" class="form-control" style="width: auto; display: inline-block;">
+                <option value="a4" selected>A4 Diagnostic Bill &amp; Invoice (Letterhead)</option>
                 <option value="thermal">80mm Thermal Receipt (POS Roll)</option>
-                <option value="a4">A4 Full Sheet Invoice</option>
               </select>
             </div>
             <div id="receipt-rendered-content" class="receipt-preview-box">
@@ -2028,7 +2028,7 @@ async function openReceiptModal(billId) {
           </div>
           <div class="modal-footer">
             <button class="btn btn-outline" id="receipt-close-btn">Close</button>
-            <button class="btn btn-primary" id="btn-do-print-receipt">${uiIcon('printer', 16)} Print Receipt</button>
+            <button class="btn btn-primary" id="btn-do-print-receipt">${uiIcon('printer', 16)} Print Bill / Receipt</button>
           </div>
         </div>
       </div>`;
@@ -2038,7 +2038,7 @@ async function openReceiptModal(billId) {
 
     function updatePreview() {
       const format = formatSelect.value;
-      previewBox.innerHTML = generateReceiptHTML(bill, state.labSettings, format);
+      previewBox.innerHTML = generateReceiptHTML(bill, state.labSettings, format, false);
     }
     updatePreview();
     formatSelect.addEventListener('change', updatePreview);
@@ -2059,32 +2059,147 @@ async function openReceiptModal(billId) {
       const html = generateReceiptHTML(bill, state.labSettings, format, true);
       const res = await window.labflowAPI.printReceipt({ html, format });
       if (res.success) {
-        showToast('Receipt printed successfully', 'success');
+        showToast('Bill / Receipt printed successfully', 'success');
         closeReceipt();
       } else {
         showToast('Print error: ' + (res.failureReason || 'Failed'), 'error');
       }
     });
   } catch (err) {
-    showToast('Failed to load receipt: ' + err.message, 'error');
+    showToast('Failed to load bill receipt: ' + err.message, 'error');
   }
 }
 
-function generateReceiptHTML(bill, lab, format = 'thermal', fullPage = false) {
-  const inWords = numberToWords(bill.paid_amount || bill.total);
-  const labName = lab.lab_name || 'Anand Diagnostic Laboratory';
-  const labAddr = lab.address || 'Bangalore, Karnataka';
-  const labPhone = lab.phone || '+91 98765 43210';
-  const labReg = lab.registration_no || 'KA-BLR-LAB';
+// Helper Barcode and SVG Icons for Diagnostic Bill / Receipt Letterhead
+function generateBillBarcode(code) {
+  const textStr = String(code || '000000').toUpperCase();
+  const patterns = {
+    '0': '000110100', '1': '100100001', '2': '001100001', '3': '101100000',
+    '4': '000110001', '5': '100110000', '6': '001110000', '7': '000100101',
+    '8': '100100100', '9': '001100100', 'A': '100001001', 'B': '001001001',
+    'C': '101001000', 'D': '000011001', 'E': '100011000', 'F': '001011000',
+    'G': '000001101', 'H': '100001100', 'I': '001001100', 'J': '000011100',
+    'K': '100000011', 'L': '001000011', 'M': '101000010', 'N': '000010011',
+    'O': '100010010', 'P': '001010010', 'Q': '000000111', 'R': '100000110',
+    'S': '001000110', 'T': '000010110', 'U': '110000001', 'V': '011000001',
+    'W': '111000000', 'X': '010010001', 'Y': '110010000', 'Z': '011010000',
+    '-': '010000101', '.': '110000100', ' ': '011000100', '*': '010010100'
+  };
+  const safeText = ('*' + textStr.replace(/[^0-9A-Z\-.* ]/g, '') + '*').slice(0, 16);
+  let x = 4;
+  const bars = [];
+  for (let i = 0; i < safeText.length; i++) {
+    const p = patterns[safeText[i]] || patterns['*'];
+    for (let j = 0; j < 9; j++) {
+      const isBar = (j % 2 === 0);
+      const isWide = p[j] === '1';
+      const width = isWide ? 2.2 : 1.0;
+      if (isBar) {
+        bars.push(`<rect x="${x.toFixed(1)}" y="0" width="${width.toFixed(1)}" height="20" fill="#072a38"/>`);
+      }
+      x += width + (isBar ? 0.7 : 1.0);
+    }
+    x += 1.8;
+  }
+  const totalWidth = Math.ceil(x + 4);
+  return `<svg class="ref-barcode-svg" viewBox="0 0 ${totalWidth} 29" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">
+    ${bars.join('')}
+    <text x="${(totalWidth / 2).toFixed(1)}" y="27" font-family="monospace" font-size="7.5" font-weight="700" letter-spacing="1" text-anchor="middle" fill="#1e293b">${escapeHTML(textStr)}</text>
+  </svg>`;
+}
 
-  const itemsRows = bill.bill_items.map(item => `
-    <tr>
-      <td>${escapeHTML(item.test_name)}</td>
-      <td class="text-right">${formatCurrency(item.price)}</td>
-    </tr>
-  `).join('');
+const billCaduceusIcon = `<svg class="ref-cross-svg" viewBox="0 0 60 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <path d="M18 2C18 0.9 18.9 0 20 0H40C41.1 0 42 0.9 42 2V18H58C59.1 18 60 18.9 60 20V40C60 41.1 59.1 42 58 42H42V58C42 59.1 41.1 60 40 60H20C18.9 60 18 59.1 18 58V42H2C0.9 42 0 41.1 0 40V20C0 18.9 0.9 18 2 18H18V2Z" fill="#006b76"/>
+  <line x1="30" y1="10" x2="30" y2="52" stroke="white" stroke-width="2.4" stroke-linecap="round"/>
+  <path d="M22 14C24.5 11 27.5 12.5 30 14C32.5 12.5 35.5 11 38 14" stroke="white" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+  <circle cx="30" cy="10" r="2.5" fill="white"/>
+  <path d="M24 20C24 17 28 17 30 19C32 21 30 25 27 26C24 27 23 30 25 33C27 35 30 35 30 38C30 41 27 43 25 45" stroke="white" stroke-width="1.7" fill="none" stroke-linecap="round"/>
+  <path d="M36 20C36 17 32 17 30 19C28 21 30 25 33 26C36 27 37 30 35 33C33 35 30 35 30 38C30 41 33 43 35 45" stroke="white" stroke-width="1.7" fill="none" stroke-linecap="round"/>
+</svg>`;
+
+const billMicroscopeIcon = `<svg class="ref-microscope-svg" viewBox="0 0 56 56" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect x="22" y="4" width="12" height="7" rx="2" fill="white"/>
+  <rect x="24" y="11" width="8" height="16" rx="2" fill="white"/>
+  <path d="M24 27L18 36" stroke="white" stroke-width="3" stroke-linecap="round"/>
+  <ellipse cx="16" cy="38" rx="5" ry="3" fill="white"/>
+  <rect x="14" y="41" width="24" height="4" rx="2" fill="white"/>
+  <path d="M32 27V42" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
+  <rect x="10" y="48" width="34" height="5" rx="2.5" fill="white"/>
+  <line x1="11" y1="41" x2="45" y2="41" stroke="white" stroke-width="1.5" opacity="0.4"/>
+</svg>`;
+
+const billHospitalWaves = `<svg class="ref-waves-svg" viewBox="0 0 100 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <path d="M0 6C25 0 25 12 50 6C75 0 75 12 100 6" stroke="#006b76" stroke-width="2" stroke-linecap="round"/>
+  <path d="M0 10C25 4 25 16 50 10C75 4 75 16 100 10" stroke="#2dd4bf" stroke-width="1.2" stroke-linecap="round" opacity="0.7"/>
+</svg>`;
+
+const billWatermarkSvg = `<div class="report-watermark" aria-hidden="true">
+  <svg class="watermark-microscope" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="100" cy="100" r="92" stroke="#006b76" stroke-width="3" opacity="0.3"/>
+    <circle cx="100" cy="100" r="82" stroke="#006b76" stroke-width="1.5" stroke-dasharray="4 4" opacity="0.2"/>
+    <path d="M85 55L105 75M78 62L98 82" stroke="#006b76" stroke-width="5" stroke-linecap="round" opacity="0.3"/>
+    <rect x="66" y="66" width="22" height="45" rx="4" transform="rotate(-45 66 66)" fill="#006b76" opacity="0.25"/>
+    <path d="M58 106C58 126 74 138 98 138H125" stroke="#006b76" stroke-width="7" stroke-linecap="round" opacity="0.3"/>
+    <rect x="52" y="132" width="65" height="10" rx="3" fill="#006b76" opacity="0.3"/>
+    <rect x="46" y="150" width="76" height="12" rx="4" fill="#006b76" opacity="0.3"/>
+    <line x1="84" y1="142" x2="84" y2="150" stroke="#006b76" stroke-width="6" opacity="0.3"/>
+  </svg>
+  <div class="watermark-label">Anand Laboratory</div>
+  <svg class="watermark-wave" viewBox="0 0 160 14" fill="none"><path d="M0 7C40 0 40 14 80 7C120 0 120 14 160 7" stroke="#006b76" stroke-width="2.5" opacity="0.25"/></svg>
+</div>`;
+
+const billMolecularLatticeSvg = `<svg class="molecular-lattice" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <path d="M30 10L50 22V46L30 58L10 46V22L30 10Z" stroke="#006b76" stroke-width="1" opacity="0.12"/>
+  <path d="M70 10L90 22V46L70 58L50 46V22L70 10Z" stroke="#006b76" stroke-width="1" opacity="0.12"/>
+  <path d="M50 46L70 58V82L50 94L30 82V58L50 46Z" stroke="#006b76" stroke-width="1" opacity="0.12"/>
+  <circle cx="30" cy="10" r="2.5" fill="#006b76" opacity="0.18"/>
+  <circle cx="50" cy="22" r="2.5" fill="#006b76" opacity="0.18"/>
+  <circle cx="70" cy="10" r="2.5" fill="#006b76" opacity="0.18"/>
+  <circle cx="90" cy="22" r="2.5" fill="#006b76" opacity="0.18"/>
+  <circle cx="50" cy="46" r="2.5" fill="#006b76" opacity="0.18"/>
+  <circle cx="30" cy="58" r="2.5" fill="#006b76" opacity="0.18"/>
+  <circle cx="70" cy="58" r="2.5" fill="#006b76" opacity="0.18"/>
+  <circle cx="50" cy="94" r="2.5" fill="#006b76" opacity="0.18"/>
+</svg>`;
+
+function formatBillTimestamp(dateString) {
+  if (!dateString) return 'Not recorded';
+  const d = new Date(dateString);
+  if (!Number.isFinite(d.getTime())) return 'Not recorded';
+  const parts = new Intl.DateTimeFormat('en-IN', {
+    day: '2-digit', month: 'short', year: 'numeric',
+    hour: '2-digit', minute: '2-digit', second: '2-digit',
+    hour12: true, timeZone: 'Asia/Kolkata'
+  }).formatToParts(d);
+  const map = Object.fromEntries(parts.map(p => [p.type, p.value]));
+  return `${map.day}-${map.month}-${map.year} ${map.hour}:${map.minute}:${map.second} ${(map.dayPeriod || '').toUpperCase()}`.trim();
+}
+
+function formatPatientTitle(patients) {
+  if (!patients) return '—';
+  const name = String(patients.full_name || '').trim();
+  if (/^(Mr|Mrs|Ms|Miss|Dr|Master)\.?\s/i.test(name)) return name;
+  const prefix = patients.title ? `${patients.title}. ` : (patients.sex === 'Female' ? 'Mrs. ' : 'Mr. ');
+  return prefix + name;
+}
+
+function generateReceiptHTML(bill, lab, format = 'a4', fullPage = false) {
+  const inWords = numberToWords(bill.paid_amount || bill.total);
+  const labName = lab.lab_name || 'Anand Laboratory';
+  const labAddr = lab.address || 'Silk Filature Quarters Road, Ward No. 14, Sidlaghatta – 562105, Chikkaballapur (Dist.)';
+  const labPhone = lab.phone || '6361303305';
+  const labEmail = 'anandhealthcaresdl@gmail.com';
+  const patientDisplayName = formatPatientTitle(bill.patients);
+  const billTimeStr = formatBillTimestamp(bill.created_at);
 
   if (format === 'thermal') {
+    const itemsRows = (bill.bill_items || []).map(item => `
+      <tr>
+        <td>${escapeHTML(item.test_name)}</td>
+        <td class="text-right">${formatCurrency(item.price)}</td>
+      </tr>
+    `).join('');
+
     return `
       <!DOCTYPE html>
       <html>
@@ -2101,24 +2216,23 @@ function generateReceiptHTML(bill, lab, format = 'thermal', fullPage = false) {
           table { width: 100%; border-collapse: collapse; font-size: 11px; }
           th, td { padding: 2px 0; }
           .words { font-size: 10px; font-style: italic; margin-top: 4px; }
-          .signature-box { margin-top: 18px; text-align: right; }
+          .signature-box { margin-top: 16px; text-align: right; }
         </style>
       </head>
       <body>
-        <div class="center" style="margin-bottom: 6px;">
-          <img src="./assets/logo.png" alt="OPTI - X LABS" style="max-height: 38px; max-width: 160px; object-fit: contain;" />
-        </div>
-        <div class="center bold" style="font-size: 13px;">${escapeHTML(labName)}</div>
-        <div class="center" style="font-size: 10px;">${escapeHTML(labAddr)}</div>
-        <div class="center" style="font-size: 10px;">Phone: ${escapeHTML(labPhone)} | Reg: ${escapeHTML(labReg)}</div>
+        <div class="center bold" style="font-size: 13px; text-transform: uppercase;">DR. ANAND HOSPITAL</div>
+        <div class="center bold" style="font-size: 14px; color: #006b76;">${escapeHTML(labName)}</div>
+        <div class="center" style="font-size: 9px;">${escapeHTML(labAddr)}</div>
+        <div class="center" style="font-size: 9px;">Phone: ${escapeHTML(labPhone)} | ${escapeHTML(labEmail)}</div>
+        <div class="center" style="margin: 4px 0;">${generateBillBarcode(bill.bill_no)}</div>
         <div class="double-divider"></div>
         <div class="center bold">DIAGNOSTIC PAYMENT RECEIPT</div>
         <div class="divider"></div>
-        <div>Receipt No: <strong>${escapeHTML(bill.bill_no)}</strong></div>
-        <div>Date &amp; Time: ${formatDate(bill.created_at)}</div>
-        <div>Patient: <strong>${escapeHTML(bill.patients?.title)} ${escapeHTML(bill.patients?.full_name)}</strong></div>
-        <div>ID / Sex / Age: ${bill.patients?.patient_no} / ${bill.patients?.sex} / ${bill.patients?.age_value}${bill.patients?.age_unit}</div>
-        <div>Ref Doctor: ${escapeHTML(bill.doctors?.name || 'Self / Walk-in')}</div>
+        <div>Bill / Receipt: <strong>${escapeHTML(bill.bill_no)}</strong></div>
+        <div>Date &amp; Time: ${billTimeStr}</div>
+        <div>Patient: <strong>${escapeHTML(patientDisplayName)}</strong></div>
+        <div>ID / Sex / Age: ${bill.patients?.patient_no || '—'} / ${bill.patients?.sex || '—'} / ${bill.patients?.age_value || ''}${bill.patients?.age_unit || 'Y'}</div>
+        <div>Ref Doctor: ${escapeHTML(bill.doctors?.name || 'SELF')}</div>
         <div class="divider"></div>
         <table>
           <thead>
@@ -2138,110 +2252,201 @@ function generateReceiptHTML(bill, lab, format = 'thermal', fullPage = false) {
         <div class="divider"></div>
         <div class="words">${escapeHTML(inWords)}</div>
         <div class="signature-box">
-          <p>Authorized Signatory</p>
+          <p><strong>Lab Technician</strong><br><small>Technician Sign</small></p>
         </div>
         <div class="center" style="margin-top: 10px; font-size: 9px;">Thank you for choosing ${escapeHTML(labName)}</div>
       </body>
       </html>`;
-  } else {
-    // A4 Format
-    return `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <meta charset="utf-8">
-        <style>
-          @page { size: A4; margin: 15mm; }
-          body { font-family: 'DM Sans', Arial, sans-serif; font-size: 13px; color: #1e293b; line-height: 1.5; }
-          .header { display: flex; justify-content: space-between; border-bottom: 2px solid #0d9488; padding-bottom: 12px; }
-          .lab-name { font-size: 20px; font-weight: bold; color: #0f766e; }
-          .text-right { text-align: right; }
-          .patient-box { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 12px; margin: 15px 0; display: flex; justify-content: space-between; }
-          table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-          th { background: #f1f5f9; padding: 8px; text-align: left; border-bottom: 1px solid #cbd5e1; }
-          td { padding: 8px; border-bottom: 1px solid #e2e8f0; }
-          .summary-table { width: 45%; margin-left: auto; margin-top: 15px; }
-          .summary-table td { padding: 4px 8px; }
-          .total-row { font-weight: bold; font-size: 14px; border-top: 1px solid #000; border-bottom: 1px solid #000; }
-          .footer { margin-top: 40px; display: flex; justify-content: space-between; align-items: flex-end; }
-        </style>
-      </head>
-      <body>
-        <div class="header">
-          <div style="display: flex; align-items: center; gap: 16px;">
-            <img src="./assets/logo.png" alt="OPTI - X LABS" style="max-height: 54px; max-width: 170px; object-fit: contain;" />
-            <div>
-              <div class="lab-name">${escapeHTML(labName)}</div>
-              <div>${escapeHTML(labAddr)}</div>
-              <div>Phone: ${escapeHTML(labPhone)} | Email: ${escapeHTML(lab.email || '')}</div>
-            </div>
-          </div>
-          <div class="text-right">
-            <h2>TAX INVOICE / RECEIPT</h2>
-            <div><strong>Bill No:</strong> ${escapeHTML(bill.bill_no)}</div>
-            <div><strong>Date:</strong> ${formatDate(bill.created_at)}</div>
-          </div>
-        </div>
-
-        <div class="patient-box">
-          <div>
-            <div><strong>Patient Name:</strong> ${escapeHTML(bill.patients?.title)} ${escapeHTML(bill.patients?.full_name)}</div>
-            <div><strong>Patient ID:</strong> ${bill.patients?.patient_no}</div>
-            <div><strong>Age / Sex:</strong> ${bill.patients?.age_value} ${bill.patients?.age_unit} / ${bill.patients?.sex}</div>
-          </div>
-          <div>
-            <div><strong>Mobile:</strong> ${escapeHTML(bill.patients?.mobile || '—')}</div>
-            <div><strong>Referred By:</strong> ${escapeHTML(bill.doctors?.name || 'Self / Walk-in')}</div>
-            <div><strong>Payment Status:</strong> ${bill.payment_status}</div>
-          </div>
-        </div>
-
-        <table>
-          <thead>
-            <tr>
-              <th style="width: 10%">Sl.</th>
-              <th>Test Panel Description</th>
-              <th>Specimen</th>
-              <th class="text-right" style="width: 20%">Amount (₹)</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${bill.bill_items.map((item, idx) => `
-              <tr>
-                <td>${idx + 1}</td>
-                <td><strong>${escapeHTML(item.test_name)}</strong></td>
-                <td>${escapeHTML(item.test_sample_type)}</td>
-                <td class="text-right">${formatCurrency(item.price)}</td>
-              </tr>
-            `).join('')}
-          </tbody>
-        </table>
-
-        <table class="summary-table">
-          <tr><td>Subtotal:</td><td class="text-right">${formatCurrency(bill.subtotal)}</td></tr>
-          ${bill.discount > 0 ? `<tr><td>Discount:</td><td class="text-right">-${formatCurrency(bill.discount)}</td></tr>` : ''}
-          <tr class="total-row"><td>Total Amount:</td><td class="text-right">${formatCurrency(bill.total)}</td></tr>
-          <tr><td>Amount Paid:</td><td class="text-right">${formatCurrency(bill.paid_amount)}</td></tr>
-          <tr style="font-weight: bold;"><td>Balance Due:</td><td class="text-right">${formatCurrency(bill.balance)}</td></tr>
-        </table>
-
-        <div style="margin-top: 10px; font-weight: 500;">
-          Amount in Words: <em>${escapeHTML(inWords)}</em>
-        </div>
-
-        <div class="footer">
-          <div>
-            <small>This is a computer generated diagnostic receipt.</small>
-          </div>
-          <div class="text-right">
-            <p>For ${escapeHTML(labName)}</p>
-            <br><br>
-            <p><strong>Authorized Signatory</strong></p>
-          </div>
-        </div>
-      </body>
-      </html>`;
   }
+
+  // A4 Format with EXACT same letterhead and layout as diagnostic report
+  const billLetterhead = `
+    <header class="report-brand" id="ref-letterhead-header">
+      <div class="ref-brand-left">
+        <div class="ref-caduceus-icon">${billCaduceusIcon}</div>
+        <div class="ref-hospital-text">
+          <div class="ref-hospital-title">DR. ANAND</div>
+          <div class="ref-hospital-sub">HOSPITAL</div>
+          <div class="ref-hospital-wave-box">${billHospitalWaves}</div>
+        </div>
+      </div>
+      <div class="ref-brand-sep"></div>
+      <div class="ref-brand-center">
+        <h2 class="ref-lab-name">
+          <span class="ref-name-word1">Anand</span> <span class="ref-name-word2">Laboratory</span>
+        </h2>
+        <p class="ref-lab-address">${escapeHTML(labAddr)}</p>
+      </div>
+      <div class="ref-header-swoosh-corner">
+        <div class="ref-microscope-emblem">${billMicroscopeIcon}</div>
+      </div>
+    </header>`;
+
+  const billPatientDetails = `
+    <section class="report-patient-block" aria-label="Patient and billing details">
+      <div class="ref-patient-layout">
+        <div class="ref-patient-col ref-pat-left">
+          <div class="ref-pat-row"><span class="ref-field-label">Name</span><span class="ref-field-colon">:</span><span class="ref-field-val"><strong class="ref-pat-fullname">${escapeHTML(patientDisplayName)}</strong></span></div>
+          <div class="ref-pat-row"><span class="ref-field-label">Age/Gender</span><span class="ref-field-colon">:</span><span class="ref-field-val">${bill.patients?.age_value || '—'} ${bill.patients?.age_unit || 'Y'} / ${bill.patients?.sex || '—'}</span></div>
+          <div class="ref-pat-row"><span class="ref-field-label">Patient No</span><span class="ref-field-colon">:</span><span class="ref-field-val">${escapeHTML(bill.patients?.patient_no || '—')}</span></div>
+          <div class="ref-pat-row"><span class="ref-field-label">Refered By</span><span class="ref-field-colon">:</span><span class="ref-field-val">${escapeHTML(bill.doctors?.name || 'SELF')}</span></div>
+        </div>
+        <div class="ref-patient-col ref-pat-right">
+          <div class="ref-barcode-container">
+            ${generateBillBarcode(bill.bill_no)}
+          </div>
+          <div class="ref-pat-row"><span class="ref-field-label">Bill No</span><span class="ref-field-colon">:</span><span class="ref-field-val"><strong>${escapeHTML(bill.bill_no)}</strong></span></div>
+          <div class="ref-pat-row"><span class="ref-field-label">Billing Date</span><span class="ref-field-colon">:</span><span class="ref-field-val">${billTimeStr}</span></div>
+          <div class="ref-pat-row"><span class="ref-field-label">Payment Status</span><span class="ref-field-colon">:</span><span class="ref-field-val"><strong style="color: ${bill.payment_status === 'Paid' ? '#0d9488' : bill.payment_status === 'Partial' ? '#d97706' : '#dc2626'}">${escapeHTML(bill.payment_status)}</strong></span></div>
+        </div>
+      </div>
+    </section>`;
+
+  const billItemsTable = `
+    <table class="report-results-table bill-items-table">
+      <colgroup>
+        <col style="width: 8%">
+        <col style="width: 52%">
+        <col style="width: 20%">
+        <col style="width: 20%">
+      </colgroup>
+      <thead>
+        <tr>
+          <th>SL.</th>
+          <th>TEST DESCRIPTION</th>
+          <th>SPECIMEN</th>
+          <th style="text-align: right;">AMOUNT (₹)</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${(bill.bill_items || []).map((item, idx) => `
+          <tr class="report-result-row">
+            <td>${idx + 1}</td>
+            <td><strong>${escapeHTML(item.test_name)}</strong></td>
+            <td>${escapeHTML(item.test_sample_type || 'Blood')}</td>
+            <td class="report-result-value" style="text-align: right;">${formatCurrency(item.price)}</td>
+          </tr>
+        `).join('')}
+      </tbody>
+    </table>`;
+
+  const billSummary = `
+    <div class="bill-summary-container">
+      <div class="bill-words-box">
+        <div class="bill-words-label">Amount in Words:</div>
+        <div class="bill-words-text">${escapeHTML(inWords)}</div>
+        <div class="bill-terms-note">
+          <p>• Computer-generated diagnostic tax invoice &amp; payment receipt.</p>
+          <p>• Reports will be issued only against presentation of this bill.</p>
+        </div>
+      </div>
+      <table class="bill-calc-table">
+        <tr>
+          <td>Subtotal:</td>
+          <td class="text-right">${formatCurrency(bill.subtotal)}</td>
+        </tr>
+        ${bill.discount > 0 ? `
+        <tr style="color: #006b76;">
+          <td>Discount:</td>
+          <td class="text-right">-${formatCurrency(bill.discount)}</td>
+        </tr>
+        ` : ''}
+        <tr class="bill-total-row">
+          <td><strong>Total Amount:</strong></td>
+          <td class="text-right"><strong>${formatCurrency(bill.total)}</strong></td>
+        </tr>
+        <tr style="color: #006b76; font-weight: 700;">
+          <td>Amount Paid:</td>
+          <td class="text-right">${formatCurrency(bill.paid_amount)}</td>
+        </tr>
+        ${bill.balance > 0 ? `
+        <tr style="color: #b91c1c; font-weight: 800;">
+          <td>Balance Due:</td>
+          <td class="text-right">${formatCurrency(bill.balance)}</td>
+        </tr>
+        ` : `
+        <tr style="color: #15803d; font-weight: 700;">
+          <td>Balance Due:</td>
+          <td class="text-right">₹0.00 (Cleared)</td>
+        </tr>
+        `}
+        <tr>
+          <td>Payment Mode:</td>
+          <td class="text-right">${escapeHTML(bill.payments?.[0]?.mode || 'Cash')}</td>
+        </tr>
+      </table>
+    </div>`;
+
+  const billSignatures = `
+    <section class="report-reviewers" id="ref-signatures-block">
+      <div class="report-reviewer" style="font-size: 8.5pt; color: #475569;">
+        <div>Patient / Attendant Sign: __________________</div>
+      </div>
+      <div class="report-reviewer report-reviewer-authorizer ref-tech-block">
+        <div class="ref-tech-sign-box">
+          <div class="ref-tech-teal-bar"></div>
+          <div class="ref-tech-labels">
+            <strong class="ref-tech-title">Lab Technician</strong>
+            <span class="ref-tech-sub">Authorized Billing Sign</span>
+          </div>
+        </div>
+      </div>
+    </section>`;
+
+  const billBottomRibbon = `
+    <div class="ref-bottom-ribbon">
+      <div class="ref-ribbon-content">
+        <span class="ref-ribbon-title">Anand Laboratory &amp; General Stores</span>
+        <span class="ref-ribbon-email">
+          <svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4-8 5-8-5V6l8 5 8-5v2z"/></svg>
+          ${escapeHTML(labEmail)}
+        </span>
+        <span class="ref-ribbon-divider">|</span>
+        <span class="ref-ribbon-phone">
+          <svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor"><path d="M6.62 10.79a15.05 15.05 0 006.59 6.59l2.2-2.2a1 1 0 011.02-.24 11.41 11.41 0 003.58.57 1 1 0 011 1V20a1 1 0 01-1 1A17 17 0 013 4a1 1 0 011-1h3.5a1 1 0 011 1 11.41 11.41 0 00.57 3.58 1 1 0 01-.24 1.02l-2.2 2.2z"/></svg>
+          ${escapeHTML(labPhone)}
+        </span>
+      </div>
+    </div>`;
+
+  const billBody = `
+    <div class="report report-document">
+      <article class="report-page" aria-label="Diagnostic Bill &amp; Tax Invoice">
+        ${billWatermarkSvg}
+        <div class="molecular-lattice-tr" aria-hidden="true">${billMolecularLatticeSvg}</div>
+        <div class="molecular-lattice-bl" aria-hidden="true">${billMolecularLatticeSvg}</div>
+        ${billLetterhead}
+        ${billPatientDetails}
+        <div class="report-document-title">
+          <span>DIAGNOSTIC BILL &amp; TAX INVOICE</span>
+          <b>OFFICIAL PAYMENT RECEIPT</b>
+        </div>
+        ${billItemsTable}
+        ${billSummary}
+        <div class="report-end-marker">****End Of Bill / Receipt****</div>
+        ${billSignatures}
+        ${billBottomRibbon}
+      </article>
+    </div>`;
+
+  if (!fullPage) return billBody;
+
+  return `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <title>Bill - ${escapeHTML(bill.bill_no)}</title>
+      <link rel="stylesheet" href="./dist/report.css">
+      <style>
+        @page { size: A4; margin: 10mm; }
+        body { margin: 0; padding: 0; background: #ffffff; }
+      </style>
+    </head>
+    <body>
+      ${billBody}
+    </body>
+    </html>`;
 }
 
 // -------------------------------------------------------------
@@ -2449,28 +2654,6 @@ function renderLabProfileSettings(container) {
 
           <div class="form-row">
             <div class="form-group col-6">
-              <label>Consultant Pathologist Name</label>
-              <input type="text" id="lab-pathologist" value="${escapeHTML(lab.pathologist_name || '')}" />
-            </div>
-            <div class="form-group col-6">
-              <label>Pathologist Qualifications</label>
-              <input type="text" id="lab-pathologist-deg" value="${escapeHTML(lab.pathologist_qualification || '')}" />
-            </div>
-          </div>
-
-          <div class="form-row">
-            <div class="form-group col-6">
-              <label>Laboratory In-Charge / Technologist</label>
-              <input type="text" id="lab-incharge" value="${escapeHTML(lab.lab_incharge || '')}" />
-            </div>
-            <div class="form-group col-6">
-              <label>In-Charge Qualifications</label>
-              <input type="text" id="lab-incharge-deg" value="${escapeHTML(lab.lab_incharge_qualification || '')}" />
-            </div>
-          </div>
-
-          <div class="form-row">
-            <div class="form-group col-6">
               <label>Default Letterhead Theme</label>
               <select id="lab-template">
                 ${REPORT_TEMPLATES.map(t =>
@@ -2507,10 +2690,6 @@ function renderLabProfileSettings(container) {
       phone: document.getElementById('lab-phone').value.trim(),
       email: document.getElementById('lab-email').value.trim(),
       registration_no: document.getElementById('lab-reg').value.trim(),
-      pathologist_name: document.getElementById('lab-pathologist').value.trim(),
-      pathologist_qualification: document.getElementById('lab-pathologist-deg').value.trim(),
-      lab_incharge: document.getElementById('lab-incharge').value.trim(),
-      lab_incharge_qualification: document.getElementById('lab-incharge-deg').value.trim(),
       letterhead_template: document.getElementById('lab-template').value,
       working_hours: document.getElementById('lab-hours').value.trim(),
       report_footer: document.getElementById('lab-footer').value.trim(),
