@@ -217,5 +217,21 @@ test('Labflow Desktop UI: Login, Billing, Reports, Printing and Settings validat
   await tick(50);
   assert(w.document.querySelector('#tab-set-profile'), 'Settings tabs should render');
 
-  console.log('PASS: All Labflow desktop flows (Login, Billing, Reports, Settings, Printing) verified.');
+  // 8. Test Support & Helpdesk Section
+  const supportTabBtn = w.document.querySelector('#tab-set-support');
+  assert(supportTabBtn, 'Support tab should exist in Settings');
+  supportTabBtn.click();
+  await tick(50);
+  assert(w.document.body.textContent.includes('8123649448'), 'Support page should display toll-free 8123649448');
+  assert(w.document.body.textContent.includes('hello@opti-x.in'), 'Support page should display support email hello@opti-x.in');
+
+  // 9. Test Privacy Policy Section
+  const privacyTabBtn = w.document.querySelector('#tab-set-privacy');
+  assert(privacyTabBtn, 'Privacy tab should exist in Settings');
+  privacyTabBtn.click();
+  await tick(50);
+  assert(w.document.body.textContent.includes('DPDPA 2023') || w.document.body.textContent.includes('DPDPA'), 'Privacy policy should mention DPDPA compliance');
+  assert(w.document.body.textContent.includes('DISHA'), 'Privacy policy should mention DISHA compliance');
+
+  console.log('PASS: All Labflow desktop flows (Login, Billing, Reports, Settings, Support, Privacy, Printing) verified.');
 });

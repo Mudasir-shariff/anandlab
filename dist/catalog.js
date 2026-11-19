@@ -78,51 +78,51 @@ export const PARAMETERS = {
   pregnancy_hcg: { name: 'Urine hCG Pregnancy Test', unit: '', min: 0, max: 1, reference: 'Negative' },
 
   // Glucose Tests
-  glucose_fasting: { name: 'Fasting Blood Sugar (FBS)', unit: 'mg/dL', min: 70, max: 99, reference: '70 – 99', criticalMin: 40, criticalMax: 500 },
-  glucose_postprandial: { name: 'Post Prandial Blood Sugar (PPBS)', unit: 'mg/dL', min: 70, max: 139, reference: '< 140', criticalMin: 40, criticalMax: 500 },
+  glucose_fasting: { name: 'Fasting Blood Sugar (FBS)', unit: 'mg/dL', min: 70, max: 99, reference: '70 – 99 mg/dL (Normal: 70–99, Impaired: 100–125, Diabetic: ≥126)', criticalMin: 40, criticalMax: 500 },
+  glucose_postprandial: { name: 'Post Prandial Blood Sugar (PPBS)', unit: 'mg/dL', min: 70, max: 139, reference: '< 140 mg/dL (Normal: <140, Impaired: 140–199, Diabetic: ≥200)', criticalMin: 40, criticalMax: 500 },
 
   // Rheumatoid & Autoimmune
-  ra_factor: { name: 'Rheumatoid Factor (RA / RF)', unit: 'IU/mL', min: 0, max: 20, reference: '< 20.0' },
-  aslo_titer: { name: 'ASLO / ASO Titer', unit: 'IU/mL', min: 0, max: 200, reference: '< 200' },
+  ra_factor: { name: 'Rheumatoid Factor (RA / RF)', unit: 'IU/mL', min: 0, max: 20, reference: '< 20.0 IU/mL (Negative)' },
+  aslo_titer: { name: 'ASLO / ASO Titer', unit: 'IU/mL', min: 0, max: 200, reference: '< 200 IU/mL (Negative)' },
 
   // HbA1c
-  hba1c: { name: 'Glycated Hemoglobin (HbA1c)', unit: '%', min: 4.0, max: 5.6, reference: '< 5.7 Normal, 5.7-6.4 Prediabetes' },
-  eag: { name: 'Estimated Average Glucose (eAG)', unit: 'mg/dL', min: 70, max: 120, reference: '70 – 120' },
+  hba1c: { name: 'Glycated Hemoglobin (HbA1c)', unit: '%', min: 4.0, max: 5.6, reference: '< 5.7% (Normal: <5.7%, Prediabetes: 5.7–6.4%, Diabetes: ≥6.5%)' },
+  eag: { name: 'Estimated Average Glucose (eAG)', unit: 'mg/dL', min: 70, max: 120, reference: '70 – 120 mg/dL' },
 
   // Liver Function Test
-  bilirubin_total: { name: 'Bilirubin, Total', unit: 'mg/dL', min: 0.2, max: 1.2, reference: '0.2 – 1.2', criticalMax: 15.0 },
-  bilirubin_direct: { name: 'Bilirubin, Direct', unit: 'mg/dL', min: 0, max: 0.3, reference: '0.0 – 0.3' },
-  bilirubin_indirect: { name: 'Bilirubin, Indirect', unit: 'mg/dL', min: 0.1, max: 0.8, reference: '0.1 – 0.8' },
-  alt: { name: 'SGPT / ALT', unit: 'U/L', min: 7, max: 56, reference: '7 – 56', criticalMax: 1000 },
-  ast: { name: 'SGOT / AST', unit: 'U/L', min: 10, max: 40, reference: '10 – 40', criticalMax: 1000 },
-  alp: { name: 'Alkaline Phosphatase (ALP)', unit: 'U/L', min: 44, max: 147, reference: '44 – 147' },
-  total_protein: { name: 'Total Protein', unit: 'g/dL', min: 6.0, max: 8.3, reference: '6.0 – 8.3' },
-  albumin: { name: 'Albumin', unit: 'g/dL', min: 3.5, max: 5.0, reference: '3.5 – 5.0', criticalMin: 1.5 },
-  globulin: { name: 'Globulin', unit: 'g/dL', min: 2.0, max: 3.5, reference: '2.0 – 3.5' },
+  bilirubin_total: { name: 'Bilirubin, Total', unit: 'mg/dL', min: 0.2, max: 1.2, reference: '0.2 – 1.2 mg/dL', criticalMax: 15.0 },
+  bilirubin_direct: { name: 'Bilirubin, Direct', unit: 'mg/dL', min: 0, max: 0.3, reference: '0.0 – 0.3 mg/dL' },
+  bilirubin_indirect: { name: 'Bilirubin, Indirect', unit: 'mg/dL', min: 0.1, max: 0.8, reference: '0.1 – 0.8 mg/dL' },
+  alt: { name: 'SGPT / ALT', unit: 'U/L', min: 7, max: 56, reference: '7 – 56 U/L', criticalMax: 1000 },
+  ast: { name: 'SGOT / AST', unit: 'U/L', min: 10, max: 40, reference: '10 – 40 U/L', criticalMax: 1000 },
+  alp: { name: 'Alkaline Phosphatase (ALP)', unit: 'U/L', min: 44, max: 147, reference: '44 – 147 U/L' },
+  total_protein: { name: 'Total Protein', unit: 'g/dL', min: 6.0, max: 8.3, reference: '6.0 – 8.3 g/dL' },
+  albumin: { name: 'Albumin', unit: 'g/dL', min: 3.5, max: 5.0, reference: '3.5 – 5.0 g/dL', criticalMin: 1.5 },
+  globulin: { name: 'Globulin', unit: 'g/dL', min: 2.0, max: 3.5, reference: '2.0 – 3.5 g/dL' },
   ag_ratio: { name: 'A:G Ratio', unit: '', min: 1.2, max: 2.2, reference: '1.2 – 2.2' },
 
   // Uric Acid
-  uric_acid: { name: 'Uric Acid', unit: 'mg/dL', min: 2.5, max: 7.0, reference: '3.5 – 7.2 (M), 2.6 – 6.0 (F)' },
+  uric_acid: { name: 'Uric Acid', unit: 'mg/dL', min: 2.5, max: 7.2, reference: '2.5 – 7.2 mg/dL', referenceM: '3.5 – 7.2 mg/dL', referenceF: '2.6 – 6.0 mg/dL' },
 
   // Thyroid Profile
-  t3_total: { name: 'Triiodothyronine (Total T3)', unit: 'ng/dL', min: 80, max: 200, reference: '80 – 200' },
-  t4_total: { name: 'Thyroxine (Total T4)', unit: 'µg/dL', min: 5.1, max: 14.1, reference: '5.1 – 14.1' },
-  tsh: { name: 'Thyroid Stimulating Hormone (TSH)', unit: 'µIU/mL', min: 0.4, max: 4.5, reference: '0.40 – 4.50', criticalMin: 0.01, criticalMax: 100 },
+  t3_total: { name: 'Triiodothyronine (Total T3)', unit: 'ng/dL', min: 80, max: 200, reference: '80 – 200 ng/dL' },
+  t4_total: { name: 'Thyroxine (Total T4)', unit: 'µg/dL', min: 5.1, max: 14.1, reference: '5.1 – 14.1 µg/dL' },
+  tsh: { name: 'Thyroid Stimulating Hormone (TSH)', unit: 'µIU/mL', min: 0.4, max: 4.5, reference: '0.40 – 4.50 µIU/mL', criticalMin: 0.01, criticalMax: 100 },
 
   // Lipid Profile
-  cholesterol_total: { name: 'Total Cholesterol', unit: 'mg/dL', min: 0, max: 200, reference: 'Desirable: < 200' },
-  triglycerides: { name: 'Triglycerides', unit: 'mg/dL', min: 0, max: 150, reference: 'Normal: < 150' },
-  hdl: { name: 'HDL Cholesterol', unit: 'mg/dL', min: 40, max: 100, reference: '> 40 (M), > 50 (F)' },
-  ldl: { name: 'LDL Cholesterol', unit: 'mg/dL', min: 0, max: 100, reference: 'Optimal: < 100' },
-  vldl: { name: 'VLDL Cholesterol', unit: 'mg/dL', min: 5, max: 40, reference: '5 – 40' },
+  cholesterol_total: { name: 'Total Cholesterol', unit: 'mg/dL', min: 0, max: 200, reference: '< 200 mg/dL (Desirable: <200, Borderline: 200–239, High: ≥240)' },
+  triglycerides: { name: 'Triglycerides', unit: 'mg/dL', min: 0, max: 150, reference: '< 150 mg/dL (Normal: <150, Borderline: 150–199, High: 200–499)' },
+  hdl: { name: 'HDL Cholesterol', unit: 'mg/dL', min: 40, max: 100, reference: '> 40 (M), > 50 (F) mg/dL', referenceM: '> 40 mg/dL', referenceF: '> 50 mg/dL' },
+  ldl: { name: 'LDL Cholesterol', unit: 'mg/dL', min: 0, max: 100, reference: '< 100 mg/dL (Optimal: <100, Borderline: 130–159, High: ≥160)' },
+  vldl: { name: 'VLDL Cholesterol', unit: 'mg/dL', min: 5, max: 40, reference: '5 – 40 mg/dL' },
   chol_hdl_ratio: { name: 'Total Chol / HDL Ratio', unit: '', min: 3.3, max: 4.4, reference: '3.3 – 4.4' },
 
   // Renal & Electrolytes
-  urea: { name: 'Blood Urea', unit: 'mg/dL', min: 15, max: 40, reference: '15 – 40', criticalMax: 200 },
-  creatinine: { name: 'Serum Creatinine', unit: 'mg/dL', min: 0.6, max: 1.3, reference: '0.7 – 1.3 (M), 0.6 – 1.1 (F)', criticalMax: 10.0 },
-  sodium: { name: 'Sodium (Na+)', unit: 'mmol/L', min: 136, max: 145, reference: '136 – 145', criticalMin: 120, criticalMax: 160 },
-  potassium: { name: 'Potassium (K+)', unit: 'mmol/L', min: 3.5, max: 5.1, reference: '3.5 – 5.1', criticalMin: 2.5, criticalMax: 6.5 },
-  chloride: { name: 'Chloride (Cl-)', unit: 'mmol/L', min: 98, max: 107, reference: '98 – 107', criticalMin: 80, criticalMax: 120 },
+  urea: { name: 'Blood Urea', unit: 'mg/dL', min: 15, max: 40, reference: '15 – 40 mg/dL', criticalMax: 200 },
+  creatinine: { name: 'Serum Creatinine', unit: 'mg/dL', min: 0.6, max: 1.3, reference: '0.6 – 1.3 mg/dL', referenceM: '0.7 – 1.3 mg/dL', referenceF: '0.6 – 1.1 mg/dL', criticalMax: 10.0 },
+  sodium: { name: 'Sodium (Na+)', unit: 'mmol/L', min: 136, max: 145, reference: '136 – 145 mmol/L', criticalMin: 120, criticalMax: 160 },
+  potassium: { name: 'Potassium (K+)', unit: 'mmol/L', min: 3.5, max: 5.1, reference: '3.5 – 5.1 mmol/L', criticalMin: 2.5, criticalMax: 6.5 },
+  chloride: { name: 'Chloride (Cl-)', unit: 'mmol/L', min: 98, max: 107, reference: '98 – 107 mmol/L', criticalMin: 80, criticalMax: 120 },
 
   // Endocrinology / Reproductive Hormones
   fsh: { name: 'Follicle Stimulating Hormone (FSH)', unit: 'mIU/mL', min: 1.5, max: 12.4, reference: '1.5 – 12.4 (M), 3.5 – 12.5 (F)' },

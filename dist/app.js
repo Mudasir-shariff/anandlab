@@ -365,63 +365,66 @@ function renderLogin(errorMessage = '') {
 
   document.getElementById('app').innerHTML = `
     <div class="login-wrapper login-split-page">
-      <!-- Left Hero / Brand Showcase with Multi-Layer Gradients -->
+      <!-- Left Clinical Identity & Diagnostic Hub -->
       <div class="login-brand-side">
-        <div class="brand-ambient-glow brand-glow-1"></div>
-        <div class="brand-ambient-glow brand-glow-2"></div>
-
         <div class="brand-side-content">
-          <div class="brand-pill-badge">
-            ${uiIcon('shield-check', 14)}
-            <span>Clinical Laboratory LIS &bull; v2.0 Enterprise</span>
+          <div class="clinical-hospital-badge">
+            <span class="cross-icon-dot"></span>
+            <span>DR. ANAND HOSPITAL &bull; ANAND LABORATORY</span>
           </div>
 
-          <div class="brand-logo-card">
-            <img src="./assets/logo.png" alt="OPTI - X LABS" class="login-logo-img" />
-          </div>
-
-          <div class="brand-heading-group">
+          <div class="brand-hero-block">
+            <div class="brand-logo-pill">
+              <img src="./assets/logo.png" alt="OPTI - X LABS" class="login-logo-img" />
+            </div>
             <h1>Opti-X Labs</h1>
-            <p class="brand-subtitle">Anand Diagnostic Laboratory Management &amp; Reporting</p>
+            <p class="brand-subtitle">Clinical Laboratory Information &amp; Diagnostic Reporting System</p>
           </div>
 
-          <div class="brand-feature-list">
-            <div class="brand-feature-item">
-              <div class="brand-feature-icon">${uiIcon('credit-card', 18)}</div>
-              <div class="brand-feature-text">
-                <span class="feat-title">Diagnostic Billing &amp; Receipts</span>
-                <span class="feat-desc">Rapid billing, thermal receipts, payments &amp; ledger</span>
+          <div class="clinical-highlights-list">
+            <div class="clinical-highlight-item">
+              <div class="hl-icon">${uiIcon('credit-card', 16)}</div>
+              <div class="hl-content">
+                <strong>Diagnostic Billing &amp; Thermal Receipts</strong>
+                <span>Instant patient intake, discount handling, thermal POS receipts &amp; payment ledger</span>
               </div>
             </div>
 
-            <div class="brand-feature-item">
-              <div class="brand-feature-icon">${uiIcon('flask', 18)}</div>
-              <div class="brand-feature-text">
-                <span class="feat-title">38 Clinical Test Panels</span>
-                <span class="feat-desc">CBC, Biochemistry, Hormones, Serology &amp; Profiles</span>
+            <div class="clinical-highlight-item">
+              <div class="hl-icon">${uiIcon('flask', 16)}</div>
+              <div class="hl-content">
+                <strong>38 Standard Pathology &amp; Biochemistry Panels</strong>
+                <span>CBC, Biochemistry, Hormones, Serology, Electrolytes, Thyroid &amp; Lipid Profiles</span>
               </div>
             </div>
 
-            <div class="brand-feature-item">
-              <div class="brand-feature-icon">${uiIcon('printer', 18)}</div>
-              <div class="brand-feature-text">
-                <span class="feat-title">Multi-Template Print Engine</span>
-                <span class="feat-desc">Instant PDF export, barcoded letterheads &amp; direct printing</span>
+            <div class="clinical-highlight-item">
+              <div class="hl-icon">${uiIcon('printer', 16)}</div>
+              <div class="hl-content">
+                <strong>Anand Laboratory Letterhead Print Engine</strong>
+                <span>A4 hospital letterhead with Dr. Anand Hospital branding, watermarks &amp; direct print</span>
               </div>
             </div>
 
-            <div class="brand-feature-item">
-              <div class="brand-feature-icon">${uiIcon('database', 18)}</div>
-              <div class="brand-feature-text">
-                <span class="feat-title">PostgreSQL Cloud Persistence</span>
-                <span class="feat-desc">Real-time Supabase sync with secure local SafeStorage</span>
+            <div class="clinical-highlight-item">
+              <div class="hl-icon">${uiIcon('database', 16)}</div>
+              <div class="hl-content">
+                <strong>Realtime PostgreSQL Cloud Sync</strong>
+                <span>Continuous cloud database synchronization backed by local SafeStorage encryption</span>
               </div>
             </div>
           </div>
 
-          <div class="brand-footer-status">
-            ${uiIcon('check-circle', 14)}
-            <span>System Online &bull; Cloud Sync Active</span>
+          <div class="clinical-support-card">
+            <div class="support-card-header">
+              ${uiIcon('phone', 14)}
+              <span>Laboratory Helpdesk &amp; Diagnostic Support</span>
+            </div>
+            <div class="support-card-body">
+              <div>Toll-Free: <strong>8123649448</strong></div>
+              <div>Email: <strong>hello@opti-x.in</strong></div>
+              <div>Direct Lab Line: <strong>6361303305</strong></div>
+            </div>
           </div>
         </div>
       </div>
@@ -429,19 +432,13 @@ function renderLogin(errorMessage = '') {
       <!-- Right Staff Authentication Side -->
       <div class="login-form-side">
         <div class="login-card-inner">
-          <div class="login-mobile-logo">
-            <div class="mobile-logo-card">
-              <img src="./assets/logo.png" alt="OPTI - X LABS" class="login-logo-img" />
-            </div>
-          </div>
-
           <div class="auth-header">
             <div class="auth-tag">
-              ${uiIcon('user', 13)}
-              <span>Staff Portal</span>
+              ${uiIcon('shield-check', 13)}
+              <span>CLINICAL OPERATOR ACCESS</span>
             </div>
-            <h2>Sign in to Account</h2>
-            <p class="auth-subtitle">Enter your laboratory staff credentials to access operations.</p>
+            <h2>Staff Sign In</h2>
+            <p class="auth-subtitle">Authorized laboratory personnel sign-in for patient billing and reports.</p>
           </div>
 
           ${errorMessage ? `
@@ -460,7 +457,7 @@ function renderLogin(errorMessage = '') {
 
           <form id="login-form" class="login-form" novalidate>
             <div class="form-group">
-              <label for="username">Username / Staff ID</label>
+              <label for="username">Staff Username / Operator ID</label>
               <div class="input-with-icon">
                 <span class="input-icon-slot">${uiIcon('user', 16)}</span>
                 <input type="text" id="username" name="username" placeholder="e.g. anandlab" required autocomplete="username" spellcheck="false" ${isLocked ? 'disabled' : ''} />
@@ -468,7 +465,7 @@ function renderLogin(errorMessage = '') {
             </div>
 
             <div class="form-group">
-              <label for="password">Password</label>
+              <label for="password">Access Password</label>
               <div class="input-with-icon">
                 <span class="input-icon-slot">${uiIcon('lock', 16)}</span>
                 <input type="password" id="password" name="password" placeholder="••••••••••••" required autocomplete="current-password" ${isLocked ? 'disabled' : ''} />
@@ -479,19 +476,20 @@ function renderLogin(errorMessage = '') {
               </div>
             </div>
 
-            <button type="submit" id="login-submit-btn" class="btn btn-login-gradient btn-block" ${isLocked ? 'disabled' : ''}>
-              <span>Sign In to Laboratory</span>
+            <button type="submit" id="login-submit-btn" class="btn btn-primary btn-block btn-clinical-login" ${isLocked ? 'disabled' : ''}>
+              <span>Sign In to Labflow</span>
               ${uiIcon('arrow-right', 16)}
             </button>
           </form>
 
           <div class="login-hint-pill">
             ${uiIcon('info', 14)}
-            <span>Authorized Lab Incharge: <strong>anandlab</strong></span>
+            <span>Default Laboratory Incharge: <strong>anandlab</strong></span>
           </div>
 
-          <div class="login-footer">
-            <span>${uiIcon('shield-check', 13)} Protected by Supabase Auth &amp; SafeStorage</span>
+          <div class="login-compliance-footer">
+            <p>${uiIcon('shield-check', 13)} Confidential Clinical Records &bull; DPDPA &amp; DISHA Compliant</p>
+            <small>Support: <strong>hello@opti-x.in</strong> | Toll-free: <strong>8123649448</strong></small>
           </div>
         </div>
       </div>
@@ -661,6 +659,11 @@ function renderApp() {
               <small>Staff Operator</small>
             </div>
           </div>
+          <div class="sidebar-help-links">
+            <button id="sidebar-support-btn" class="sidebar-link-btn" title="Helpdesk & Support">${uiIcon('phone', 13)} Support</button>
+            <span class="sep">&bull;</span>
+            <button id="sidebar-privacy-btn" class="sidebar-link-btn" title="Privacy Policy">${uiIcon('shield-check', 13)} Privacy</button>
+          </div>
           <button id="logout-btn" class="btn btn-outline-danger btn-sm" title="Sign out">
             ${uiIcon('log-out', 14)} Logout
           </button>
@@ -679,6 +682,18 @@ function renderApp() {
       state.currentPage = btn.dataset.nav;
       renderApp();
     });
+  });
+
+  document.getElementById('sidebar-support-btn')?.addEventListener('click', () => {
+    state.currentPage = 'settings';
+    state.settingsSubTab = 'support';
+    renderApp();
+  });
+
+  document.getElementById('sidebar-privacy-btn')?.addEventListener('click', () => {
+    state.currentPage = 'settings';
+    state.settingsSubTab = 'privacy';
+    renderApp();
   });
 
   document.getElementById('logout-btn').addEventListener('click', () => {
@@ -1556,6 +1571,7 @@ async function loadReportsTable() {
             <th>Patient Details</th>
             <th>Doctor</th>
             <th>Tests Ordered</th>
+            <th>Billing Status</th>
             <th class="text-center">Status</th>
             <th class="text-center">Action</th>
           </tr>
@@ -1563,11 +1579,16 @@ async function loadReportsTable() {
         <tbody>
           ${filtered.map(r => {
             const uniqueTestCodes = [...new Set(r.report_results?.map(res => res.test_code) || [])];
+            const bill = r.bills || {};
+            const total = bill.net_amount ?? bill.total_amount ?? bill.total ?? 0;
+            const paid = bill.paid_amount ?? 0;
+            const bal = Math.max(0, total - paid);
+            const billStatus = bill.payment_status || (bal === 0 && total > 0 ? 'Paid' : (paid > 0 ? 'Partial' : 'Pending'));
             return `
               <tr>
                 <td>
-                  <strong>${escapeHTML(r.bills?.bill_no || '—')}</strong>
-                  <div><small style="color: #0d9488; font-weight: 600;">${r.patients?.patient_no || ''}</small></div>
+                  <strong>${escapeHTML(bill.bill_no || '—')}</strong>
+                  <div><small style="color: var(--primary, #006b76); font-weight: 600;">${r.patients?.patient_no || ''}</small></div>
                 </td>
                 <td>
                   ${formatDate(r.created_at)}
@@ -1577,21 +1598,40 @@ async function loadReportsTable() {
                   <strong>${escapeHTML(r.patients?.full_name || '—')}</strong>
                   <div><small>${r.patients?.sex || ''}, ${r.patients?.age_value || ''}${r.patients?.age_unit || ''} · 📱 ${escapeHTML(r.patients?.mobile || 'No mobile')}</small></div>
                 </td>
-                <td>${escapeHTML(r.bills?.doctors?.name || 'Self / Walk-in')}</td>
+                <td>${escapeHTML(bill.doctors?.name || 'Self / Walk-in')}</td>
                 <td><span class="test-codes-badge">${uniqueTestCodes.join(', ')}</span></td>
+                <td>
+                  <div class="report-bill-summary">
+                    <strong>₹ ${total}</strong>
+                    <div class="small-muted">Paid: ₹ ${paid}${bal > 0 ? ` · <span class="text-danger font-bold">Due: ₹ ${bal}</span>` : ''}</div>
+                    <span class="badge badge-${billStatus.toLowerCase()}">${billStatus}</span>
+                  </div>
+                </td>
                 <td class="text-center">
                   <span class="badge badge-${r.status.toLowerCase()}">${r.status}</span>
                 </td>
                 <td class="text-center">
                   ${r.status === 'Pending' ? `
-                    <button class="btn btn-primary btn-sm btn-enter-results" data-id="${r.id}">
-                      ${uiIcon('edit', 14)} Enter Results
-                    </button>
+                    <div class="table-actions">
+                      <button class="btn btn-primary btn-sm btn-enter-results" data-id="${r.id}">
+                        ${uiIcon('edit', 14)} Enter Results
+                      </button>
+                      ${bill.id ? `
+                        <button class="btn btn-outline btn-sm btn-print-bill" data-bill-id="${bill.id}" title="Print Invoice / Bill">
+                          ${uiIcon('credit-card', 14)} Bill
+                        </button>
+                      ` : ''}
+                    </div>
                   ` : `
                     <div class="table-actions">
-                      <button class="btn btn-outline btn-sm btn-print-report" data-id="${r.id}">
-                        ${uiIcon('printer', 14)} View / Print
+                      <button class="btn btn-primary btn-sm btn-print-report" data-id="${r.id}">
+                        ${uiIcon('printer', 14)} Print Report
                       </button>
+                      ${bill.id ? `
+                        <button class="btn btn-outline btn-sm btn-print-bill" data-bill-id="${bill.id}">
+                          ${uiIcon('credit-card', 14)} Print Bill
+                        </button>
+                      ` : ''}
                       <button class="btn btn-outline-danger btn-xs btn-reopen-report" data-id="${r.id}" title="Reopen for editing">
                         ${uiIcon('edit', 12)} Edit
                       </button>
@@ -1610,6 +1650,10 @@ async function loadReportsTable() {
 
     container.querySelectorAll('.btn-print-report').forEach(btn => {
       btn.addEventListener('click', () => openReportPrintPreview(btn.dataset.id));
+    });
+
+    container.querySelectorAll('.btn-print-bill').forEach(btn => {
+      btn.addEventListener('click', () => openReceiptModal(btn.dataset.billId));
     });
 
     container.querySelectorAll('.btn-reopen-report').forEach(btn => {
@@ -1740,6 +1784,49 @@ function renderResultEntryForm(container) {
           </div>
         </div>
 
+        <!-- Billing & Invoice Summary Section in Report Entry -->
+        <div class="card mb-4 report-billing-card">
+          <div class="card-header bg-subtle d-flex justify-between align-center">
+            <h3>${uiIcon('credit-card', 16)} Diagnostic Billing &amp; Invoice Ledger</h3>
+            <span class="badge badge-${(r.bills?.payment_status || 'paid').toLowerCase()}">${r.bills?.payment_status || 'Paid'}</span>
+          </div>
+          <div class="card-body">
+            <div class="report-billing-grid">
+              <div class="stat-item">
+                <span class="stat-label">Bill / Invoice No</span>
+                <span class="stat-value"><strong>${escapeHTML(r.bills?.bill_no || '—')}</strong></span>
+              </div>
+              <div class="stat-item">
+                <span class="stat-label">Subtotal</span>
+                <span class="stat-value">₹ ${r.bills?.subtotal ?? r.bills?.total_amount ?? r.bills?.total ?? 0}</span>
+              </div>
+              <div class="stat-item">
+                <span class="stat-label">Discount Applied</span>
+                <span class="stat-value">₹ ${r.bills?.discount ?? 0}</span>
+              </div>
+              <div class="stat-item">
+                <span class="stat-label">Net Payable</span>
+                <span class="stat-value font-bold text-primary">₹ ${r.bills?.net_amount ?? r.bills?.total_amount ?? r.bills?.total ?? 0}</span>
+              </div>
+              <div class="stat-item">
+                <span class="stat-label">Amount Paid</span>
+                <span class="stat-value text-success font-bold">₹ ${r.bills?.paid_amount ?? 0}</span>
+              </div>
+              <div class="stat-item">
+                <span class="stat-label">Balance Due</span>
+                <span class="stat-value ${(r.bills?.balance_amount || 0) > 0 ? 'text-danger font-bold' : ''}">₹ ${r.bills?.balance_amount ?? 0}</span>
+              </div>
+            </div>
+            ${r.bills?.id ? `
+              <div class="mt-3">
+                <button type="button" class="btn btn-outline btn-sm" id="btn-print-bill-entry">
+                  ${uiIcon('printer', 14)} Print Bill / Thermal Receipt
+                </button>
+              </div>
+            ` : ''}
+          </div>
+        </div>
+
         <div class="form-actions sticky-actions">
           <button type="button" id="btn-save-progress" class="btn btn-outline btn-lg">${uiIcon('save', 16)} Save Progress</button>
           <button type="button" id="btn-complete-report" class="btn btn-primary btn-lg">${uiIcon('check-circle', 16)} Mark as Completed &amp; Print</button>
@@ -1750,6 +1837,46 @@ function renderResultEntryForm(container) {
   // Attach Result Live Flag Listeners
   container.querySelectorAll('.result-value-input').forEach(input => {
     input.addEventListener('input', () => evaluateLiveFlag(input));
+  });
+
+  // Rapid Operator Navigation: Enter or ArrowDown moves to next result field; ArrowUp moves to previous
+  const resultInputs = Array.from(container.querySelectorAll('.result-value-input'));
+  resultInputs.forEach((input, index) => {
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === 'ArrowDown') {
+        e.preventDefault();
+        const nextInput = resultInputs[index + 1];
+        if (nextInput) {
+          nextInput.focus();
+          nextInput.select?.();
+        } else {
+          // If on last input, move focus to clinical notes
+          const notesElem = document.getElementById('report-clinical-notes');
+          if (notesElem) {
+            notesElem.focus();
+          }
+        }
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        const prevInput = resultInputs[index - 1];
+        if (prevInput) {
+          prevInput.focus();
+          prevInput.select?.();
+        }
+      }
+    });
+  });
+
+  // Automatically focus the first input on load for rapid technician data entry
+  if (resultInputs.length > 0) {
+    setTimeout(() => {
+      resultInputs[0].focus();
+      resultInputs[0].select?.();
+    }, 40);
+  }
+
+  container.querySelector('#btn-print-bill-entry')?.addEventListener('click', () => {
+    if (r.bills?.id) openReceiptModal(r.bills.id);
   });
 
   container.querySelector('#btn-back-to-reports')?.addEventListener('click', () => {
@@ -2184,6 +2311,9 @@ async function openReportPrintPreview(reportId) {
           </div>
           <div class="modal-footer">
             <button class="btn btn-outline" id="btn-close-rep-modal">Close</button>
+            ${report.bills?.id ? `
+              <button class="btn btn-outline" id="btn-modal-print-bill">${uiIcon('credit-card', 14)} Print Bill / Receipt</button>
+            ` : ''}
             <button class="btn btn-outline" id="btn-export-pdf">${uiIcon('download', 14)} Export PDF</button>
             <button class="btn btn-primary" id="btn-print-report-now">${uiIcon('printer', 14)} Print Clinical Report</button>
           </div>
@@ -2205,6 +2335,10 @@ async function openReportPrintPreview(reportId) {
 
     document.getElementById('modal-close-btn').addEventListener('click', () => modalContainer.innerHTML = '');
     document.getElementById('btn-close-rep-modal').addEventListener('click', () => modalContainer.innerHTML = '');
+
+    document.getElementById('btn-modal-print-bill')?.addEventListener('click', () => {
+      if (report.bills?.id) openReceiptModal(report.bills.id);
+    });
 
     document.getElementById('btn-print-report-now').addEventListener('click', async () => {
       const fullHtml = renderActiveHTML();
@@ -2238,8 +2372,8 @@ function renderSettingsModule(container) {
   container.innerHTML = `
     <div class="module-header">
       <div class="module-title">
-        <h1>Laboratory Settings</h1>
-        <p>Lab profile, doctors, referral sources, test catalog pricing and account security</p>
+        <h1>Laboratory Settings &amp; Compliance</h1>
+        <p>Lab profile, doctors, referral sources, test catalog pricing, helpdesk and privacy compliance</p>
       </div>
       <div class="module-tabs">
         <button class="tab-btn ${state.settingsSubTab === 'profile' ? 'active' : ''}" id="tab-set-profile">Lab Details &amp; Letterhead</button>
@@ -2247,6 +2381,8 @@ function renderSettingsModule(container) {
         <button class="tab-btn ${state.settingsSubTab === 'referrals' ? 'active' : ''}" id="tab-set-referrals">Referral Sources</button>
         <button class="tab-btn ${state.settingsSubTab === 'catalog' ? 'active' : ''}" id="tab-set-catalog">Test Catalog &amp; Pricing</button>
         <button class="tab-btn ${state.settingsSubTab === 'security' ? 'active' : ''}" id="tab-set-security">Account Security</button>
+        <button class="tab-btn ${state.settingsSubTab === 'support' ? 'active' : ''}" id="tab-set-support">Support &amp; Helpdesk</button>
+        <button class="tab-btn ${state.settingsSubTab === 'privacy' ? 'active' : ''}" id="tab-set-privacy">Privacy &amp; Compliance</button>
       </div>
     </div>
     <div class="module-body" id="settings-body"></div>`;
@@ -2256,6 +2392,8 @@ function renderSettingsModule(container) {
   document.getElementById('tab-set-referrals').addEventListener('click', () => { state.settingsSubTab = 'referrals'; renderSettingsModule(container); });
   document.getElementById('tab-set-catalog').addEventListener('click', () => { state.settingsSubTab = 'catalog'; renderSettingsModule(container); });
   document.getElementById('tab-set-security').addEventListener('click', () => { state.settingsSubTab = 'security'; renderSettingsModule(container); });
+  document.getElementById('tab-set-support').addEventListener('click', () => { state.settingsSubTab = 'support'; renderSettingsModule(container); });
+  document.getElementById('tab-set-privacy').addEventListener('click', () => { state.settingsSubTab = 'privacy'; renderSettingsModule(container); });
 
   const body = document.getElementById('settings-body');
   if (state.settingsSubTab === 'profile') renderLabProfileSettings(body);
@@ -2263,6 +2401,8 @@ function renderSettingsModule(container) {
   else if (state.settingsSubTab === 'referrals') renderReferralsSettings(body);
   else if (state.settingsSubTab === 'catalog') renderCatalogSettings(body);
   else if (state.settingsSubTab === 'security') renderSecuritySettings(body);
+  else if (state.settingsSubTab === 'support') renderSupportPage(body);
+  else if (state.settingsSubTab === 'privacy') renderPrivacyPolicyPage(body);
 }
 
 function renderLabProfileSettings(container) {
@@ -2589,6 +2729,150 @@ function renderSecuritySettings(container) {
       showToast('Password change failed: ' + err.message, 'error');
     }
   });
+}
+
+function renderSupportPage(container) {
+  container.innerHTML = `
+    <div class="support-page-wrapper">
+      <div class="card mb-4">
+        <div class="card-header bg-subtle d-flex justify-between align-center">
+          <div>
+            <h3>${uiIcon('phone', 18)} Clinical Helpdesk &amp; Technical Support</h3>
+            <p class="muted mt-1">Official 24/7 technical assistance and customer care for Anand Laboratory &amp; Dr. Anand Hospital staff</p>
+          </div>
+          <span class="badge badge-paid">Support Active</span>
+        </div>
+        <div class="card-body">
+          <div class="support-grid">
+            <div class="support-contact-box primary-contact">
+              <div class="contact-icon">${uiIcon('phone', 24)}</div>
+              <div class="contact-details">
+                <span class="contact-type">TOLL-FREE HELPDESK</span>
+                <span class="contact-value"><a href="tel:8123649448">8123649448</a></span>
+                <p class="contact-hint">24x7 Priority technical assistance for billing, printing, and LIS sync</p>
+              </div>
+            </div>
+
+            <div class="support-contact-box">
+              <div class="contact-icon">${uiIcon('mail', 24)}</div>
+              <div class="contact-details">
+                <span class="contact-type">OFFICIAL EMAIL SUPPORT</span>
+                <span class="contact-value"><a href="mailto:hello@opti-x.in">hello@opti-x.in</a></span>
+                <p class="contact-hint">Guaranteed response within 2 hours for bug reports, catalog additions &amp; escalations</p>
+              </div>
+            </div>
+
+            <div class="support-contact-box">
+              <div class="contact-icon">${uiIcon('printer', 24)}</div>
+              <div class="contact-details">
+                <span class="contact-type">DIRECT LAB DISPATCH LINE</span>
+                <span class="contact-value"><a href="tel:6361303305">6361303305</a></span>
+                <p class="contact-hint">Anand Laboratory &amp; General Stores dispatch &amp; sample queries</p>
+              </div>
+            </div>
+
+            <div class="support-contact-box">
+              <div class="contact-icon">${uiIcon('shield-check', 24)}</div>
+              <div class="contact-details">
+                <span class="contact-type">PHYSICAL LABORATORY LOCATION</span>
+                <span class="contact-value-text">Silk Filature Quarters Road, Ward No. 14, Sidlaghatta – 562105, Chikkaballapur (Dist.), Karnataka</span>
+                <p class="contact-hint">Dr. Anand Hospital &amp; Anand Diagnostic Center</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid grid-2 mb-4">
+        <div class="card">
+          <div class="card-header">
+            <h3>${uiIcon('clock', 16)} Laboratory Operating Hours</h3>
+          </div>
+          <div class="card-body">
+            <ul class="support-hours-list">
+              <li><strong>Monday – Saturday:</strong> <span>7:00 AM – 9:00 PM</span></li>
+              <li><strong>Sunday:</strong> <span>8:00 AM – 2:00 PM</span></li>
+              <li><strong>Emergency &amp; Critical Samples:</strong> <span class="badge badge-paid">24 / 7 on Call</span></li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <h3>${uiIcon('database', 16)} Diagnostic Engine Status</h3>
+          </div>
+          <div class="card-body">
+            <ul class="system-status-list">
+              <li><span>Cloud Database (PostgreSQL):</span> <strong class="text-success">${uiIcon('check-circle', 14)} Connected &amp; Synced</strong></li>
+              <li><span>Local Credential Vault:</span> <strong class="text-success">${uiIcon('check-circle', 14)} SafeStorage AES-256 Enabled</strong></li>
+              <li><span>Report Print Engine:</span> <strong class="text-success">${uiIcon('check-circle', 14)} Hospital Letterhead Vector Ready</strong></li>
+              <li><span>Software Release:</span> <strong>Opti-X Labs Enterprise v2.4.0 (Hospital LIS)</strong></li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function renderPrivacyPolicyPage(container) {
+  container.innerHTML = `
+    <div class="privacy-page-wrapper">
+      <div class="card">
+        <div class="card-header bg-subtle d-flex justify-between align-center">
+          <div>
+            <h3>${uiIcon('shield-check', 18)} Patient Health Data Privacy &amp; Governance Policy</h3>
+            <p class="muted mt-1">Compliance with Digital Personal Data Protection Act (DPDPA 2023) and DISHA Guidelines</p>
+          </div>
+          <span class="badge badge-paid">Clinical Compliance Verified</span>
+        </div>
+        <div class="card-body privacy-body-content">
+          <h4>1. Purpose and Scope</h4>
+          <p>
+            Anand Diagnostic Laboratory ("Anand Laboratory") and Dr. Anand Hospital, powered by the Opti-X Labs Clinical Information System,
+            are committed to maintaining the confidentiality, integrity, and availability of all electronic health records (EHR), patient demographic
+            data, and pathology diagnostic findings.
+          </p>
+
+          <h4>2. Regulatory Compliance</h4>
+          <p>
+            This system complies with:
+          </p>
+          <ul>
+            <li><strong>Digital Personal Data Protection Act (DPDPA), 2023:</strong> Ensuring patient rights to data privacy, lawful processing, purpose specification, and secure data storage.</li>
+            <li><strong>Digital Information Security in Healthcare Act (DISHA):</strong> Strict controls preventing unauthorized transmission, sharing, or secondary use of diagnostic pathology records.</li>
+            <li><strong>Indian Council of Medical Research (ICMR) Ethical Guidelines:</strong> Preserving diagnostic laboratory quality standards and patient record confidentiality.</li>
+          </ul>
+
+          <h4>3. Data Protection and Encryption Safeguards</h4>
+          <p>
+            All diagnostic test values, patient records, and financial invoices processed within this application are protected by multiple enterprise-grade security layers:
+          </p>
+          <ul>
+            <li><strong>Hardware SafeStorage:</strong> All local operator sessions and cryptographic tokens are protected via Chromium SafeStorage using OS-level AES-256 encryption.</li>
+            <li><strong>Transport Security:</strong> Data exchanged with the cloud database is secured over TLS 1.3 cryptographic protocols with modern cipher suites.</li>
+            <li><strong>Row-Level Security (RLS):</strong> Multi-tenant isolation prevents cross-organization access to clinical reports or patient records.</li>
+          </ul>
+
+          <h4>4. Record Retention Policy</h4>
+          <p>
+            In accordance with clinical laboratory regulatory mandates in India, diagnostic reports, numerical readings, and clinical notes are retained for a minimum statutory period of 3 years from the date of specimen receipt.
+          </p>
+
+          <h4>5. Data Protection Officer (DPO) &amp; Grievance Officer</h4>
+          <p>
+            For patient record access requests, correction of demographic details, or technical privacy questions, contact our designated privacy desk:
+          </p>
+          <div class="dpo-contact-card">
+            <div><strong>Clinical Privacy &amp; Data Officer:</strong> Opti-X Labs Compliance Desk</div>
+            <div><strong>Official Email:</strong> <a href="mailto:hello@opti-x.in">hello@opti-x.in</a></div>
+            <div><strong>Toll-Free Grievance Helpline:</strong> <a href="tel:8123649448">8123649448</a></div>
+            <div><strong>Registered Address:</strong> Silk Filature Quarters Road, Ward No. 14, Sidlaghatta – 562105, Chikkaballapur (Dist.), Karnataka</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
 }
 
 // -------------------------------------------------------------
