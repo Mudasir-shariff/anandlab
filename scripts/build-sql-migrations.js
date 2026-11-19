@@ -14,6 +14,7 @@ let sql = `-- ==================================================================
 
 -- 1. Initial Lab Settings
 INSERT INTO public.lab_settings (
+    id,
     lab_name,
     tagline,
     address,
@@ -28,11 +29,12 @@ INSERT INTO public.lab_settings (
     report_footer,
     working_hours
 ) VALUES (
+    '00000000-0000-0000-0000-000000000001',
     'Anand Diagnostic Center',
     'Precision Diagnostics · Clinical Excellence',
-    '#42, 10th Main, Vijayanagar, Bangalore - 560040',
-    '+91 98450 12345',
-    'contact@ananddiagnostic.in',
+    'Silk Filature Quarters Road, Ward No. 14, Sidlaghatta – 562105, Chikkaballapur (Dist.)',
+    '6361303305',
+    'hello@opti-x.in',
     'KA-BLR-LAB-2026-089',
     'Dr. Ramesh Kumar',
     'MD (Pathology), DCP',
@@ -40,9 +42,15 @@ INSERT INTO public.lab_settings (
     'B.Sc MLT (Senior Technologist)',
     'classic',
     'Results relate only to the specimen tested. Please correlate clinically with symptoms and history.',
-    'Mon – Sat: 7:00 AM – 8:30 PM | Sun: 7:00 AM – 1:00 PM'
+    'Mon – Sat: 7:00 AM – 9:00 PM | Sun: 8:00 AM – 2:00 PM'
 )
-ON CONFLICT DO UPDATE SET lab_name = EXCLUDED.lab_name;
+ON CONFLICT (id) DO UPDATE SET
+    lab_name = EXCLUDED.lab_name,
+    tagline = EXCLUDED.tagline,
+    address = EXCLUDED.address,
+    phone = EXCLUDED.phone,
+    email = EXCLUDED.email,
+    working_hours = EXCLUDED.working_hours;
 
 -- 2. Referring Doctors (Empty by default - registered by laboratory staff)
 -- 3. Referral Labs & Hospitals (Empty by default - registered by laboratory staff)

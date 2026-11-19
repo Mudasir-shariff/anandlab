@@ -228,7 +228,7 @@ async function init() {
                   localStorage.setItem('supabase_anon_key', k);
                 }
               }
-            } catch (_) {}
+            } catch (_) { }
           }
           return { supabaseUrl: u, supabaseAnonKey: k };
         },
@@ -575,7 +575,7 @@ async function handleLogin(e) {
 
 async function handleLogout(toastMsg = '') {
   if (state.supabase) {
-    try { await state.supabase.auth.signOut(); } catch (e) {}
+    try { await state.supabase.auth.signOut(); } catch (e) { }
   }
   if (window.labflowAPI) {
     await window.labflowAPI.clearSession();
@@ -775,8 +775,8 @@ function renderNewBillForm(container) {
                 <label>Title *</label>
                 <select id="patient-title">
                   ${['Mr', 'Mrs', 'Ms', 'Master', 'Miss', 'Baby', 'B/O', 'Dr', 'Prof'].map(t =>
-                    `<option value="${t}" ${state.newBill.patient.title === t ? 'selected' : ''}>${t}</option>`
-                  ).join('')}
+    `<option value="${t}" ${state.newBill.patient.title === t ? 'selected' : ''}>${t}</option>`
+  ).join('')}
                 </select>
               </div>
               <div class="form-group col-9">
@@ -868,8 +868,8 @@ function renderNewBillForm(container) {
                   <select id="bill-doctor">
                     <option value="">Self / Walk-in</option>
                     ${state.doctors.filter(d => d.active).map(d =>
-                      `<option value="${d.id}" ${state.newBill.doctorId === d.id ? 'selected' : ''}>${escapeHTML(d.name)}${d.qualification ? ' (' + escapeHTML(d.qualification) + ')' : ''}</option>`
-                    ).join('')}
+    `<option value="${d.id}" ${state.newBill.doctorId === d.id ? 'selected' : ''}>${escapeHTML(d.name)}${d.qualification ? ' (' + escapeHTML(d.qualification) + ')' : ''}</option>`
+  ).join('')}
                   </select>
                   <button type="button" class="btn btn-primary-outline btn-icon" id="btn-add-doctor" title="Add New Doctor">+</button>
                 </div>
@@ -883,8 +883,8 @@ function renderNewBillForm(container) {
                   <select id="bill-referral-lab">
                     <option value="">Direct / None</option>
                     ${state.referralLabs.filter(l => l.active).map(l =>
-                      `<option value="${l.id}" ${state.newBill.referralLabId === l.id ? 'selected' : ''}>${escapeHTML(l.name)}</option>`
-                    ).join('')}
+    `<option value="${l.id}" ${state.newBill.referralLabId === l.id ? 'selected' : ''}>${escapeHTML(l.name)}</option>`
+  ).join('')}
                   </select>
                   <button type="button" class="btn btn-primary-outline btn-icon" id="btn-add-ref-lab" title="Add Referral Lab">+</button>
                 </div>
@@ -896,8 +896,8 @@ function renderNewBillForm(container) {
                   <select id="bill-referral-hosp">
                     <option value="">Direct / None</option>
                     ${state.referralHospitals.filter(h => h.active).map(h =>
-                      `<option value="${h.id}" ${state.newBill.referralHospitalId === h.id ? 'selected' : ''}>${escapeHTML(h.name)}</option>`
-                    ).join('')}
+    `<option value="${h.id}" ${state.newBill.referralHospitalId === h.id ? 'selected' : ''}>${escapeHTML(h.name)}</option>`
+  ).join('')}
                   </select>
                   <button type="button" class="btn btn-primary-outline btn-icon" id="btn-add-ref-hosp" title="Add Referral Hospital">+</button>
                 </div>
@@ -917,14 +917,14 @@ function renderNewBillForm(container) {
           <div class="card-body">
             <div class="test-pill-container" id="test-catalog-pills">
               ${activeTests.map(t => {
-                const isSelected = state.newBill.selectedTestIds.includes(t.id);
-                return `
+    const isSelected = state.newBill.selectedTestIds.includes(t.id);
+    return `
                   <button type="button" class="test-pill ${isSelected ? 'selected' : ''}" data-test-id="${t.id}">
                     <span class="test-pill-code">${escapeHTML(t.code)}</span>
                     <span class="test-pill-name">${escapeHTML(t.name)}</span>
                     <span class="test-pill-price">₹${t.price}</span>
                   </button>`;
-              }).join('')}
+  }).join('')}
             </div>
 
             <!-- Selected Cart Table -->
@@ -984,8 +984,8 @@ function renderNewBillForm(container) {
                 <span>Payment Mode:</span>
                 <select id="bill-payment-mode" class="summary-input">
                   ${['Cash', 'UPI', 'Card', 'Net Banking', 'Other'].map(m =>
-                    `<option value="${m}" ${state.newBill.paymentMode === m ? 'selected' : ''}>${m}</option>`
-                  ).join('')}
+    `<option value="${m}" ${state.newBill.paymentMode === m ? 'selected' : ''}>${m}</option>`
+  ).join('')}
                 </select>
               </div>
 
@@ -1536,7 +1536,7 @@ async function loadReportsTable() {
     }
 
     if (state.reportsFilter.dateRange === 'Today') {
-      const s = new Date(); s.setHours(0,0,0,0);
+      const s = new Date(); s.setHours(0, 0, 0, 0);
       query = query.gte('created_at', s.toISOString());
     } else if (state.reportsFilter.dateRange === 'Week') {
       const w = new Date(); w.setDate(w.getDate() - 7);
@@ -1578,13 +1578,13 @@ async function loadReportsTable() {
         </thead>
         <tbody>
           ${filtered.map(r => {
-            const uniqueTestCodes = [...new Set(r.report_results?.map(res => res.test_code) || [])];
-            const bill = r.bills || {};
-            const total = bill.net_amount ?? bill.total_amount ?? bill.total ?? 0;
-            const paid = bill.paid_amount ?? 0;
-            const bal = Math.max(0, total - paid);
-            const billStatus = bill.payment_status || (bal === 0 && total > 0 ? 'Paid' : (paid > 0 ? 'Partial' : 'Pending'));
-            return `
+      const uniqueTestCodes = [...new Set(r.report_results?.map(res => res.test_code) || [])];
+      const bill = r.bills || {};
+      const total = bill.net_amount ?? bill.total_amount ?? bill.total ?? 0;
+      const paid = bill.paid_amount ?? 0;
+      const bal = Math.max(0, total - paid);
+      const billStatus = bill.payment_status || (bal === 0 && total > 0 ? 'Paid' : (paid > 0 ? 'Partial' : 'Pending'));
+      return `
               <tr>
                 <td>
                   <strong>${escapeHTML(bill.bill_no || '—')}</strong>
@@ -1640,7 +1640,7 @@ async function loadReportsTable() {
                 </td>
               </tr>
             `;
-          }).join('')}
+    }).join('')}
         </tbody>
       </table>`;
 
@@ -1723,8 +1723,8 @@ function renderResultEntryForm(container) {
 
       <form id="result-entry-form" class="mt-4">
         ${Object.entries(grouped).map(([code, rows]) => {
-          const testMeta = state.testsCatalog.find(t => t.code === code) || TESTS[code] || {};
-          return `
+    const testMeta = state.testsCatalog.find(t => t.code === code) || TESTS[code] || {};
+    return `
             <div class="card mb-4">
               <div class="card-header bg-subtle">
                 <h3>${escapeHTML(testMeta.name || code)} <small>(${escapeHTML(testMeta.department || 'Clinical Lab')} · ${escapeHTML(testMeta.sample_type || testMeta.sample || 'Specimen')})</small></h3>
@@ -1741,8 +1741,8 @@ function renderResultEntryForm(container) {
                   </thead>
                   <tbody>
                     ${rows.map(row => {
-                      const initialFlag = row.flag || '';
-                      return `
+      const initialFlag = row.flag || '';
+      return `
                         <tr class="result-param-row ${initialFlag ? 'row-abnormal' : ''}" data-param-id="${row.id}">
                           <td>
                             <strong>${escapeHTML(row.parameter_name)}</strong>
@@ -1767,12 +1767,12 @@ function renderResultEntryForm(container) {
                           <td>${escapeHTML(row.reference_range || '—')}</td>
                         </tr>
                       `;
-                    }).join('')}
+    }).join('')}
                   </tbody>
                 </table>
               </div>
             </div>`;
-        }).join('')}
+  }).join('')}
 
         <div class="card mb-4">
           <div class="card-header">
@@ -2300,8 +2300,8 @@ async function openReportPrintPreview(reportId) {
               <label>Letterhead Style:</label>
               <select id="report-template-select">
                 ${REPORT_TEMPLATES.map(tpl =>
-                  `<option value="${tpl.id}" ${tpl.id === settingsAdapter.reportTemplate ? 'selected' : ''}>${tpl.name}</option>`
-                ).join('')}
+      `<option value="${tpl.id}" ${tpl.id === settingsAdapter.reportTemplate ? 'selected' : ''}>${tpl.name}</option>`
+    ).join('')}
               </select>
             </div>
             <button class="modal-close" id="modal-close-btn">&times;</button>
@@ -2474,8 +2474,8 @@ function renderLabProfileSettings(container) {
               <label>Default Letterhead Theme</label>
               <select id="lab-template">
                 ${REPORT_TEMPLATES.map(t =>
-                  `<option value="${t.id}" ${t.id === lab.letterhead_template ? 'selected' : ''}>${t.name} (${t.description})</option>`
-                ).join('')}
+    `<option value="${t.id}" ${t.id === lab.letterhead_template ? 'selected' : ''}>${t.name} (${t.description})</option>`
+  ).join('')}
               </select>
             </div>
             <div class="form-group col-6">
@@ -2722,7 +2722,7 @@ function renderReferralsSettings(container) {
 }
 
 function renderCatalogSettings(container) {
-  container.innerHTML = `
+        container.innerHTML = `
     <div class="card">
       <div class="card-header">
         <h3>Diagnostic Test Catalog &amp; Prices</h3>
@@ -2764,24 +2764,24 @@ function renderCatalogSettings(container) {
     </div>`;
 
   container.querySelectorAll('.btn-save-test-price').forEach(btn => {
-    btn.addEventListener('click', async () => {
-      const id = btn.dataset.id;
-      const input = container.querySelector(`.price-edit-input[data-id="${id}"]`);
-      const newPrice = Number(input.value || 0);
-      try {
-        const { error } = await state.supabase.from('tests').update({ price: newPrice }).eq('id', id);
-        if (error) throw error;
-        showToast('Test price updated', 'success');
-        await loadReferenceData();
-      } catch (err) {
-        showToast('Error updating price: ' + err.message, 'error');
-      }
-    });
+        btn.addEventListener('click', async () => {
+          const id = btn.dataset.id;
+          const input = container.querySelector(`.price-edit-input[data-id="${id}"]`);
+          const newPrice = Number(input.value || 0);
+          try {
+            const { error } = await state.supabase.from('tests').update({ price: newPrice }).eq('id', id);
+            if (error) throw error;
+            showToast('Test price updated', 'success');
+            await loadReferenceData();
+          } catch (err) {
+            showToast('Error updating price: ' + err.message, 'error');
+          }
+        });
   });
 }
 
-function renderSecuritySettings(container) {
-  container.innerHTML = `
+      function renderSecuritySettings(container) {
+        container.innerHTML = `
     <div class="card" style="max-width: 500px;">
       <div class="card-header">
         <h3>Change Staff Password</h3>
@@ -2802,26 +2802,26 @@ function renderSecuritySettings(container) {
     </div>`;
 
   document.getElementById('change-pwd-form').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const p1 = document.getElementById('new-password').value;
-    const p2 = document.getElementById('confirm-password').value;
-    if (p1 !== p2) {
-      showToast('Passwords do not match.', 'error');
+        e.preventDefault();
+      const p1 = document.getElementById('new-password').value;
+      const p2 = document.getElementById('confirm-password').value;
+      if (p1 !== p2) {
+        showToast('Passwords do not match.', 'error');
       return;
     }
-    try {
-      const { error } = await state.supabase.auth.updateUser({ password: p1 });
+      try {
+      const {error} = await state.supabase.auth.updateUser({password: p1 });
       if (error) throw error;
       showToast('Password updated successfully', 'success');
       document.getElementById('change-pwd-form').reset();
     } catch (err) {
-      showToast('Password change failed: ' + err.message, 'error');
+        showToast('Password change failed: ' + err.message, 'error');
     }
   });
 }
 
-function renderSupportPage(container) {
-  container.innerHTML = `
+      function renderSupportPage(container) {
+        container.innerHTML = `
     <div class="support-page-wrapper">
       <div class="card mb-4">
         <div class="card-header bg-subtle d-flex justify-between align-center">
@@ -2904,8 +2904,8 @@ function renderSupportPage(container) {
   `;
 }
 
-function renderPrivacyPolicyPage(container) {
-  container.innerHTML = `
+      function renderPrivacyPolicyPage(container) {
+        container.innerHTML = `
     <div class="privacy-page-wrapper">
       <div class="card">
         <div class="card-header bg-subtle d-flex justify-between align-center">
@@ -2964,207 +2964,207 @@ function renderPrivacyPolicyPage(container) {
   `;
 }
 
-// -------------------------------------------------------------
-// Quick Add Modals (Doctors, Labs, Hospitals, Payment)
-// -------------------------------------------------------------
-function openAddDoctorModal() {
+      // -------------------------------------------------------------
+      // Quick Add Modals (Doctors, Labs, Hospitals, Payment)
+      // -------------------------------------------------------------
+      function openAddDoctorModal() {
   const modalContainer = document.getElementById('modal-container');
-  modalContainer.innerHTML = `
-    <div class="modal-overlay">
-      <div class="modal-dialog">
-        <div class="modal-header">
-          <h3>Add Referring Doctor</h3>
-          <button class="modal-close" id="modal-close-btn">&times;</button>
+      modalContainer.innerHTML = `
+      <div class="modal-overlay">
+        <div class="modal-dialog">
+          <div class="modal-header">
+            <h3>Add Referring Doctor</h3>
+            <button class="modal-close" id="modal-close-btn">&times;</button>
+          </div>
+          <form id="quick-add-doc-form">
+            <div class="modal-body">
+              <div class="form-group mb-3">
+                <label>Doctor Full Name *</label>
+                <input type="text" id="new-doc-name" placeholder="Dr. Firstname Lastname" required />
+              </div>
+              <div class="form-group mb-3">
+                <label>Degrees / Speciality</label>
+                <input type="text" id="new-doc-qual" placeholder="MBBS, MD" />
+              </div>
+              <div class="form-group">
+                <label>Phone Number</label>
+                <input type="tel" id="new-doc-phone" placeholder="+91 ..." />
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-outline" id="modal-cancel-btn">Cancel</button>
+              <button type="submit" class="btn btn-primary">Save Doctor</button>
+            </div>
+          </form>
         </div>
-        <form id="quick-add-doc-form">
-          <div class="modal-body">
-            <div class="form-group mb-3">
-              <label>Doctor Full Name *</label>
-              <input type="text" id="new-doc-name" placeholder="Dr. Firstname Lastname" required />
-            </div>
-            <div class="form-group mb-3">
-              <label>Degrees / Speciality</label>
-              <input type="text" id="new-doc-qual" placeholder="MBBS, MD" />
-            </div>
-            <div class="form-group">
-              <label>Phone Number</label>
-              <input type="tel" id="new-doc-phone" placeholder="+91 ..." />
-            </div>
-          </div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-outline" id="modal-cancel-btn">Cancel</button>
-            <button type="submit" class="btn btn-primary">Save Doctor</button>
-          </div>
-        </form>
-      </div>
-    </div>`;
+      </div>`;
 
   document.getElementById('modal-close-btn').addEventListener('click', () => modalContainer.innerHTML = '');
   document.getElementById('modal-cancel-btn').addEventListener('click', () => modalContainer.innerHTML = '');
 
   document.getElementById('quick-add-doc-form').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const name = document.getElementById('new-doc-name').value.trim();
-    const qualification = document.getElementById('new-doc-qual').value.trim();
-    const phone = document.getElementById('new-doc-phone').value.trim();
+        e.preventDefault();
+      const name = document.getElementById('new-doc-name').value.trim();
+      const qualification = document.getElementById('new-doc-qual').value.trim();
+      const phone = document.getElementById('new-doc-phone').value.trim();
 
-    try {
-      const { data, error } = await state.supabase.from('doctors').insert({ name, qualification, phone }).select().single();
+      try {
+      const {data, error} = await state.supabase.from('doctors').insert({name, qualification, phone}).select().single();
       if (error) throw error;
       showToast('Doctor added successfully', 'success');
       await loadReferenceData();
       modalContainer.innerHTML = '';
       if (state.currentPage === 'billing' && state.billingSubTab === 'new') {
         state.newBill.doctorId = data.id;
-        renderNewBillForm(document.getElementById('billing-body'));
+      renderNewBillForm(document.getElementById('billing-body'));
       }
     } catch (err) {
-      showToast('Error: ' + err.message, 'error');
+        showToast('Error: ' + err.message, 'error');
     }
   });
 }
 
-function openAddReferralLabModal() {
+      function openAddReferralLabModal() {
   const modalContainer = document.getElementById('modal-container');
-  modalContainer.innerHTML = `
-    <div class="modal-overlay">
-      <div class="modal-dialog">
-        <div class="modal-header">
-          <h3>Add Referral Laboratory</h3>
-          <button class="modal-close" id="modal-close-btn">&times;</button>
-        </div>
-        <form id="quick-add-lab-form">
-          <div class="modal-body">
-            <div class="form-group">
-              <label>Lab Name *</label>
-              <input type="text" id="new-lab-name" required />
+      modalContainer.innerHTML = `
+      <div class="modal-overlay">
+        <div class="modal-dialog">
+          <div class="modal-header">
+            <h3>Add Referral Laboratory</h3>
+            <button class="modal-close" id="modal-close-btn">&times;</button>
+          </div>
+          <form id="quick-add-lab-form">
+            <div class="modal-body">
+              <div class="form-group">
+                <label>Lab Name *</label>
+                <input type="text" id="new-lab-name" required />
+              </div>
             </div>
-          </div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-outline" id="modal-cancel-btn">Cancel</button>
-            <button type="submit" class="btn btn-primary">Save</button>
-          </div>
-        </form>
-      </div>
-    </div>`;
+            <div class="modal-footer">
+              <button type="button" class="btn btn-outline" id="modal-cancel-btn">Cancel</button>
+              <button type="submit" class="btn btn-primary">Save</button>
+            </div>
+          </form>
+        </div>
+      </div>`;
 
   document.getElementById('modal-close-btn').addEventListener('click', () => modalContainer.innerHTML = '');
   document.getElementById('modal-cancel-btn').addEventListener('click', () => modalContainer.innerHTML = '');
 
   document.getElementById('quick-add-lab-form').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const name = document.getElementById('new-lab-name').value.trim();
-    try {
-      const { data, error } = await state.supabase.from('referral_labs').insert({ name }).select().single();
+        e.preventDefault();
+      const name = document.getElementById('new-lab-name').value.trim();
+      try {
+      const {data, error} = await state.supabase.from('referral_labs').insert({name}).select().single();
       if (error) throw error;
       showToast('Referral Lab added', 'success');
       await loadReferenceData();
       modalContainer.innerHTML = '';
       if (state.currentPage === 'billing' && state.billingSubTab === 'new') {
         state.newBill.referralLabId = data.id;
-        renderNewBillForm(document.getElementById('billing-body'));
+      renderNewBillForm(document.getElementById('billing-body'));
       }
     } catch (err) {
-      showToast('Error: ' + err.message, 'error');
+        showToast('Error: ' + err.message, 'error');
     }
   });
 }
 
-function openAddReferralHospitalModal() {
+      function openAddReferralHospitalModal() {
   const modalContainer = document.getElementById('modal-container');
-  modalContainer.innerHTML = `
-    <div class="modal-overlay">
-      <div class="modal-dialog">
-        <div class="modal-header">
-          <h3>Add Referral Hospital</h3>
-          <button class="modal-close" id="modal-close-btn">&times;</button>
-        </div>
-        <form id="quick-add-hosp-form">
-          <div class="modal-body">
-            <div class="form-group">
-              <label>Hospital Name *</label>
-              <input type="text" id="new-hosp-name" required />
+      modalContainer.innerHTML = `
+      <div class="modal-overlay">
+        <div class="modal-dialog">
+          <div class="modal-header">
+            <h3>Add Referral Hospital</h3>
+            <button class="modal-close" id="modal-close-btn">&times;</button>
+          </div>
+          <form id="quick-add-hosp-form">
+            <div class="modal-body">
+              <div class="form-group">
+                <label>Hospital Name *</label>
+                <input type="text" id="new-hosp-name" required />
+              </div>
             </div>
-          </div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-outline" id="modal-cancel-btn">Cancel</button>
-            <button type="submit" class="btn btn-primary">Save</button>
-          </div>
-        </form>
-      </div>
-    </div>`;
+            <div class="modal-footer">
+              <button type="button" class="btn btn-outline" id="modal-cancel-btn">Cancel</button>
+              <button type="submit" class="btn btn-primary">Save</button>
+            </div>
+          </form>
+        </div>
+      </div>`;
 
   document.getElementById('modal-close-btn').addEventListener('click', () => modalContainer.innerHTML = '');
   document.getElementById('modal-cancel-btn').addEventListener('click', () => modalContainer.innerHTML = '');
 
   document.getElementById('quick-add-hosp-form').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const name = document.getElementById('new-hosp-name').value.trim();
-    try {
-      const { data, error } = await state.supabase.from('referral_hospitals').insert({ name }).select().single();
+        e.preventDefault();
+      const name = document.getElementById('new-hosp-name').value.trim();
+      try {
+      const {data, error} = await state.supabase.from('referral_hospitals').insert({name}).select().single();
       if (error) throw error;
       showToast('Referral Hospital added', 'success');
       await loadReferenceData();
       modalContainer.innerHTML = '';
       if (state.currentPage === 'billing' && state.billingSubTab === 'new') {
         state.newBill.referralHospitalId = data.id;
-        renderNewBillForm(document.getElementById('billing-body'));
+      renderNewBillForm(document.getElementById('billing-body'));
       }
     } catch (err) {
-      showToast('Error: ' + err.message, 'error');
+        showToast('Error: ' + err.message, 'error');
     }
   });
 }
 
-function openCollectPaymentModal(billId, maxBalance) {
+      function openCollectPaymentModal(billId, maxBalance) {
   const modalContainer = document.getElementById('modal-container');
-  modalContainer.innerHTML = `
-    <div class="modal-overlay">
-      <div class="modal-dialog">
-        <div class="modal-header">
-          <h3>Collect Balance Payment</h3>
-          <button class="modal-close" id="modal-close-btn">&times;</button>
+      modalContainer.innerHTML = `
+      <div class="modal-overlay">
+        <div class="modal-dialog">
+          <div class="modal-header">
+            <h3>Collect Balance Payment</h3>
+            <button class="modal-close" id="modal-close-btn">&times;</button>
+          </div>
+          <form id="collect-pay-form">
+            <div class="modal-body">
+              <div class="form-group mb-3">
+                <label>Payment Amount (₹) *</label>
+                <input type="number" id="pay-amount" min="1" max="${maxBalance}" value="${maxBalance}" required />
+              </div>
+              <div class="form-group mb-3">
+                <label>Payment Mode</label>
+                <select id="pay-mode">
+                  ${['Cash', 'UPI', 'Card', 'Net Banking', 'Other'].map(m => `<option value="${m}">${m}</option>`).join('')}
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Payment Notes</label>
+                <input type="text" id="pay-notes" placeholder="Optional transaction ID or note" />
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-outline" id="modal-cancel-btn">Cancel</button>
+              <button type="submit" class="btn btn-primary">Record Payment</button>
+            </div>
+          </form>
         </div>
-        <form id="collect-pay-form">
-          <div class="modal-body">
-            <div class="form-group mb-3">
-              <label>Payment Amount (₹) *</label>
-              <input type="number" id="pay-amount" min="1" max="${maxBalance}" value="${maxBalance}" required />
-            </div>
-            <div class="form-group mb-3">
-              <label>Payment Mode</label>
-              <select id="pay-mode">
-                ${['Cash', 'UPI', 'Card', 'Net Banking', 'Other'].map(m => `<option value="${m}">${m}</option>`).join('')}
-              </select>
-            </div>
-            <div class="form-group">
-              <label>Payment Notes</label>
-              <input type="text" id="pay-notes" placeholder="Optional transaction ID or note" />
-            </div>
-          </div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-outline" id="modal-cancel-btn">Cancel</button>
-            <button type="submit" class="btn btn-primary">Record Payment</button>
-          </div>
-        </form>
-      </div>
-    </div>`;
+      </div>`;
 
   document.getElementById('modal-close-btn').addEventListener('click', () => modalContainer.innerHTML = '');
   document.getElementById('modal-cancel-btn').addEventListener('click', () => modalContainer.innerHTML = '');
 
   document.getElementById('collect-pay-form').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const amount = Number(document.getElementById('pay-amount').value);
-    const mode = document.getElementById('pay-mode').value;
-    const notes = document.getElementById('pay-notes').value.trim();
+        e.preventDefault();
+      const amount = Number(document.getElementById('pay-amount').value);
+      const mode = document.getElementById('pay-mode').value;
+      const notes = document.getElementById('pay-notes').value.trim();
 
-    try {
-      const { data, error } = await state.supabase.rpc('collect_bill_payment', {
+      try {
+      const {data, error} = await state.supabase.rpc('collect_bill_payment', {
         p_bill_id: billId,
-        p_amount: amount,
-        p_mode: mode,
-        p_notes: notes
+      p_amount: amount,
+      p_mode: mode,
+      p_notes: notes
       });
 
       if (error) throw error;
@@ -3173,12 +3173,12 @@ function openCollectPaymentModal(billId, maxBalance) {
       loadBillsTable();
       openReceiptModal(billId);
     } catch (err) {
-      showToast('Payment error: ' + err.message, 'error');
+        showToast('Payment error: ' + err.message, 'error');
     }
   });
 }
 
-// -------------------------------------------------------------
-// Launch on DOM Ready
-// -------------------------------------------------------------
-window.addEventListener('DOMContentLoaded', init);
+      // -------------------------------------------------------------
+      // Launch on DOM Ready
+      // -------------------------------------------------------------
+      window.addEventListener('DOMContentLoaded', init);
