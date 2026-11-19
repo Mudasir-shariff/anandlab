@@ -392,6 +392,15 @@
   font-weight: 700;
 }
 
+.ref-ribbon-email {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: #ccfbf1;
+  font-weight: 600;
+  font-size: 9.5px;
+}
+
 /* =============================================================
    Reference Software Alignments & Layout (MATHRUSRI / Anand Lab)
    ============================================================= */
@@ -407,59 +416,52 @@
   display: flex !important;
   justify-content: space-between !important;
   align-items: flex-start !important;
-  gap: 12px !important;
+  gap: 16px !important;
   width: 100% !important;
 }
 
 .ref-pat-left {
+  flex: 0 0 50% !important;
+  min-width: 0 !important;
+}
+
+.ref-pat-right {
   flex: 0 0 46% !important;
   min-width: 0 !important;
 }
 
-.ref-pat-center {
-  flex: 0 0 14% !important;
+/* Patient row layout using divs (no table) */
+.ref-pat-row {
   display: flex !important;
-  justify-content: center !important;
-  align-items: center !important;
-}
-
-.ref-pat-right {
-  flex: 0 0 38% !important;
-  min-width: 0 !important;
-}
-
-.ref-pat-meta-table {
-  border-collapse: collapse !important;
-  width: 100% !important;
+  align-items: baseline !important;
+  line-height: 1.55 !important;
   font-family: Arial, Helvetica, sans-serif !important;
   font-size: 8.5pt !important;
 }
 
-.ref-pat-meta-table tr {
-  line-height: 1.4 !important;
-}
-
 .ref-field-label {
   width: 125px !important;
+  flex-shrink: 0 !important;
   font-weight: 600 !important;
   color: #1e293b !important;
   white-space: nowrap !important;
-  padding: 1.5px 0 !important;
 }
 
 .ref-field-colon {
   width: 14px !important;
+  flex-shrink: 0 !important;
   text-align: center !important;
   font-weight: 700 !important;
   color: #334155 !important;
-  padding: 1.5px 2px !important;
+  padding: 0 2px !important;
 }
 
 .ref-field-val {
   font-weight: 600 !important;
   color: #0f172a !important;
-  padding: 1.5px 0 !important;
   overflow-wrap: anywhere !important;
+  flex: 1 !important;
+  min-width: 0 !important;
 }
 
 .ref-pat-fullname {
@@ -470,43 +472,15 @@
   letter-spacing: 0.2px !important;
 }
 
-.ref-qr-container {
-  display: flex !important;
-  flex-direction: column !important;
-  align-items: center !important;
-  justify-content: center !important;
-  gap: 3px !important;
-  padding: 2px !important;
-}
-
-.ref-qr-svg {
-  width: 58px !important;
-  height: 58px !important;
-  border: 1px solid #cbd5e1 !important;
-  border-radius: 4px !important;
-  padding: 2px !important;
-  background: #ffffff !important;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06) !important;
-}
-
-.ref-qr-tag {
-  font-family: Arial, Helvetica, sans-serif !important;
-  font-size: 6.5pt !important;
-  font-weight: 700 !important;
-  color: #006b76 !important;
-  text-transform: uppercase !important;
-  letter-spacing: 0.5px !important;
-}
-
 .ref-barcode-container {
   display: flex !important;
   justify-content: flex-start !important;
-  margin-bottom: 4px !important;
+  margin-bottom: 5px !important;
 }
 
 .ref-barcode-svg {
   height: 27px !important;
-  max-width: 135px !important;
+  max-width: 145px !important;
   display: block !important;
 }
 

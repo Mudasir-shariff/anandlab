@@ -208,6 +208,10 @@ function bottomBanner() {
   return `<div class="ref-bottom-ribbon">
     <div class="ref-ribbon-content">
       <span class="ref-ribbon-title">Anand Laboratory &amp; General Stores</span>
+      <span class="ref-ribbon-email">
+        <svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4-8 5-8-5V6l8 5 8-5v2z"/></svg>
+        anandhealthcaresdl@gmail.com
+      </span>
       <span class="ref-ribbon-divider">|</span>
       <span class="ref-ribbon-phone">
         <svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor"><path d="M6.62 10.79a15.05 15.05 0 006.59 6.59l2.2-2.2a1 1 0 011.02-.24 11.41 11.41 0 003.58.57 1 1 0 011 1V20a1 1 0 01-1 1A17 17 0 013 4a1 1 0 011-1h3.5a1 1 0 011 1 11.41 11.41 0 00.57 3.58 1 1 0 01-.24 1.02l-2.2 2.2z"/></svg>
@@ -364,6 +368,9 @@ const formatPatientName = (name, sex) => {
   return prefix + trimmed;
 };
 
+function patientRow(label, value) {
+  return `<div class="ref-pat-row"><span class="ref-field-label">${label}</span><span class="ref-field-colon">:</span><span class="ref-field-val">${value}</span></div>`;
+}
 function patientDetails(order) {
   const patName = formatPatientName(order.name, order.sex);
   const reportedFormatted = order.status === 'Approved' ? displayDate(order.approvedAt) : 'Pending approval';
@@ -373,60 +380,18 @@ function patientDetails(order) {
     </dl>
     <div class="ref-patient-layout">
       <div class="ref-patient-col ref-pat-left">
-        <table class="ref-pat-meta-table">
-          <tbody>
-            <tr>
-              <td class="ref-field-label">Name</td>
-              <td class="ref-field-colon">:</td>
-              <td class="ref-field-val ref-pat-fullname">${text(patName)}</td>
-            </tr>
-            <tr>
-              <td class="ref-field-label">Age/Gender</td>
-              <td class="ref-field-colon">:</td>
-              <td class="ref-field-val">${text(order.age)} Y / ${text(order.sex)}</td>
-            </tr>
-            <tr>
-              <td class="ref-field-label">Patient No</td>
-              <td class="ref-field-colon">:</td>
-              <td class="ref-field-val">${text(order.patientId)}</td>
-            </tr>
-            <tr>
-              <td class="ref-field-label">Refered By</td>
-              <td class="ref-field-colon">:</td>
-              <td class="ref-field-val">${text(order.referrer || 'SELF')}</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-      <div class="ref-patient-col ref-pat-center">
-        <div class="ref-qr-container">
-          ${generateSvgQrCode(order.id, order.patientId)}
-          <span class="ref-qr-tag">Scan to Verify</span>
-        </div>
+        ${patientRow('Name', `<span class="ref-pat-fullname">${text(patName)}</span>`)}
+        ${patientRow('Age/Gender', `${text(order.age)} Y / ${text(order.sex)}`)}
+        ${patientRow('Patient No', text(order.patientId))}
+        ${patientRow('Refered By', text(order.referrer || 'SELF'))}
       </div>
       <div class="ref-patient-col ref-pat-right">
         <div class="ref-barcode-container">
           ${generateSvgBarcode(order.id)}
         </div>
-        <table class="ref-pat-meta-table">
-          <tbody>
-            <tr>
-              <td class="ref-field-label">Bill No</td>
-              <td class="ref-field-colon">:</td>
-              <td class="ref-field-val"><strong>${text(order.id)}</strong></td>
-            </tr>
-            <tr>
-              <td class="ref-field-label">Sample Collect Date</td>
-              <td class="ref-field-colon">:</td>
-              <td class="ref-field-val">${displayDate(order.collectedAt || order.createdAt)}</td>
-            </tr>
-            <tr>
-              <td class="ref-field-label">Reported Date</td>
-              <td class="ref-field-colon">:</td>
-              <td class="ref-field-val">${escape(reportedFormatted)}</td>
-            </tr>
-          </tbody>
-        </table>
+        ${patientRow('Bill No', `<strong>${text(order.id)}</strong>`)}
+        ${patientRow('Sample Collect Date', displayDate(order.collectedAt || order.createdAt))}
+        ${patientRow('Reported Date', escape(reportedFormatted))}
       </div>
     </div>
   </section>`;
@@ -480,7 +445,6 @@ export function renderReport(order={},settings={},options={}) {
   const historical=order.status==='Approved'&&!definitions.frozen&&!sample;
   const warnings=[];
   if(order.amendmentReason)warnings.push(`Amended report: ${order.amendmentReason} (Replaces ${order.originalOrderId||'previous release'}).`);
-  if(historical)warnings.push('Historical report: original test definitions were not captured. Reference details use the current catalog.');
   if(definitions.hasUnknown)warnings.push('Some recorded test definitions are unavailable. Verify this report with the laboratory.');
   const warning=warnings.join(' ');
   const pages=paginate(order,profile,template,definitions,Boolean(mode),warning);
