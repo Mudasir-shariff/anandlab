@@ -632,23 +632,8 @@ INSERT INTO public.lab_settings (
 )
 ON CONFLICT DO UPDATE SET lab_name = EXCLUDED.lab_name;
 
--- 2. Default Doctors
-INSERT INTO public.doctors (name, qualification, phone, active) VALUES
-    ('Self / Walk-in', '', '', true),
-    ('Dr. Meera Iyer', 'MD (Gen Med)', '+91 98451 22334', true),
-    ('Dr. Arjun Rao', 'MBBS, DNB', '+91 98452 33445', true)
-ON CONFLICT DO NOTHING;
-
--- 3. Default Referral Labs & Hospitals
-INSERT INTO public.referral_labs (name, active) VALUES
-    ('Direct Walk-in', true),
-    ('Apex Reference Lab', true)
-ON CONFLICT DO NOTHING;
-
-INSERT INTO public.referral_hospitals (name, active) VALUES
-    ('None / Independent', true),
-    ('City Care Hospital', true)
-ON CONFLICT DO NOTHING;
+-- 2. Referring Doctors (Empty by default - registered by laboratory staff)
+-- 3. Referral Labs & Hospitals (Empty by default - registered by laboratory staff)
 
 -- 4. 38 Test Panels & Parameters
 DO $$

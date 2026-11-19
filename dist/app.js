@@ -2530,41 +2530,57 @@ function renderLabProfileSettings(container) {
 }
 
 function renderDoctorsSettings(container) {
+  const doctors = state.doctors || [];
   container.innerHTML = `
     <div class="card">
-      <div class="card-header">
-        <h3>Referring Doctors Directory</h3>
+      <div class="card-header d-flex justify-between align-center">
+        <div>
+          <h3>Referring Doctors Directory</h3>
+          <p class="muted mt-1">Manage external medical consultants and referring physicians for diagnostic billing.</p>
+        </div>
         <button class="btn btn-primary btn-sm" id="btn-add-doc-modal">+ Add Doctor</button>
       </div>
       <div class="card-body">
-        <table class="data-table">
-          <thead>
-            <tr>
-              <th>Doctor Name</th>
-              <th>Qualifications</th>
-              <th>Phone</th>
-              <th class="text-center">Status</th>
-              <th class="text-center">Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${state.doctors.map(d => `
+        ${doctors.length === 0 ? `
+          <div class="empty-state text-center p-4">
+            <p class="muted mb-2">No referring doctors registered yet.</p>
+            <p><small class="muted">Click <strong>+ Add Doctor</strong> above to register consulting physicians.</small></p>
+          </div>
+        ` : `
+          <table class="data-table">
+            <thead>
               <tr>
-                <td><strong>${escapeHTML(d.name)}</strong></td>
-                <td>${escapeHTML(d.qualification || '—')}</td>
-                <td>${escapeHTML(d.phone || '—')}</td>
-                <td class="text-center">
-                  <span class="badge ${d.active ? 'badge-paid' : 'badge-unpaid'}">${d.active ? 'Active' : 'Inactive'}</span>
-                </td>
-                <td class="text-center">
-                  <button class="btn btn-outline btn-xs btn-toggle-doctor" data-id="${d.id}" data-active="${d.active}">
-                    ${d.active ? 'Deactivate' : 'Activate'}
-                  </button>
-                </td>
+                <th>Doctor Name</th>
+                <th>Qualifications</th>
+                <th>Phone</th>
+                <th class="text-center">Status</th>
+                <th class="text-center">Actions</th>
               </tr>
-            `).join('')}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              ${doctors.map(d => `
+                <tr>
+                  <td><strong>${escapeHTML(d.name)}</strong></td>
+                  <td>${escapeHTML(d.qualification || '—')}</td>
+                  <td>${escapeHTML(d.phone || '—')}</td>
+                  <td class="text-center">
+                    <span class="badge ${d.active ? 'badge-paid' : 'badge-unpaid'}">${d.active ? 'Active' : 'Inactive'}</span>
+                  </td>
+                  <td class="text-center">
+                    <div class="table-actions justify-center">
+                      <button class="btn btn-outline btn-xs btn-toggle-doctor" data-id="${d.id}" data-active="${d.active}">
+                        ${d.active ? 'Deactivate' : 'Activate'}
+                      </button>
+                      <button class="btn btn-outline-danger btn-xs btn-delete-doctor" data-id="${d.id}" data-name="${escapeHTML(d.name)}" title="Delete doctor">
+                        ${uiIcon('trash', 12)} Delete
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        `}
       </div>
     </div>`;
 
@@ -2579,50 +2595,91 @@ function renderDoctorsSettings(container) {
       renderDoctorsSettings(container);
     });
   });
+
+  container.querySelectorAll('.btn-delete-doctor').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const id = btn.dataset.id;
+      const name = btn.dataset.name;
+      if (confirm(`Are you sure you want to delete ${name}?`)) {
+        const { error } = await state.supabase.from('doctors').delete().eq('id', id);
+        if (error) {
+          showToast('Could not delete doctor: ' + error.message, 'error');
+        } else {
+          showToast(`Doctor ${name} deleted successfully`, 'success');
+          await loadReferenceData();
+          renderDoctorsSettings(container);
+        }
+      }
+    });
+  });
 }
 
 function renderReferralsSettings(container) {
+  const labs = state.referralLabs || [];
+  const hosps = state.referralHospitals || [];
   container.innerHTML = `
     <div class="form-row">
       <div class="col-6">
         <div class="card">
-          <div class="card-header">
+          <div class="card-header d-flex justify-between align-center">
             <h3>Referral Laboratories</h3>
             <button class="btn btn-primary btn-sm" id="btn-add-lab-modal">+ Add Lab</button>
           </div>
           <div class="card-body">
-            <table class="data-table">
-              <thead><tr><th>Name</th><th class="text-center">Status</th></tr></thead>
-              <tbody>
-                ${state.referralLabs.map(l => `
-                  <tr>
-                    <td><strong>${escapeHTML(l.name)}</strong></td>
-                    <td class="text-center"><span class="badge ${l.active ? 'badge-paid' : 'badge-unpaid'}">${l.active ? 'Active' : 'Inactive'}</span></td>
-                  </tr>
-                `).join('')}
-              </tbody>
-            </table>
+            ${labs.length === 0 ? `
+              <div class="empty-state text-center p-3">
+                <p class="muted">No referral laboratories registered.</p>
+              </div>
+            ` : `
+              <table class="data-table">
+                <thead><tr><th>Name</th><th class="text-center">Status</th><th class="text-center">Action</th></tr></thead>
+                <tbody>
+                  ${labs.map(l => `
+                    <tr>
+                      <td><strong>${escapeHTML(l.name)}</strong></td>
+                      <td class="text-center"><span class="badge ${l.active ? 'badge-paid' : 'badge-unpaid'}">${l.active ? 'Active' : 'Inactive'}</span></td>
+                      <td class="text-center">
+                        <button class="btn btn-outline-danger btn-xs btn-delete-lab" data-id="${l.id}" data-name="${escapeHTML(l.name)}" title="Delete lab">
+                          ${uiIcon('trash', 12)}
+                        </button>
+                      </td>
+                    </tr>
+                  `).join('')}
+                </tbody>
+              </table>
+            `}
           </div>
         </div>
       </div>
       <div class="col-6">
         <div class="card">
-          <div class="card-header">
+          <div class="card-header d-flex justify-between align-center">
             <h3>Referral Hospitals</h3>
             <button class="btn btn-primary btn-sm" id="btn-add-hosp-modal">+ Add Hospital</button>
           </div>
           <div class="card-body">
-            <table class="data-table">
-              <thead><tr><th>Name</th><th class="text-center">Status</th></tr></thead>
-              <tbody>
-                ${state.referralHospitals.map(h => `
-                  <tr>
-                    <td><strong>${escapeHTML(h.name)}</strong></td>
-                    <td class="text-center"><span class="badge ${h.active ? 'badge-paid' : 'badge-unpaid'}">${h.active ? 'Active' : 'Inactive'}</span></td>
-                  </tr>
-                `).join('')}
-              </tbody>
-            </table>
+            ${hosps.length === 0 ? `
+              <div class="empty-state text-center p-3">
+                <p class="muted">No referral hospitals registered.</p>
+              </div>
+            ` : `
+              <table class="data-table">
+                <thead><tr><th>Name</th><th class="text-center">Status</th><th class="text-center">Action</th></tr></thead>
+                <tbody>
+                  ${hosps.map(h => `
+                    <tr>
+                      <td><strong>${escapeHTML(h.name)}</strong></td>
+                      <td class="text-center"><span class="badge ${h.active ? 'badge-paid' : 'badge-unpaid'}">${h.active ? 'Active' : 'Inactive'}</span></td>
+                      <td class="text-center">
+                        <button class="btn btn-outline-danger btn-xs btn-delete-hosp" data-id="${h.id}" data-name="${escapeHTML(h.name)}" title="Delete hospital">
+                          ${uiIcon('trash', 12)}
+                        </button>
+                      </td>
+                    </tr>
+                  `).join('')}
+                </tbody>
+              </table>
+            `}
           </div>
         </div>
       </div>
@@ -2630,6 +2687,38 @@ function renderReferralsSettings(container) {
 
   document.getElementById('btn-add-lab-modal').addEventListener('click', openAddReferralLabModal);
   document.getElementById('btn-add-hosp-modal').addEventListener('click', openAddReferralHospitalModal);
+
+  container.querySelectorAll('.btn-delete-lab').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const id = btn.dataset.id;
+      const name = btn.dataset.name;
+      if (confirm(`Are you sure you want to delete ${name}?`)) {
+        const { error } = await state.supabase.from('referral_labs').delete().eq('id', id);
+        if (error) showToast('Error deleting lab: ' + error.message, 'error');
+        else {
+          showToast(`Referral lab ${name} deleted`, 'success');
+          await loadReferenceData();
+          renderReferralsSettings(container);
+        }
+      }
+    });
+  });
+
+  container.querySelectorAll('.btn-delete-hosp').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const id = btn.dataset.id;
+      const name = btn.dataset.name;
+      if (confirm(`Are you sure you want to delete ${name}?`)) {
+        const { error } = await state.supabase.from('referral_hospitals').delete().eq('id', id);
+        if (error) showToast('Error deleting hospital: ' + error.message, 'error');
+        else {
+          showToast(`Referral hospital ${name} deleted`, 'success');
+          await loadReferenceData();
+          renderReferralsSettings(container);
+        }
+      }
+    });
+  });
 }
 
 function renderCatalogSettings(container) {
