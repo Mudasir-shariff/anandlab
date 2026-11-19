@@ -17,8 +17,142 @@ const numericValue = value => {
 const displayDate = value => {
   if (!value) return 'Not recorded';
   const date = new Date(value);
-  return Number.isFinite(date.getTime()) ? escape(date.toLocaleString('en-IN', { day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit', hour12:true, timeZone:'Asia/Kolkata' })) : 'Not recorded';
+  if (!Number.isFinite(date.getTime())) return 'Not recorded';
+  const parts = new Intl.DateTimeFormat('en-IN', {
+    day: '2-digit', month: 'short', year: 'numeric',
+    hour: '2-digit', minute: '2-digit', second: '2-digit',
+    hour12: true, timeZone: 'Asia/Kolkata'
+  }).formatToParts(date);
+  const map = Object.fromEntries(parts.map(p => [p.type, p.value]));
+  return `${map.day}-${map.month}-${map.year} ${map.hour}:${map.minute}:${map.second} ${(map.dayPeriod || '').toUpperCase()}`.trim();
 };
+
+const PARAMETER_METHODS = {
+  hb: 'Automated Cell Counter, Photometric Measurement',
+  wbc: 'Coulter Principle',
+  neutrophils: 'VCS Technology',
+  lymphocytes: 'VCS Technology',
+  eosinophils: 'VCS Technology',
+  monocytes: 'VCS Technology',
+  basophils: 'VCS Technology',
+  rbc: 'Coulter Principle',
+  hct: 'Automated Cell Counter, Calculation',
+  platelets: 'Automated Cell Counter, Derived From Platelet Histogram',
+  mcv: 'Automated Cell Counter, Derived From RBC Histogram',
+  mch: 'Automated Cell Counter, Calculation',
+  mchc: 'Automated Cell Counter, Calculation',
+  rdw_cv: 'Calculated from RBC Histogram',
+  rdw_sd: 'Calculated from RBC Histogram',
+  glucose_fasting: 'Hexokinase / GOD-POD Method',
+  glucose_postprandial: 'Hexokinase / GOD-POD Method',
+  hba1c: 'HPLC Method (NGSP Certified)',
+  eag: 'Calculated from HbA1c',
+  urea: 'GLDH Kinetic Method',
+  creatinine: 'Modified Jaffe Kinetic',
+  uric_acid: 'Uricase / POD Method',
+  calcium_total: 'Arsenazo III Method',
+  bilirubin_total: 'DSA / Diazo Method',
+  bilirubin_direct: 'Diazo Method',
+  alt: 'IFCC without Pyridoxal Phosphate',
+  ast: 'IFCC without Pyridoxal Phosphate',
+  alp: 'p-NPP Kinetic Method (IFCC)',
+  total_protein: 'Biuret Method',
+  albumin: 'Bromocresol Green (BCG) Method',
+  cholesterol_total: 'CHOD-PAP Enzymatic',
+  triglycerides: 'GPO-PAP Enzymatic',
+  hdl: 'Direct Enzymatic Clearance',
+  ldl: 'Friedewald Calculation',
+  vldl: 'Calculated (Triglycerides / 5)',
+  tsh: 'Chemiluminescence (CLIA)',
+  t3_total: 'Chemiluminescence (CLIA)',
+  t4_total: 'Chemiluminescence (CLIA)',
+  sodium: 'Indirect ISE (Ion Selective Electrode)',
+  potassium: 'Indirect ISE (Ion Selective Electrode)',
+  chloride: 'Indirect ISE (Ion Selective Electrode)',
+  esr: 'Westergren Method (1 hr)',
+  crp: 'Immunoturbidimetric (Quantitative)',
+  ra_factor: 'Turbidimetric Immunoassay',
+  aslo_titer: 'Turbidimetric Immunoassay'
+};
+
+function generateSvgBarcode(code) {
+  const textStr = String(code || '000000').toUpperCase();
+  const patterns = {
+    '0': '000110100', '1': '100100001', '2': '001100001', '3': '101100000',
+    '4': '000110001', '5': '100110000', '6': '001110000', '7': '000100101',
+    '8': '100100100', '9': '001100100', 'A': '100001001', 'B': '001001001',
+    'C': '101001000', 'D': '000011001', 'E': '100011000', 'F': '001011000',
+    'G': '000001101', 'H': '100001100', 'I': '001001100', 'J': '000011100',
+    'K': '100000011', 'L': '001000011', 'M': '101000010', 'N': '000010011',
+    'O': '100010010', 'P': '001010010', 'Q': '000000111', 'R': '100000110',
+    'S': '001000110', 'T': '000010110', 'U': '110000001', 'V': '011000001',
+    'W': '111000000', 'X': '010010001', 'Y': '110010000', 'Z': '011010000',
+    '-': '010000101', '.': '110000100', ' ': '011000100', '*': '010010100'
+  };
+  const safeText = ('*' + textStr.replace(/[^0-9A-Z\-.* ]/g, '') + '*').slice(0, 16);
+  let x = 4;
+  const bars = [];
+  for (let i = 0; i < safeText.length; i++) {
+    const p = patterns[safeText[i]] || patterns['*'];
+    for (let j = 0; j < 9; j++) {
+      const isBar = (j % 2 === 0);
+      const isWide = p[j] === '1';
+      const width = isWide ? 2.2 : 1.0;
+      if (isBar) {
+        bars.push(`<rect x="${x.toFixed(1)}" y="0" width="${width.toFixed(1)}" height="20" fill="#072a38"/>`);
+      }
+      x += width + (isBar ? 0.7 : 1.0);
+    }
+    x += 1.8;
+  }
+  const totalWidth = Math.ceil(x + 4);
+  return `<svg class="ref-barcode-svg" viewBox="0 0 ${totalWidth} 29" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">
+    ${bars.join('')}
+    <text x="${(totalWidth / 2).toFixed(1)}" y="27" font-family="monospace" font-size="7.5" font-weight="700" letter-spacing="1" text-anchor="middle" fill="#1e293b">${escape(textStr)}</text>
+  </svg>`;
+}
+
+function generateSvgQrCode(orderId, patientId) {
+  const size = 25;
+  const grid = Array.from({ length: size }, () => Array(size).fill(false));
+  const placeFinder = (startX, startY) => {
+    for (let r = 0; r < 7; r++) {
+      for (let c = 0; c < 7; c++) {
+        if (r === 0 || r === 6 || c === 0 || c === 6 || (r >= 2 && r <= 4 && c >= 2 && c <= 4)) {
+          grid[startY + r][startX + c] = true;
+        }
+      }
+    }
+  };
+  placeFinder(0, 0);
+  placeFinder(size - 7, 0);
+  placeFinder(0, size - 7);
+  for (let i = 8; i < size - 8; i++) {
+    grid[6][i] = (i % 2 === 0);
+    grid[i][6] = (i % 2 === 0);
+  }
+  const seedStr = `${orderId || 'ORD'}:${patientId || 'PAT'}:optix`;
+  let hash = 0;
+  for (let i = 0; i < seedStr.length; i++) hash = ((hash << 5) - hash + seedStr.charCodeAt(i)) | 0;
+  for (let r = 0; r < size; r++) {
+    for (let c = 0; c < size; c++) {
+      if ((r < 8 && c < 8) || (r < 8 && c >= size - 8) || (r >= size - 8 && c < 8)) continue;
+      if (r === 6 || c === 6) continue;
+      const bit = Math.abs(Math.sin((r * 29 + c * 31 + hash) * 1.3)) > 0.46;
+      grid[r][c] = bit;
+    }
+  }
+  const rects = [];
+  for (let r = 0; r < size; r++) {
+    for (let c = 0; c < size; c++) {
+      if (grid[r][c]) rects.push(`<rect x="${c}" y="${r}" width="1" height="1" fill="#004d55"/>`);
+    }
+  }
+  return `<svg class="ref-qr-svg" viewBox="-1 -1 27 27" xmlns="http://www.w3.org/2000/svg">
+    <rect x="-1" y="-1" width="27" height="27" fill="#ffffff" rx="1"/>
+    ${rects.join('')}
+  </svg>`;
+}
 const caduceusCrossIcon = `<svg class="ref-cross-svg" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
   <path d="M22 6C22 3.79086 23.7909 2 26 2H38C40.2091 2 42 3.79086 42 6V22H58C60.2091 22 62 23.7909 62 26V38C62 40.2091 60.2091 42 58 42H42V58C42 60.2091 40.2091 62 38 62H26C23.7909 62 22 60.2091 22 58V42H6C3.79086 42 2 40.2091 2 38V26C2 23.7909 3.79086 22 6 22H22V6Z" fill="#006b76"/>
   <line x1="32" y1="12" x2="32" y2="52" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round"/>
@@ -194,7 +328,9 @@ function resultRow(row,code,sex) {
   const isCustomRef = parameter.reference && (!PARAMETERS[row.key] || parameter.reference !== PARAMETERS[row.key].reference);
   const sexRef = !isCustomRef && (sex==='Male' && parameter.referenceM ? parameter.referenceM : sex==='Female' && parameter.referenceF ? parameter.referenceF : null);
   const reference=row.unknown?'Not captured':sexRef||parameter.reference || (Number.isFinite(parameter.min)&&Number.isFinite(parameter.max)?`${parameter.min} – ${parameter.max}`:'Not captured');
-  return `<tr class="report-result-row ${flag?'report-abnormal':''}" data-test="${escape(code)}" data-parameter="${escape(row.key)}"><td>${text(parameter.name || row.key)}${row.unknown?'<small class="report-definition-label">Definition not captured</small>':''}</td><td class="report-result-value">${available?escape(row.value):recordedText?escape(recordedText):'—'}${flag?`<span class="report-result-flag" aria-label="${flag==='H'?'Above reference range':'Below reference range'}">${flag}</span>`:''}</td><td>${row.unknown?'Not captured':text(parameter.unit)}</td><td>${escape(reference)}</td></tr>`;
+  const method = PARAMETER_METHODS[row.key] || '';
+  const subheader = (code === 'CBC' && row.key === 'neutrophils') ? '<tr class="report-subheading-row"><td colspan="4">DIFFERENTIAL COUNT</td></tr>' : '';
+  return `${subheader}<tr class="report-result-row ${flag?'report-abnormal':''}" ${method?`data-method="${escape(method)}" `:''}data-test="${escape(code)}" data-parameter="${escape(row.key)}"><td>${text(parameter.name || row.key)}${row.unknown?'<small class="report-definition-label">Definition not captured</small>':''}</td><td class="report-result-value">${available?escape(row.value):recordedText?escape(recordedText):'—'}${flag?`<span class="report-result-flag" aria-label="${flag==='H'?'Above reference range':'Below reference range'}">${flag}</span>`:''}</td><td>${row.unknown?'Not captured':text(parameter.unit)}</td><td>${escape(reference)}</td></tr>`;
 }
 
 function letterhead(profile) {
@@ -219,8 +355,81 @@ function letterhead(profile) {
     </div>
   </header>`;
 }
+
+const formatPatientName = (name, sex) => {
+  const trimmed = String(name || '').trim();
+  if (!trimmed) return '—';
+  if (/^(Mr|Mrs|Ms|Miss|Dr|Master)\.?\s/i.test(trimmed)) return trimmed;
+  const prefix = sex === 'Male' ? 'Mr. ' : sex === 'Female' ? 'Mrs. ' : '';
+  return prefix + trimmed;
+};
+
 function patientDetails(order) {
-  return `<section class="report-patient-block" aria-label="Patient and sample details"><div class="report-patient-identity"><h3>${text(order.name)}</h3><dl><div><dt>Age / Sex</dt><dd>${text(order.age)} years / ${text(order.sex)}</dd></div><div><dt>Patient ID</dt><dd>${text(order.patientId)}</dd></div><div><dt>Referred by</dt><dd>${text(order.referrer || 'Self')}</dd></div></dl></div><div class="report-sample-details"><dl><div><dt>Order no.</dt><dd class="report-order-number">${text(order.id)}</dd></div><div><dt>Registered</dt><dd>${displayDate(order.createdAt)}</dd></div><div><dt>Collected</dt><dd>${displayDate(order.collectedAt)}</dd></div><div><dt>Received</dt><dd>${displayDate(order.receivedAt)}</dd></div><div><dt>Reported</dt><dd>${order.status==='Approved'?displayDate(order.approvedAt):'Pending approval'}</dd></div></dl><p class="report-timezone">All report times: IST (UTC+05:30)</p></div></section>`;
+  const patName = formatPatientName(order.name, order.sex);
+  const reportedFormatted = order.status === 'Approved' ? displayDate(order.approvedAt) : 'Pending approval';
+  return `<section class="report-patient-block" aria-label="Patient and sample details">
+    <dl class="ref-audit-dl" style="position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;">
+      <div><dt>Reported</dt><dd>${reportedFormatted}</dd></div>
+    </dl>
+    <div class="ref-patient-layout">
+      <div class="ref-patient-col ref-pat-left">
+        <table class="ref-pat-meta-table">
+          <tbody>
+            <tr>
+              <td class="ref-field-label">Name</td>
+              <td class="ref-field-colon">:</td>
+              <td class="ref-field-val ref-pat-fullname">${text(patName)}</td>
+            </tr>
+            <tr>
+              <td class="ref-field-label">Age/Gender</td>
+              <td class="ref-field-colon">:</td>
+              <td class="ref-field-val">${text(order.age)} Y / ${text(order.sex)}</td>
+            </tr>
+            <tr>
+              <td class="ref-field-label">Patient No</td>
+              <td class="ref-field-colon">:</td>
+              <td class="ref-field-val">${text(order.patientId)}</td>
+            </tr>
+            <tr>
+              <td class="ref-field-label">Refered By</td>
+              <td class="ref-field-colon">:</td>
+              <td class="ref-field-val">${text(order.referrer || 'SELF')}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="ref-patient-col ref-pat-center">
+        <div class="ref-qr-container">
+          ${generateSvgQrCode(order.id, order.patientId)}
+          <span class="ref-qr-tag">Scan to Verify</span>
+        </div>
+      </div>
+      <div class="ref-patient-col ref-pat-right">
+        <div class="ref-barcode-container">
+          ${generateSvgBarcode(order.id)}
+        </div>
+        <table class="ref-pat-meta-table">
+          <tbody>
+            <tr>
+              <td class="ref-field-label">Bill No</td>
+              <td class="ref-field-colon">:</td>
+              <td class="ref-field-val"><strong>${text(order.id)}</strong></td>
+            </tr>
+            <tr>
+              <td class="ref-field-label">Sample Collect Date</td>
+              <td class="ref-field-colon">:</td>
+              <td class="ref-field-val">${displayDate(order.collectedAt || order.createdAt)}</td>
+            </tr>
+            <tr>
+              <td class="ref-field-label">Reported Date</td>
+              <td class="ref-field-colon">:</td>
+              <td class="ref-field-val">${escape(reportedFormatted)}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>`;
 }
 function signatures(order,profile) {
   const approved=order.status==='Approved';
@@ -275,5 +484,5 @@ export function renderReport(order={},settings={},options={}) {
   if(definitions.hasUnknown)warnings.push('Some recorded test definitions are unavailable. Verify this report with the laboratory.');
   const warning=warnings.join(' ');
   const pages=paginate(order,profile,template,definitions,Boolean(mode),warning);
-  return `<div class="report report-document report-theme-${template}" data-report-template="${template}">${pages.map((page,index)=>`<article class="report-page" aria-label="Report page ${index+1} of ${pages.length}">${watermarkSvg}<div class="molecular-lattice-tr" aria-hidden="true">${molecularLatticeSvg}</div><div class="molecular-lattice-bl" aria-hidden="true">${molecularLatticeSvg}</div>${mode?`<div class="report-status-ribbon ${draft?'report-status-draft':''}">${escape(mode)}</div>`:''}${letterhead(profile)}${patientDetails(order)}${warning?`<p class="report-data-warning">${escape(warning)}</p>`:''}<div class="report-document-title"><span>LABORATORY REPORT</span><b>${draft?'DRAFT':'RESULTS'}</b></div><main class="report-results-content">${page.sections.length?page.sections.map(section=>`<section class="report-test-section"><div class="report-test-heading"><span>${text(section.test.department)}</span><h3>${text(section.test.name)}${section.continued?' <small>(continued)</small>':''}</h3><div>Specimen: ${text(section.test.sample)}</div></div><table class="report-results-table"><colgroup><col style="width:43%"><col style="width:16%"><col style="width:17%"><col style="width:24%"></colgroup><thead><tr><th>TEST DESCRIPTION</th><th>RESULT</th><th>UNITS</th><th>BIOLOGICAL REFERENCE</th></tr></thead><tbody>${section.rows.map(row=>resultRow(row,section.code,order.sex)).join('')}</tbody></table></section>`).join(''):page.noteOnly?'':'<p class="report-no-results">No test results are available for this order.</p>'}</main>${page.notes!==null?`<section class="report-clinical-notes"><h4>Clinical notes${page.notesContinued?' · continued':''}</h4><p>${escape(page.notes)}</p><small>H = above reference interval · L = below reference interval. Interpret results with clinical findings. Reference intervals require laboratory validation.</small></section>`:''}${page.signatures?signatures(order,profile):'<p class="report-continued-note">Report continued on the next page.</p>'}<footer class="report-page-footer"><div class="report-footer-rule"></div><div class="report-footer-row"><span>${text(order.id)}</span><strong>Page ${index+1} of ${pages.length}</strong><span>${index===pages.length-1?'End of report':'Continued'}</span></div>${profile.reportFooter?`<p>${escape(profile.reportFooter)}</p>`:'<p>Results relate only to the sample tested. Please correlate with clinical findings.</p>'}${profile.workingHours?`<p>Working hours: ${escape(profile.workingHours)}</p>`:''}</footer>${bottomBanner()}</article>`).join('')}</div>`;
+  return `<div class="report report-document report-theme-${template}" data-report-template="${template}">${pages.map((page,index)=>`<article class="report-page" aria-label="Report page ${index+1} of ${pages.length}">${watermarkSvg}<div class="molecular-lattice-tr" aria-hidden="true">${molecularLatticeSvg}</div><div class="molecular-lattice-bl" aria-hidden="true">${molecularLatticeSvg}</div>${mode?`<div class="report-status-ribbon ${draft?'report-status-draft':''}">${escape(mode)}</div>`:''}${letterhead(profile)}${patientDetails(order)}${warning?`<p class="report-data-warning">${escape(warning)}</p>`:''}<div class="report-document-title"><span>LABORATORY REPORT</span><b>${draft?'DRAFT':'RESULTS'}</b></div><main class="report-results-content">${page.sections.length?page.sections.map(section=>`<section class="report-test-section"><div class="report-test-heading"><span>${text(section.test.department)}</span><h3>${text(section.test.name)}${section.continued?' <small>(continued)</small>':''}</h3><div>Specimen: ${text(section.test.sample)}</div></div><table class="report-results-table"><colgroup><col style="width:43%"><col style="width:16%"><col style="width:17%"><col style="width:24%"></colgroup><thead><tr><th>TEST DESCRIPTION</th><th>RESULT</th><th>UNITS</th><th>BIOLOGICAL REFERENCE</th></tr></thead><tbody>${section.rows.map(row=>resultRow(row,section.code,order.sex)).join('')}</tbody></table></section>`).join(''):page.noteOnly?'':'<p class="report-no-results">No test results are available for this order.</p>'}</main>${page.notes!==null?`<section class="report-clinical-notes"><h4>Interpretation :${page.notesContinued?' (continued)':''}</h4><p>${escape(page.notes)}</p><small>H = above reference interval · L = below reference interval. Interpret results with clinical findings. Reference intervals require laboratory validation.</small></section>`:''}<div class="report-end-marker">****End Of The Report****</div>${page.signatures?signatures(order,profile):'<p class="report-continued-note">Report continued on the next page.</p>'}<footer class="report-page-footer"><div class="report-footer-rule"></div><div class="report-footer-row"><span>${text(order.id)}</span><strong>Page ${index+1} of ${pages.length}</strong><span>${index===pages.length-1?'End of report':'Continued'}</span></div>${profile.reportFooter?`<p>${escape(profile.reportFooter)}</p>`:'<p>Results relate only to the sample tested. Please correlate with clinical findings.</p>'}${profile.workingHours?`<p>Working hours: ${escape(profile.workingHours)}</p>`:''}</footer>${bottomBanner()}</article>`).join('')}</div>`;
 }

@@ -391,3 +391,286 @@
   color: #99f6e4;
   font-weight: 700;
 }
+
+/* =============================================================
+   Reference Software Alignments & Layout (MATHRUSRI / Anand Lab)
+   ============================================================= */
+
+/* Patient Details Layout */
+.report-patient-block {
+  border-bottom: 2.5px double #006b76 !important;
+  padding: 4px 0 8px !important;
+  margin-bottom: 8px !important;
+}
+
+.ref-patient-layout {
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: flex-start !important;
+  gap: 12px !important;
+  width: 100% !important;
+}
+
+.ref-pat-left {
+  flex: 0 0 46% !important;
+  min-width: 0 !important;
+}
+
+.ref-pat-center {
+  flex: 0 0 14% !important;
+  display: flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+}
+
+.ref-pat-right {
+  flex: 0 0 38% !important;
+  min-width: 0 !important;
+}
+
+.ref-pat-meta-table {
+  border-collapse: collapse !important;
+  width: 100% !important;
+  font-family: Arial, Helvetica, sans-serif !important;
+  font-size: 8.5pt !important;
+}
+
+.ref-pat-meta-table tr {
+  line-height: 1.4 !important;
+}
+
+.ref-field-label {
+  width: 125px !important;
+  font-weight: 600 !important;
+  color: #1e293b !important;
+  white-space: nowrap !important;
+  padding: 1.5px 0 !important;
+}
+
+.ref-field-colon {
+  width: 14px !important;
+  text-align: center !important;
+  font-weight: 700 !important;
+  color: #334155 !important;
+  padding: 1.5px 2px !important;
+}
+
+.ref-field-val {
+  font-weight: 600 !important;
+  color: #0f172a !important;
+  padding: 1.5px 0 !important;
+  overflow-wrap: anywhere !important;
+}
+
+.ref-pat-fullname {
+  font-weight: 800 !important;
+  font-size: 9.5pt !important;
+  color: #072a38 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.2px !important;
+}
+
+.ref-qr-container {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 3px !important;
+  padding: 2px !important;
+}
+
+.ref-qr-svg {
+  width: 58px !important;
+  height: 58px !important;
+  border: 1px solid #cbd5e1 !important;
+  border-radius: 4px !important;
+  padding: 2px !important;
+  background: #ffffff !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06) !important;
+}
+
+.ref-qr-tag {
+  font-family: Arial, Helvetica, sans-serif !important;
+  font-size: 6.5pt !important;
+  font-weight: 700 !important;
+  color: #006b76 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.5px !important;
+}
+
+.ref-barcode-container {
+  display: flex !important;
+  justify-content: flex-start !important;
+  margin-bottom: 4px !important;
+}
+
+.ref-barcode-svg {
+  height: 27px !important;
+  max-width: 135px !important;
+  display: block !important;
+}
+
+/* Department Banner & Section Headings */
+.report-document .report-test-heading {
+  margin: 10px 0 6px !important;
+  text-align: left !important;
+}
+
+.report-document .report-test-heading > span {
+  display: block !important;
+  background: #e6f4f5 !important;
+  color: #004d55 !important;
+  font-family: Arial, Helvetica, sans-serif !important;
+  font-size: 10pt !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.8px !important;
+  text-transform: uppercase !important;
+  padding: 4px 8px !important;
+  border-left: 4px solid #006b76 !important;
+  border-radius: 2px !important;
+  margin-bottom: 4px !important;
+}
+
+.report-document .report-test-heading h3 {
+  font-family: Arial, Helvetica, sans-serif !important;
+  font-size: 10pt !important;
+  font-weight: 700 !important;
+  color: #072a38 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.2px !important;
+  margin: 2px 0 2px 2px !important;
+}
+
+.report-document .report-test-heading > div {
+  font-size: 7.5pt !important;
+  color: #64748b !important;
+  margin-left: 2px !important;
+}
+
+/* Results Table Grid & Sub-headers */
+.report-document table.report-results-table {
+  border-collapse: collapse !important;
+  width: 100% !important;
+  border: 1px solid #cbd5e1 !important;
+}
+
+.report-document .report-results-table th {
+  background: #f1f7f8 !important;
+  color: #072a38 !important;
+  font-family: Arial, Helvetica, sans-serif !important;
+  font-size: 8pt !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.4px !important;
+  padding: 6px 8px !important;
+  border-top: 1.5px solid #006b76 !important;
+  border-bottom: 1.5px solid #006b76 !important;
+  text-transform: uppercase !important;
+}
+
+.report-document .report-results-table td {
+  padding: 5px 8px !important;
+  font-size: 8.5pt !important;
+  line-height: 1.35 !important;
+  border-bottom: 1px solid #f1f5f9 !important;
+  vertical-align: middle !important;
+}
+
+.report-document .report-results-table td:first-child {
+  font-weight: 700 !important;
+  color: #0f172a !important;
+}
+
+/* Method annotations rendered via ::after */
+.report-document .report-results-table tr[data-method] td:first-child::after {
+  content: attr(data-method) !important;
+  display: block !important;
+  font-size: 6.8pt !important;
+  font-style: italic !important;
+  font-weight: 400 !important;
+  color: #64748b !important;
+  margin-top: 1.5px !important;
+  line-height: 1.2 !important;
+}
+
+.report-document .report-subheading-row td {
+  background: #f8fafc !important;
+  color: #006b76 !important;
+  font-weight: 800 !important;
+  font-size: 8pt !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.8px !important;
+  padding: 4px 8px !important;
+  border-top: 1px solid #cbd5e1 !important;
+  border-bottom: 1px solid #cbd5e1 !important;
+}
+
+.report-document .report-results-table .report-result-value {
+  font-weight: 700 !important;
+  font-size: 9pt !important;
+  color: #072a38 !important;
+  font-variant-numeric: tabular-nums !important;
+}
+
+.report-document .report-results-table .report-abnormal td {
+  background: #fef2f2 !important;
+}
+
+.report-document .report-results-table .report-abnormal .report-result-value {
+  color: #b91c1c !important;
+  font-weight: 800 !important;
+}
+
+.report-document .report-result-flag {
+  background: #fee2e2 !important;
+  color: #991b1b !important;
+  border: 1px solid #f87171 !important;
+  font-weight: 800 !important;
+  border-radius: 2px !important;
+  padding: 1px 4px !important;
+  margin-left: 6px !important;
+  font-size: 7.5pt !important;
+}
+
+/* Interpretation & Clinical Notes */
+.report-document .report-clinical-notes {
+  background: #f8fafc !important;
+  border: 1px solid #e2e8f0 !important;
+  border-left: 3.5px solid #006b76 !important;
+  border-radius: 4px !important;
+  padding: 8px 12px !important;
+  margin: 10px 0 6px !important;
+}
+
+.report-document .report-clinical-notes h4 {
+  font-family: Arial, Helvetica, sans-serif !important;
+  font-size: 9pt !important;
+  font-weight: 800 !important;
+  color: #072a38 !important;
+  margin-bottom: 4px !important;
+}
+
+.report-document .report-clinical-notes p {
+  font-size: 8.5pt !important;
+  line-height: 1.5 !important;
+  color: #334155 !important;
+  margin-bottom: 4px !important;
+}
+
+.report-document .report-clinical-notes small {
+  font-size: 7pt !important;
+  color: #64748b !important;
+  display: block !important;
+  margin-top: 4px !important;
+}
+
+/* End Of The Report Marker */
+.report-document .report-end-marker {
+  text-align: center !important;
+  font-family: Arial, Helvetica, sans-serif !important;
+  font-size: 9pt !important;
+  font-weight: 800 !important;
+  color: #072a38 !important;
+  letter-spacing: 1.5px !important;
+  margin: 10px 0 6px !important;
+  text-transform: uppercase !important;
+}
