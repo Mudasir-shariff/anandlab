@@ -53,7 +53,11 @@ const server = http.createServer((req, res) => {
   }
 
   if (reqPath === '/' || reqPath === '') reqPath = '/index.html';
-  const filePath = path.join(distDir, reqPath);
+  if (reqPath === '/favicon.ico') reqPath = '/assets/favicon.ico';
+  let filePath = path.join(distDir, reqPath);
+  if (!fs.existsSync(filePath) && reqPath === '/assets/favicon.ico') {
+    filePath = path.resolve(__dirname, '..', 'assets', 'icon.ico');
+  }
 
   if (!fs.existsSync(filePath)) {
     res.writeHead(404, { 'Content-Type': 'text/plain' });
@@ -63,10 +67,14 @@ const server = http.createServer((req, res) => {
 
   const ext = path.extname(filePath);
   const contentType = mimeTypes[ext] || 'application/octet-stream';
-  res.writeHead(200, {
+  const headers = {
     'Content-Type': contentType,
     'Access-Control-Allow-Origin': '*'
-  });
+  };
+  if (['.js', '.css', '.png', '.ico', '.svg', '.woff2'].includes(ext)) {
+    headers['Cache-Control'] = 'public, max-age=31536000, immutable';
+  }
+  res.writeHead(200, headers);
   fs.createReadStream(filePath).pipe(res);
 });
 

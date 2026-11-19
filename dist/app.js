@@ -321,7 +321,7 @@ function renderSetupPrompt() {
     <div class="setup-container">
       <div class="setup-card">
         <div class="login-logo-container mb-3">
-          <img src="./assets/logo.png" alt="OPTI - X LABS" class="login-logo-img" style="filter: brightness(0) invert(1);" />
+          <img src="./assets/logo.png" alt="OPTI - X LABS" class="login-logo-img" width="160" height="62" style="filter: brightness(0) invert(1);" />
         </div>
         <div class="brand-badge">Opti-X Labs Desktop</div>
         <h2>Connect Supabase Database</h2>
@@ -375,7 +375,7 @@ function renderLogin(errorMessage = '') {
 
           <div class="brand-hero-block">
             <div class="brand-logo-pill">
-              <img src="./assets/logo.png" alt="OPTI - X LABS" class="login-logo-img" />
+              <img src="./assets/logo.png" alt="OPTI - X LABS" class="login-logo-img" width="160" height="62" />
             </div>
             <h1>Opti-X Labs</h1>
             <p class="brand-subtitle">Clinical Laboratory Information &amp; Diagnostic Reporting System</p>

@@ -3,22 +3,28 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Labflow Diagnostics - Modern Clinical Laboratory Management &amp; Diagnostic Reporting System">
+  <meta name="theme-color" content="#006b76">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400..700;1,9..40,400..700&family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" media="print" onload="this.media='all'">
+  <link rel="icon" type="image/x-icon" href="./assets/favicon.ico">
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self' https://*.supabase.co wss://*.supabase.co; img-src 'self' data: blob:;">
   <title>Labflow Diagnostics</title>
   <link rel="stylesheet" href="./style.css">
-  <link rel="stylesheet" href="./report.css">
+  <link rel="stylesheet" href="./report.css" media="print" onload="this.media='all'">
 </head>
 <body>
-  <div id="app">
+  <main id="app" role="main">
     <div class="app-loading">
       <div class="spinner"></div>
       <p>Initializing Labflow Diagnostics...</p>
     </div>
-  </div>
+  </main>
   <div id="modal-container"></div>
   <div id="toast-container" class="toast-container" role="status" aria-live="polite"></div>
 
-  <script src="./supabase.js"></script>
+  <script defer src="./supabase.js"></script>
   <script type="module" src="./app.js"></script>
 </body>
 </html>
