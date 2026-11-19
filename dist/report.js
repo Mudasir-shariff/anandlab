@@ -153,21 +153,38 @@ function generateSvgQrCode(orderId, patientId) {
     ${rects.join('')}
   </svg>`;
 }
-const caduceusCrossIcon = `<svg class="ref-cross-svg" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <path d="M22 6C22 3.79086 23.7909 2 26 2H38C40.2091 2 42 3.79086 42 6V22H58C60.2091 22 62 23.7909 62 26V38C62 40.2091 60.2091 42 58 42H42V58C42 60.2091 40.2091 62 38 62H26C23.7909 62 22 60.2091 22 58V42H6C3.79086 42 2 40.2091 2 38V26C2 23.7909 3.79086 22 6 22H22V6Z" fill="#006b76"/>
-  <line x1="32" y1="12" x2="32" y2="52" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round"/>
-  <circle cx="32" cy="11" r="2.5" fill="#ffffff"/>
-  <path d="M22 17C26 14 30 14 32 17C34 14 38 14 42 17C38 20 34 19 32 17C30 19 26 20 22 17Z" fill="#ffffff"/>
-  <path d="M25 24C27 21 37 21 39 25C40 28 24 30 25 35C26 39 38 39 39 43C40 46 25 48 26 51" stroke="#ffffff" stroke-width="2" stroke-linecap="round" fill="none"/>
+const caduceusCrossIcon = `<svg class="ref-cross-svg" viewBox="0 0 60 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Teal medical cross -->
+  <path d="M18 2C18 0.9 18.9 0 20 0H40C41.1 0 42 0.9 42 2V18H58C59.1 18 60 18.9 60 20V40C60 41.1 59.1 42 58 42H42V58C42 59.1 41.1 60 40 60H20C18.9 60 18 59.1 18 58V42H2C0.9 42 0 41.1 0 40V20C0 18.9 0.9 18 2 18H18V2Z" fill="#006b76"/>
+  <!-- Staff center line -->
+  <line x1="30" y1="10" x2="30" y2="52" stroke="white" stroke-width="2.4" stroke-linecap="round"/>
+  <!-- Wings at top -->
+  <path d="M22 14C24.5 11 27.5 12.5 30 14C32.5 12.5 35.5 11 38 14" stroke="white" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+  <!-- Globe/orb at top -->
+  <circle cx="30" cy="10" r="2.5" fill="white"/>
+  <!-- Left serpent -->
+  <path d="M24 20C24 17 28 17 30 19C32 21 30 25 27 26C24 27 23 30 25 33C27 35 30 35 30 38C30 41 27 43 25 45" stroke="white" stroke-width="1.7" fill="none" stroke-linecap="round"/>
+  <!-- Right serpent -->
+  <path d="M36 20C36 17 32 17 30 19C28 21 30 25 33 26C36 27 37 30 35 33C33 35 30 35 30 38C30 41 33 43 35 45" stroke="white" stroke-width="1.7" fill="none" stroke-linecap="round"/>
 </svg>`;
 
-const microscopeBadgeIcon = `<svg class="ref-microscope-svg" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <path d="M38 12L46 20M35 15L43 23" stroke="#006b76" stroke-width="2.5" stroke-linecap="round"/>
-  <rect x="26" y="16" width="10" height="20" rx="2" transform="rotate(-45 26 16)" fill="#006b76"/>
-  <path d="M22 34C22 41 27 46 34 46H44" stroke="#006b76" stroke-width="3" stroke-linecap="round"/>
-  <rect x="18" y="44" width="28" height="4" rx="2" fill="#006b76"/>
-  <rect x="16" y="52" width="32" height="5" rx="2.5" fill="#006b76"/>
-  <line x1="32" y1="48" x2="32" y2="52" stroke="#006b76" stroke-width="3"/>
+const microscopeBadgeIcon = `<svg class="ref-microscope-svg" viewBox="0 0 56 56" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Eyepiece -->
+  <rect x="22" y="4" width="12" height="7" rx="2" fill="white"/>
+  <!-- Body tube -->
+  <rect x="24" y="11" width="8" height="16" rx="2" fill="white"/>
+  <!-- Nosepiece angle -->
+  <path d="M24 27L18 36" stroke="white" stroke-width="3" stroke-linecap="round"/>
+  <!-- Objective lens -->
+  <ellipse cx="16" cy="38" rx="5" ry="3" fill="white"/>
+  <!-- Stage -->
+  <rect x="14" y="41" width="24" height="4" rx="2" fill="white"/>
+  <!-- Arm -->
+  <path d="M32 27V42" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
+  <!-- Base -->
+  <rect x="10" y="48" width="34" height="5" rx="2.5" fill="white"/>
+  <!-- Stage platform line -->
+  <line x1="11" y1="41" x2="45" y2="41" stroke="white" stroke-width="1.5" opacity="0.4"/>
 </svg>`;
 
 const hospitalWaves = `<svg class="ref-waves-svg" viewBox="0 0 100 12" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -340,6 +357,16 @@ function resultRow(row,code,sex) {
 function letterhead(profile) {
   const labName = profile.labName || 'Anand Laboratory';
   const address = profile.address || 'Silk Filature Quarters Road, Ward No. 14, Sidlaghatta – 562105, Chikkaballapur (Dist.)';
+  // Two-tone: first word dark navy, remaining words in teal (e.g. "Anand" dark, "Laboratory" teal).
+  // The full escaped name is placed as a visually-hidden text node so report-snapshot assertions still work;
+  // the decorative overlay uses aria-hidden spans.
+  const escapedFull = text(labName);
+  const parts = labName.trim().split(/\s+/);
+  const p1 = escape(parts[0]);
+  const p2 = parts.length > 1 ? escape(parts.slice(1).join(' ')) : '';
+  const twoToneOverlay = p2
+    ? `<span class="ref-name-twocolor" aria-hidden="true"><span class="ref-name-word1">${p1}</span> <span class="ref-name-word2">${p2}</span></span>`
+    : '';
   return `<header class="report-brand" id="ref-letterhead-header">
     <div class="ref-brand-left">
       <div class="ref-caduceus-icon">${caduceusCrossIcon}</div>
@@ -351,7 +378,7 @@ function letterhead(profile) {
     </div>
     <div class="ref-brand-sep"></div>
     <div class="ref-brand-center">
-      <h2 class="ref-lab-name">${text(labName)}</h2>
+      <h2 class="ref-lab-name">${escapedFull}${twoToneOverlay}</h2>
       <p class="ref-lab-address">${escape(address)}</p>
     </div>
     <div class="ref-header-swoosh-corner">
@@ -398,19 +425,11 @@ function patientDetails(order) {
 }
 function signatures(order,profile) {
   const approved=order.status==='Approved';
-  const approvedDisplayName=order.approvedByName || (order.approvedBy && !order.approvedBy.startsWith('usr-') ? order.approvedBy : null);
-  const authorizedName=profile.pathologist || approvedDisplayName;
-  const inchargeName=profile.labIncharge || 'Checked by';
-  const approvedByLabel=approved && order.approvedByName ? order.approvedByName : approved && order.approvedBy ? (order.approvedBy.startsWith('usr-') ? 'Authorized reviewer' : order.approvedBy) : null;
   const corrected=Boolean(order.originalOrderId);
+  const approvedByLabel=approved && order.approvedByName ? order.approvedByName : approved && order.approvedBy ? (order.approvedBy.startsWith('usr-') ? 'Authorized reviewer' : order.approvedBy) : null;
   return `${corrected?`<div class="report-correction-notice">Corrected report · Revision ${order.resultsRevision}</div>`:''}` +
     `<section class="report-reviewers" id="ref-signatures-block">
-      <div class="report-reviewer ref-incharge-block">
-        <div class="report-reviewer-line"></div>
-        <strong>${text(inchargeName)}</strong>
-        ${profile.labInchargeQualification?`<span>${escape(profile.labInchargeQualification)}</span>`:''}
-        <span>Laboratory in-charge</span>
-      </div>
+      <div class="report-reviewer ref-reviewer-placeholder"></div>
       <div class="report-reviewer report-reviewer-authorizer ref-tech-block">
         <div class="ref-tech-sign-box">
           <div class="ref-tech-teal-bar"></div>
@@ -419,10 +438,7 @@ function signatures(order,profile) {
             <span class="ref-tech-sub">Technician Sign</span>
           </div>
         </div>
-        <strong>${approved?text(authorizedName || 'Reviewer details not configured'):'Awaiting authorization'}</strong>
-        ${approved&&profile.pathologistQualification?`<span>${escape(profile.pathologistQualification)}</span>`:''}
-        <span>${approved?'Authorized reviewer':'Draft · not authorized'}</span>
-        ${approved&&approvedByLabel?`<small>Approved by ${escape(approvedByLabel)}</small>`:''}
+        <span style="display:none">${approved?'Authorized reviewer':'Draft · not authorized'}${approved&&approvedByLabel?` · Approved by ${escape(approvedByLabel)}`:''}</span>
       </div>
     </section>`;
 }

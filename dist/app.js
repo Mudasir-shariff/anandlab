@@ -2901,7 +2901,7 @@ function renderReferralsSettings(container) {
 }
 
 function renderCatalogSettings(container) {
-        container.innerHTML = `
+  container.innerHTML = `
     <div class="card">
       <div class="card-header">
         <h3>Diagnostic Test Catalog &amp; Prices</h3>
@@ -2943,24 +2943,24 @@ function renderCatalogSettings(container) {
     </div>`;
 
   container.querySelectorAll('.btn-save-test-price').forEach(btn => {
-        btn.addEventListener('click', async () => {
-          const id = btn.dataset.id;
-          const input = container.querySelector(`.price-edit-input[data-id="${id}"]`);
-          const newPrice = Number(input.value || 0);
-          try {
-            const { error } = await state.supabase.from('tests').update({ price: newPrice }).eq('id', id);
-            if (error) throw error;
-            showToast('Test price updated', 'success');
-            await loadReferenceData();
-          } catch (err) {
-            showToast('Error updating price: ' + err.message, 'error');
-          }
-        });
+    btn.addEventListener('click', async () => {
+      const id = btn.dataset.id;
+      const input = container.querySelector(`.price-edit-input[data-id="${id}"]`);
+      const newPrice = Number(input.value || 0);
+      try {
+        const { error } = await state.supabase.from('tests').update({ price: newPrice }).eq('id', id);
+        if (error) throw error;
+        showToast('Test price updated', 'success');
+        await loadReferenceData();
+      } catch (err) {
+        showToast('Error updating price: ' + err.message, 'error');
+      }
+    });
   });
 }
 
-      function renderSecuritySettings(container) {
-        container.innerHTML = `
+function renderSecuritySettings(container) {
+  container.innerHTML = `
     <div class="card" style="max-width: 500px;">
       <div class="card-header">
         <h3>Change Staff Password</h3>
@@ -2981,26 +2981,26 @@ function renderCatalogSettings(container) {
     </div>`;
 
   document.getElementById('change-pwd-form').addEventListener('submit', async (e) => {
-        e.preventDefault();
-      const p1 = document.getElementById('new-password').value;
-      const p2 = document.getElementById('confirm-password').value;
-      if (p1 !== p2) {
-        showToast('Passwords do not match.', 'error');
+    e.preventDefault();
+    const p1 = document.getElementById('new-password').value;
+    const p2 = document.getElementById('confirm-password').value;
+    if (p1 !== p2) {
+      showToast('Passwords do not match.', 'error');
       return;
     }
-      try {
-      const {error} = await state.supabase.auth.updateUser({password: p1 });
+    try {
+      const { error } = await state.supabase.auth.updateUser({ password: p1 });
       if (error) throw error;
       showToast('Password updated successfully', 'success');
       document.getElementById('change-pwd-form').reset();
     } catch (err) {
-        showToast('Password change failed: ' + err.message, 'error');
+      showToast('Password change failed: ' + err.message, 'error');
     }
   });
 }
 
-      function renderSupportPage(container) {
-        container.innerHTML = `
+function renderSupportPage(container) {
+  container.innerHTML = `
     <div class="support-page-wrapper">
       <div class="card mb-4">
         <div class="card-header bg-subtle d-flex justify-between align-center">
@@ -3083,8 +3083,8 @@ function renderCatalogSettings(container) {
   `;
 }
 
-      function renderPrivacyPolicyPage(container) {
-        container.innerHTML = `
+function renderPrivacyPolicyPage(container) {
+  container.innerHTML = `
     <div class="privacy-page-wrapper">
       <div class="card">
         <div class="card-header bg-subtle d-flex justify-between align-center">
@@ -3143,12 +3143,12 @@ function renderCatalogSettings(container) {
   `;
 }
 
-      // -------------------------------------------------------------
-      // Quick Add Modals (Doctors, Labs, Hospitals, Payment)
-      // -------------------------------------------------------------
-      function openAddDoctorModal() {
+// -------------------------------------------------------------
+// Quick Add Modals (Doctors, Labs, Hospitals, Payment)
+// -------------------------------------------------------------
+function openAddDoctorModal() {
   const modalContainer = document.getElementById('modal-container');
-      modalContainer.innerHTML = `
+  modalContainer.innerHTML = `
       <div class="modal-overlay">
         <div class="modal-dialog">
           <div class="modal-header">
@@ -3182,30 +3182,30 @@ function renderCatalogSettings(container) {
   document.getElementById('modal-cancel-btn').addEventListener('click', () => modalContainer.innerHTML = '');
 
   document.getElementById('quick-add-doc-form').addEventListener('submit', async (e) => {
-        e.preventDefault();
-      const name = document.getElementById('new-doc-name').value.trim();
-      const qualification = document.getElementById('new-doc-qual').value.trim();
-      const phone = document.getElementById('new-doc-phone').value.trim();
+    e.preventDefault();
+    const name = document.getElementById('new-doc-name').value.trim();
+    const qualification = document.getElementById('new-doc-qual').value.trim();
+    const phone = document.getElementById('new-doc-phone').value.trim();
 
-      try {
-      const {data, error} = await state.supabase.from('doctors').insert({name, qualification, phone}).select().single();
+    try {
+      const { data, error } = await state.supabase.from('doctors').insert({ name, qualification, phone }).select().single();
       if (error) throw error;
       showToast('Doctor added successfully', 'success');
       await loadReferenceData();
       modalContainer.innerHTML = '';
       if (state.currentPage === 'billing' && state.billingSubTab === 'new') {
         state.newBill.doctorId = data.id;
-      renderNewBillForm(document.getElementById('billing-body'));
+        renderNewBillForm(document.getElementById('billing-body'));
       }
     } catch (err) {
-        showToast('Error: ' + err.message, 'error');
+      showToast('Error: ' + err.message, 'error');
     }
   });
 }
 
-      function openAddReferralLabModal() {
+function openAddReferralLabModal() {
   const modalContainer = document.getElementById('modal-container');
-      modalContainer.innerHTML = `
+  modalContainer.innerHTML = `
       <div class="modal-overlay">
         <div class="modal-dialog">
           <div class="modal-header">
@@ -3231,27 +3231,27 @@ function renderCatalogSettings(container) {
   document.getElementById('modal-cancel-btn').addEventListener('click', () => modalContainer.innerHTML = '');
 
   document.getElementById('quick-add-lab-form').addEventListener('submit', async (e) => {
-        e.preventDefault();
-      const name = document.getElementById('new-lab-name').value.trim();
-      try {
-      const {data, error} = await state.supabase.from('referral_labs').insert({name}).select().single();
+    e.preventDefault();
+    const name = document.getElementById('new-lab-name').value.trim();
+    try {
+      const { data, error } = await state.supabase.from('referral_labs').insert({ name }).select().single();
       if (error) throw error;
       showToast('Referral Lab added', 'success');
       await loadReferenceData();
       modalContainer.innerHTML = '';
       if (state.currentPage === 'billing' && state.billingSubTab === 'new') {
         state.newBill.referralLabId = data.id;
-      renderNewBillForm(document.getElementById('billing-body'));
+        renderNewBillForm(document.getElementById('billing-body'));
       }
     } catch (err) {
-        showToast('Error: ' + err.message, 'error');
+      showToast('Error: ' + err.message, 'error');
     }
   });
 }
 
-      function openAddReferralHospitalModal() {
+function openAddReferralHospitalModal() {
   const modalContainer = document.getElementById('modal-container');
-      modalContainer.innerHTML = `
+  modalContainer.innerHTML = `
       <div class="modal-overlay">
         <div class="modal-dialog">
           <div class="modal-header">
@@ -3277,27 +3277,27 @@ function renderCatalogSettings(container) {
   document.getElementById('modal-cancel-btn').addEventListener('click', () => modalContainer.innerHTML = '');
 
   document.getElementById('quick-add-hosp-form').addEventListener('submit', async (e) => {
-        e.preventDefault();
-      const name = document.getElementById('new-hosp-name').value.trim();
-      try {
-      const {data, error} = await state.supabase.from('referral_hospitals').insert({name}).select().single();
+    e.preventDefault();
+    const name = document.getElementById('new-hosp-name').value.trim();
+    try {
+      const { data, error } = await state.supabase.from('referral_hospitals').insert({ name }).select().single();
       if (error) throw error;
       showToast('Referral Hospital added', 'success');
       await loadReferenceData();
       modalContainer.innerHTML = '';
       if (state.currentPage === 'billing' && state.billingSubTab === 'new') {
         state.newBill.referralHospitalId = data.id;
-      renderNewBillForm(document.getElementById('billing-body'));
+        renderNewBillForm(document.getElementById('billing-body'));
       }
     } catch (err) {
-        showToast('Error: ' + err.message, 'error');
+      showToast('Error: ' + err.message, 'error');
     }
   });
 }
 
-      function openCollectPaymentModal(billId, maxBalance) {
+function openCollectPaymentModal(billId, maxBalance) {
   const modalContainer = document.getElementById('modal-container');
-      modalContainer.innerHTML = `
+  modalContainer.innerHTML = `
       <div class="modal-overlay">
         <div class="modal-dialog">
           <div class="modal-header">
@@ -3333,17 +3333,17 @@ function renderCatalogSettings(container) {
   document.getElementById('modal-cancel-btn').addEventListener('click', () => modalContainer.innerHTML = '');
 
   document.getElementById('collect-pay-form').addEventListener('submit', async (e) => {
-        e.preventDefault();
-      const amount = Number(document.getElementById('pay-amount').value);
-      const mode = document.getElementById('pay-mode').value;
-      const notes = document.getElementById('pay-notes').value.trim();
+    e.preventDefault();
+    const amount = Number(document.getElementById('pay-amount').value);
+    const mode = document.getElementById('pay-mode').value;
+    const notes = document.getElementById('pay-notes').value.trim();
 
-      try {
-      const {data, error} = await state.supabase.rpc('collect_bill_payment', {
+    try {
+      const { data, error } = await state.supabase.rpc('collect_bill_payment', {
         p_bill_id: billId,
-      p_amount: amount,
-      p_mode: mode,
-      p_notes: notes
+        p_amount: amount,
+        p_mode: mode,
+        p_notes: notes
       });
 
       if (error) throw error;
@@ -3352,12 +3352,12 @@ function renderCatalogSettings(container) {
       loadBillsTable();
       openReceiptModal(billId);
     } catch (err) {
-        showToast('Payment error: ' + err.message, 'error');
+      showToast('Payment error: ' + err.message, 'error');
     }
   });
 }
 
-      // -------------------------------------------------------------
-      // Launch on DOM Ready
-      // -------------------------------------------------------------
-      window.addEventListener('DOMContentLoaded', init);
+// -------------------------------------------------------------
+// Launch on DOM Ready
+// -------------------------------------------------------------
+window.addEventListener('DOMContentLoaded', init);
