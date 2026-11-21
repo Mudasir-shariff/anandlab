@@ -2302,14 +2302,14 @@ const billMicroscopeIcon = `<svg class="ref-microscope-svg" viewBox="0 0 56 56" 
   <path d="M32 27V42" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
   <rect x="10" y="48" width="34" height="5" rx="2.5" fill="white"/>
   <line x1="11" y1="41" x2="45" y2="41" stroke="white" stroke-width="1.5" opacity="0.4"/>
-</svg > `;
+</svg>`;
 
-const billHospitalWaves = `< svg class="ref-waves-svg" viewBox = "0 0 100 12" fill = "none" xmlns = "http://www.w3.org/2000/svg" >
+const billHospitalWaves = `<svg class="ref-waves-svg" viewBox="0 0 100 12" fill="none" xmlns="http://www.w3.org/2000/svg">
   <path d="M0 6C25 0 25 12 50 6C75 0 75 12 100 6" stroke="#006b76" stroke-width="2" stroke-linecap="round"/>
   <path d="M0 10C25 4 25 16 50 10C75 4 75 16 100 10" stroke="#2dd4bf" stroke-width="1.2" stroke-linecap="round" opacity="0.7"/>
-</svg > `;
+</svg>`;
 
-const billWatermarkSvg = `< div class="report-watermark" aria - hidden="true" >
+const billWatermarkSvg = `<div class="report-watermark" aria-hidden="true">
   <svg class="watermark-microscope" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
     <circle cx="100" cy="100" r="92" stroke="#006b76" stroke-width="3" opacity="0.3"/>
     <circle cx="100" cy="100" r="82" stroke="#006b76" stroke-width="1.5" stroke-dasharray="4 4" opacity="0.2"/>
@@ -2322,9 +2322,9 @@ const billWatermarkSvg = `< div class="report-watermark" aria - hidden="true" >
   </svg>
   <div class="watermark-label">Anand Laboratory</div>
   <svg class="watermark-wave" viewBox="0 0 160 14" fill="none"><path d="M0 7C40 0 40 14 80 7C120 0 120 14 160 7" stroke="#006b76" stroke-width="2.5" opacity="0.25"/></svg>
-</div > `;
+</div>`;
 
-const billMolecularLatticeSvg = `< svg class="molecular-lattice" viewBox = "0 0 120 120" fill = "none" xmlns = "http://www.w3.org/2000/svg" >
+const billMolecularLatticeSvg = `<svg class="molecular-lattice" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
   <path d="M30 10L50 22V46L30 58L10 46V22L30 10Z" stroke="#006b76" stroke-width="1" opacity="0.12"/>
   <path d="M70 10L90 22V46L70 58L50 46V22L70 10Z" stroke="#006b76" stroke-width="1" opacity="0.12"/>
   <path d="M50 46L70 58V82L50 94L30 82V58L50 46Z" stroke="#006b76" stroke-width="1" opacity="0.12"/>
@@ -2336,7 +2336,7 @@ const billMolecularLatticeSvg = `< svg class="molecular-lattice" viewBox = "0 0 
   <circle cx="30" cy="58" r="2.5" fill="#006b76" opacity="0.18"/>
   <circle cx="70" cy="58" r="2.5" fill="#006b76" opacity="0.18"/>
   <circle cx="50" cy="94" r="2.5" fill="#006b76" opacity="0.18"/>
-</svg > `;
+</svg>`;
 
 function formatBillTimestamp(dateString) {
   if (!dateString) return 'Not recorded';
@@ -2370,29 +2370,29 @@ function generateReceiptHTML(bill, lab, format = 'a4', fullPage = false) {
 
   if (format === 'thermal') {
     const itemsRows = (bill.bill_items || []).map(item => `
-    < tr >
+      <tr>
         <td>${escapeHTML(item.test_name)}</td>
         <td class="text-right">${formatCurrency(item.price)}</td>
-      </tr >
+      </tr>
     `).join('');
 
     return `
-    < !DOCTYPE html >
+      <!DOCTYPE html>
       <html>
         <head>
           <meta charset="utf-8">
             <style>
-              @page {size: 80mm auto; margin: 2mm; }
-              body {font - family: monospace, sans-serif; width: 72mm; margin: 0 auto; font-size: 11px; line-height: 1.3; color: #000; }
-              .center {text - align: center; }
-              .text-right {text - align: right; }
-              .bold {font - weight: bold; }
-              .divider {border - top: 1px dashed #000; margin: 4px 0; }
-              .double-divider {border - top: 2px solid #000; margin: 4px 0; }
-              table {width: 100%; border-collapse: collapse; font-size: 11px; }
-              th, td {padding: 2px 0; }
-              .words {font - size: 10px; font-style: italic; margin-top: 4px; }
-              .signature-box {margin - top: 16px; text-align: right; }
+              @page { size: 80mm auto; margin: 2mm; }
+              body { font-family: monospace, sans-serif; width: 72mm; margin: 0 auto; font-size: 11px; line-height: 1.3; color: #000; }
+              .center { text-align: center; }
+              .text-right { text-align: right; }
+              .bold { font-weight: bold; }
+              .divider { border-top: 1px dashed #000; margin: 4px 0; }
+              .double-divider { border-top: 2px solid #000; margin: 4px 0; }
+              table { width: 100%; border-collapse: collapse; font-size: 11px; }
+              th, td { padding: 2px 0; }
+              .words { font-size: 10px; font-style: italic; margin-top: 4px; }
+              .signature-box { margin-top: 16px; text-align: right; }
             </style>
         </head>
         <body>
@@ -2437,7 +2437,7 @@ function generateReceiptHTML(bill, lab, format = 'a4', fullPage = false) {
 
   // A4 Format with EXACT same letterhead and layout as diagnostic report
   const billLetterhead = `
-        < header class="report-brand" id = "ref-letterhead-header" >
+    <header class="report-brand" id="ref-letterhead-header">
       <div class="ref-brand-left">
         <div class="ref-caduceus-icon">${billCaduceusIcon}</div>
         <div class="ref-hospital-text">
@@ -2456,10 +2456,10 @@ function generateReceiptHTML(bill, lab, format = 'a4', fullPage = false) {
       <div class="ref-header-swoosh-corner">
         <div class="ref-microscope-emblem">${billMicroscopeIcon}</div>
       </div>
-    </header > `;
+    </header>`;
 
   const billPatientDetails = `
-    < section class="report-patient-block" aria - label="Patient and billing details" >
+    <section class="report-patient-block" aria-label="Patient and billing details">
       <div class="ref-patient-layout">
         <div class="ref-patient-col ref-pat-left">
           <div class="ref-pat-row"><span class="ref-field-label">Name</span><span class="ref-field-colon">:</span><span class="ref-field-val"><strong class="ref-pat-fullname">${escapeHTML(patientDisplayName)}</strong></span></div>
@@ -2476,10 +2476,10 @@ function generateReceiptHTML(bill, lab, format = 'a4', fullPage = false) {
           <div class="ref-pat-row"><span class="ref-field-label">Payment Status</span><span class="ref-field-colon">:</span><span class="ref-field-val"><strong style="color: ${bill.payment_status === 'Paid' ? '#0d9488' : bill.payment_status === 'Partial' ? '#d97706' : '#dc2626'}">${escapeHTML(bill.payment_status)}</strong></span></div>
         </div>
       </div>
-    </section > `;
+    </section>`;
 
   const billItemsTable = `
-    < table class="report-results-table bill-items-table" >
+    <table class="report-results-table bill-items-table">
       <colgroup>
         <col style="width: 8%">
           <col style="width: 52%">
