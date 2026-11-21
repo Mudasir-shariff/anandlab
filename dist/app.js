@@ -173,7 +173,9 @@ function uiIcon(name, size = 16, className = '') {
     'flask': `<svg class="svg-icon${extraClass}" width="${s}" height="${s}" viewBox="0 0 24 24"><path d="M10 2v7.527a2 2 0 0 1-.211.896L4.72 20.55a1 1 0 0 0 .9 1.45h12.76a1 1 0 0 0 .9-1.45l-5.069-10.127A2 2 0 0 1 14 9.527V2"/><line x1="8.5" y1="2" x2="15.5" y2="2"/><line x1="7" y1="16" x2="17" y2="16"/></svg>`,
     'database': `<svg class="svg-icon${extraClass}" width="${s}" height="${s}" viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>`,
     'gift': `<svg class="svg-icon${extraClass}" width="${s}" height="${s}" viewBox="0 0 24 24"><polyline points="20 12 20 22 4 22 4 12"/><rect x="2" y="7" width="20" height="5"/><line x1="12" y1="22" x2="12" y2="7"/><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/></svg>`,
-    'share': `<svg class="svg-icon${extraClass}" width="${s}" height="${s}" viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>`
+    'share': `<svg class="svg-icon${extraClass}" width="${s}" height="${s}" viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>`,
+    'users': `<svg class="svg-icon${extraClass}" width="${s}" height="${s}" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>`,
+    'headphones': `<svg class="svg-icon${extraClass}" width="${s}" height="${s}" viewBox="0 0 24 24"><path d="M3 18v-6a9 9 0 0 1 18 0v6"/><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"/></svg>`
   };
   return icons[name] || '';
 }
@@ -659,27 +661,35 @@ function renderApp() {
           </button>
 
           <button class="nav-item ${state.currentPage === 'referral' ? 'active' : ''}" data-nav="referral">
-            <span class="nav-icon">${uiIcon('gift', 18)}</span>
-            <span class="nav-label">Refer &amp; Free Service</span>
-            <span class="nav-badge-pill">6 Mo Free</span>
+            <span class="nav-icon">${uiIcon('users', 18)}</span>
+            <span class="nav-label">Referrals</span>
           </button>
         </nav>
 
+        <div class="sidebar-optic-wireframe" aria-hidden="true">
+          <svg width="130" height="90" viewBox="0 0 130 90" fill="none" stroke="rgba(255,255,255,0.12)" stroke-width="1.1">
+            <ellipse cx="28" cy="45" rx="12" ry="28"/>
+            <ellipse cx="62" cy="45" rx="15" ry="34"/>
+            <ellipse cx="102" cy="45" rx="18" ry="40"/>
+            <line x1="5" y1="45" x2="125" y2="45" stroke-dasharray="2 3" stroke="rgba(255,255,255,0.08)"/>
+            <path d="M28 17 L102 5 M28 73 L102 85" stroke="rgba(255, 255, 255, 0.09)"/>
+          </svg>
+        </div>
+
         <div class="sidebar-footer">
+          <div class="sidebar-help-links">
+            <button id="sidebar-support-btn" class="sidebar-link-btn" title="Helpdesk & Support">${uiIcon('headphones', 13)} Support</button>
+            <button id="sidebar-privacy-btn" class="sidebar-link-btn" title="Privacy Policy">${uiIcon('shield-check', 13)} Privacy</button>
+          </div>
           <div class="user-info">
-            <span class="user-icon">${uiIcon('user', 18)}</span>
+            <div class="user-avatar-circle">AL</div>
             <div class="user-details">
               <strong>${escapeHTML(state.user?.user_metadata?.username || 'anandlab')}</strong>
               <small>Staff Operator</small>
             </div>
           </div>
-          <div class="sidebar-help-links">
-            <button id="sidebar-support-btn" class="sidebar-link-btn" title="Helpdesk & Support">${uiIcon('phone', 13)} Support</button>
-            <span class="sep">&bull;</span>
-            <button id="sidebar-privacy-btn" class="sidebar-link-btn" title="Privacy Policy">${uiIcon('shield-check', 13)} Privacy</button>
-          </div>
-          <button id="logout-btn" class="btn btn-outline-danger btn-sm" title="Sign out">
-            ${uiIcon('log-out', 14)} Logout
+          <button id="logout-btn" class="sidebar-logout-btn" title="Sign out">
+            ${uiIcon('log-out', 14)} Log out
           </button>
         </div>
       </aside>
@@ -3352,192 +3362,109 @@ function renderReferralPromotionPage(container) {
   const currentLabLicense = state.labSettings?.registration_no || 'KA-BLR-LAB-2026-089';
 
   container.innerHTML = `
-    <div class="referral-page-wrapper">
-      <!-- 1. Hero Promotion Banner -->
-      <div class="referral-hero-card">
-        <div class="referral-hero-badge">
-          ${uiIcon('gift', 14)} EXCLUSIVE LABORATORY PARTNER BENEFIT
-        </div>
-        <h1 class="referral-hero-title">Refer a Diagnostic Lab &amp; Enjoy 6 Months of Free Service!</h1>
-        <p class="referral-hero-subtitle">
-          Help neighbouring diagnostic centres, pathology labs, and clinics upgrade to modern clinical billing and reporting.
-          For every laboratory that signs up through your referral, your laboratory receives <strong>6 full months of complimentary software service charge waiver</strong>.
-        </p>
+    <div class="referrals-view-container">
+      <h1 class="referrals-main-title">Referrals</h1>
 
-        <div class="referral-perks-grid">
-          <div class="referral-perk-card">
-            <div class="referral-perk-number">6 Mo</div>
-            <div class="referral-perk-title">Free Service Charge</div>
-            <div class="referral-perk-desc">100% waiver of your laboratory's cloud software service fee for each successful referral.</div>
+      <div class="referrals-top-grid">
+        <!-- Left Hero Card -->
+        <div class="referrals-hero-card">
+          <div class="referrals-hero-text">
+            <h2 class="hero-heading">
+              Refer a lab.<br>
+              <span class="hero-heading-highlight">Get 6 months free.</span>
+            </h2>
+            <p class="hero-subtext">
+              We waive your software service fee once the referred lab’s installation is verified.
+            </p>
+            <div class="hero-limit-box">
+              <div class="limit-bold">No referral limit.</div>
+              <div class="limit-regular">Two verified referrals earn a full year.</div>
+            </div>
           </div>
-          <div class="referral-perk-card">
-            <div class="referral-perk-number">100%</div>
-            <div class="referral-perk-title">Zero Upfront Cost</div>
-            <div class="referral-perk-desc">Free on-site or remote installation, letterhead styling, and staff onboarding for the referred lab.</div>
+          <div class="referrals-hero-img-wrap">
+            <img src="./assets/images/referral-microscope.jpg" alt="Microscope" class="hero-microscope-img" />
           </div>
-          <div class="referral-perk-card">
-            <div class="referral-perk-number">&infin;</div>
-            <div class="referral-perk-title">Cumulative Rewards</div>
-            <div class="referral-perk-desc">No limit on referrals! Refer 2 labs = 1 year free, refer 4 labs = 2 years free service.</div>
+        </div>
+
+        <!-- Right Referral Details Form Card -->
+        <div class="referrals-form-card">
+          <h2 class="form-card-title">Referral details</h2>
+          <form id="referral-direct-form">
+            <div class="form-field-group">
+              <label class="form-field-label">Laboratory or hospital name</label>
+              <input type="text" id="ref-lab-name" class="form-field-input" placeholder="Enter laboratory name" required />
+            </div>
+
+            <div class="form-field-group">
+              <label class="form-field-label">Contact person</label>
+              <input type="text" id="ref-contact-name" class="form-field-input" placeholder="Doctor or owner’s name" />
+            </div>
+
+            <div class="form-field-group">
+              <label class="form-field-label">Mobile number</label>
+              <div class="phone-input-split">
+                <span class="phone-country-code">+91</span>
+                <input type="tel" id="ref-phone" class="phone-number-field" placeholder="10-digit mobile number" maxlength="10" pattern="[0-9]{10}" required />
+              </div>
+            </div>
+
+            <button type="submit" class="btn-submit-referral-cta" id="btn-submit-referral">
+              Submit referral &rarr;
+            </button>
+
+            <div class="form-call-hotline">
+              Or call <a href="tel:8123649448" class="hotline-phone-link">+91 8123649448</a>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- Bottom 3-Step Process Row -->
+      <div class="referrals-stepper-container">
+        <div class="stepper-step-item">
+          <div class="stepper-circle-badge">1</div>
+          <div class="stepper-step-body">
+            <h3 class="stepper-step-title">Share the details</h3>
+            <p class="stepper-step-desc">Send the lab name and a contact number.</p>
+          </div>
+        </div>
+
+        <div class="stepper-vertical-divider"></div>
+
+        <div class="stepper-step-item">
+          <div class="stepper-circle-badge">2</div>
+          <div class="stepper-step-body">
+            <h3 class="stepper-step-title">We set up the lab</h3>
+            <p class="stepper-step-desc">Installation, letterhead setup and staff training are free.</p>
+          </div>
+        </div>
+
+        <div class="stepper-vertical-divider"></div>
+
+        <div class="stepper-step-item">
+          <div class="stepper-circle-badge">3</div>
+          <div class="stepper-step-body">
+            <h3 class="stepper-step-title">Your fee is waived</h3>
+            <p class="stepper-step-desc">Six months are credited after verification.</p>
           </div>
         </div>
       </div>
 
-      <!-- 2. What They Need To Do (The 3 Core Claim Steps) -->
-      <div class="card mb-4">
-        <div class="card-header">
-          <h3>How to Claim Your 6 Months Free Service</h3>
-          <p class="text-secondary mt-1">Simple 3-step process to claim your complimentary laboratory service charge:</p>
-        </div>
-        <div class="card-body">
-          <div class="referral-steps-container">
-            <div class="referral-step-card">
-              <div class="referral-step-badge">1</div>
-              <div class="referral-step-title">1. Share Referral Detail &amp; Number With Us</div>
-              <p class="referral-step-text">
-                Provide the referred laboratory name, doctor/owner contact person, and mobile number using the form below or directly to our hotline at <strong>+91 8123649448</strong>.
-              </p>
-            </div>
-
-            <div class="referral-step-card">
-              <div class="referral-step-badge">2</div>
-              <div class="referral-step-title">2. Wait Till We Install This Software</div>
-              <p class="referral-step-text">
-                Our technical team will contact them, conduct a live demo, and perform complete installation, letterhead configuration, and staff training at their premises or remotely.
-              </p>
-            </div>
-
-            <div class="referral-step-card">
-              <div class="referral-step-badge">3</div>
-              <div class="referral-step-title">3. Get 6 Months Free Service</div>
-              <p class="referral-step-text">
-                Once software installation and verification are complete, your laboratory immediately receives a 6-month service charge waiver applied directly to your account.
-              </p>
-            </div>
+      ${localReferrals.length > 0 ? `
+        <div style="margin-top: 36px; padding-top: 20px; border-top: 1px dashed #E2E8E5;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+            <span style="font-size:13.5px; font-weight:600; color:#111818;">Submitted Referrals (${localReferrals.length})</span>
+            <span style="font-size:11.5px; color:#596464;">Tracked under license ${escapeHTML(currentLabLicense)}</span>
           </div>
-        </div>
-      </div>
-
-      <!-- 3. Form & Direct Support Hotline Grid -->
-      <div class="grid grid-2 mb-4">
-        <!-- Left: Submit Referral Form -->
-        <div class="card">
-          <div class="card-header">
-            <h3>${uiIcon('share', 16)} Share Referral Details</h3>
-            <p class="text-secondary mt-1">Send us the laboratory details to initiate their installation and lock in your reward.</p>
-          </div>
-          <div class="card-body">
-            <form id="referral-submit-form">
-              <div class="form-group mb-3">
-                <label>Referred Laboratory / Hospital Name *</label>
-                <input type="text" id="ref-lab-name" placeholder="e.g. City Diagnostic Laboratory" required />
-              </div>
-
-              <div class="form-row mb-3">
-                <div class="form-group col-6">
-                  <label>Contact Person / Doctor Name</label>
-                  <input type="text" id="ref-contact-name" placeholder="e.g. Dr. Ramesh / Lab Incharge" />
-                </div>
-                <div class="form-group col-6">
-                  <label>Mobile / WhatsApp Number *</label>
-                  <input type="tel" id="ref-phone" placeholder="e.g. 9876543210" pattern="[0-9]{10}" maxlength="10" required />
-                </div>
-              </div>
-
-              <div class="form-row mb-3">
-                <div class="form-group col-6">
-                  <label>City / Location</label>
-                  <input type="text" id="ref-city" placeholder="e.g. Sidlaghatta / Chikkaballapur" />
-                </div>
-                <div class="form-group col-6">
-                  <label>Your Lab (Referring Entity)</label>
-                  <input type="text" value="${escapeHTML(currentLabName)} (${escapeHTML(currentLabLicense)})" readonly disabled style="background:#f1f5f9; color:#475569; font-size:13px;" />
-                </div>
-              </div>
-
-              <div class="form-group mb-4">
-                <label>Additional Notes (Optional)</label>
-                <input type="text" id="ref-notes" placeholder="e.g. Best time to call, existing software they use..." />
-              </div>
-
-              <div class="d-flex gap-2 align-center">
-                <button type="submit" class="btn btn-primary" id="btn-submit-referral">
-                  ${uiIcon('gift', 15)} Submit Referral
-                </button>
-                <button type="button" class="btn btn-outline" id="btn-whatsapp-referral" title="Send details instantly via WhatsApp to Opti-X Support">
-                  ${uiIcon('phone', 14)} Send via WhatsApp
-                </button>
-                <button type="button" class="btn btn-outline" id="btn-copy-referral-text" title="Copy pre-formatted referral text">
-                  ${uiIcon('clipboard', 14)} Copy Text
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-
-        <!-- Right: Dedicated Support Hotline -->
-        <div class="card">
-          <div class="card-header">
-            <h3>${uiIcon('phone', 16)} Dedicated Referral Hotline</h3>
-            <p class="text-secondary mt-1">Prefer to talk directly? Reach our software deployment dispatch team anytime.</p>
-          </div>
-          <div class="card-body">
-            <div class="support-contact-rows">
-              <div class="support-contact-row">
-                <span class="sc-label">WhatsApp &amp; Call</span>
-                <span class="sc-val"><a href="tel:8123649448" class="tabular-nums font-bold" style="font-size:16px; color:#004F49;">+91 8123649448</a></span>
-                <span class="sc-desc small-muted">Direct referral desk for fast installation scheduling</span>
-              </div>
-              <div class="support-contact-row">
-                <span class="sc-label">Referral Email</span>
-                <span class="sc-val"><a href="mailto:hello@opti-x.in?subject=New%20Lab%20Referral%20from%20${encodeURIComponent(currentLabName)}" class="font-bold">hello@opti-x.in</a></span>
-                <span class="sc-desc small-muted">Send laboratory contacts or inquiries directly</span>
-              </div>
-              <div class="support-contact-row">
-                <span class="sc-label">Referring Laboratory</span>
-                <span class="sc-val font-bold">${escapeHTML(currentLabName)}</span>
-                <span class="sc-desc small-muted">License: <span class="tabular-nums font-semibold">${escapeHTML(currentLabLicense)}</span></span>
-              </div>
-            </div>
-
-            <div class="card mt-3" style="background:#f0fdf4; border:1px solid #bbf7d0; padding:14px; border-radius:8px;">
-              <h4 style="font-size:13.5px; color:#166534; margin-bottom:6px; font-weight:700;">
-                ${uiIcon('check-circle', 14)} Guaranteed Service Waiver
-              </h4>
-              <p style="font-size:12.5px; color:#15803d; line-height:1.45; margin:0;">
-                Every referral is logged under your permanent registration license (<strong>${escapeHTML(currentLabLicense)}</strong>).
-                Free service begins on the date the referred lab goes live.
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- 4. Tracked Referrals Section -->
-      <div class="card">
-        <div class="card-header d-flex justify-between align-center">
-          <div>
-            <h3>Your Submitted Referrals</h3>
-            <p class="text-secondary mt-1">Track status and free service charge eligibility for laboratories you referred.</p>
-          </div>
-          <span class="badge badge-paid">${localReferrals.length} Logged</span>
-        </div>
-        <div class="card-body" id="referrals-list-container">
-          ${localReferrals.length === 0 ? `
-            <div class="empty-state text-center p-4">
-              <p class="text-secondary mb-1">No referrals submitted yet.</p>
-              <p><small class="text-secondary">Submit your first referral above to claim 6 months of free software service.</small></p>
-            </div>
-          ` : `
-            <table class="data-table">
+          <div class="card" style="padding:0; overflow:hidden; border-radius:12px; border:1px solid #E2E8E5;">
+            <table class="data-table" style="margin:0;">
               <thead>
                 <tr>
                   <th>Laboratory / Hospital</th>
                   <th>Contact Person</th>
-                  <th>Phone Number</th>
-                  <th>City</th>
+                  <th>Mobile</th>
                   <th>Submitted Date</th>
-                  <th class="text-center">Benefit Status</th>
+                  <th class="text-center">Installation Status</th>
                 </tr>
               </thead>
               <tbody>
@@ -3545,8 +3472,7 @@ function renderReferralPromotionPage(container) {
                   <tr>
                     <td><strong>${escapeHTML(r.labName)}</strong></td>
                     <td>${escapeHTML(r.contactName || '—')}</td>
-                    <td class="tabular-nums">${escapeHTML(r.phone)}</td>
-                    <td>${escapeHTML(r.city || '—')}</td>
+                    <td class="tabular-nums">+91 ${escapeHTML(r.phone)}</td>
                     <td class="tabular-nums">${escapeHTML(r.date)}</td>
                     <td class="text-center">
                       <span class="badge ${r.status === 'Completed' ? 'badge-paid' : 'badge-unpaid'}">
@@ -3557,30 +3483,18 @@ function renderReferralPromotionPage(container) {
                 `).join('')}
               </tbody>
             </table>
-          `}
+          </div>
         </div>
-      </div>
+      ` : ''}
     </div>
   `;
 
-  function getReferralMessage() {
-    const labName = document.getElementById('ref-lab-name')?.value.trim() || '';
-    const contactName = document.getElementById('ref-contact-name')?.value.trim() || '';
-    const phone = document.getElementById('ref-phone')?.value.trim() || '';
-    const city = document.getElementById('ref-city')?.value.trim() || '';
-    const notes = document.getElementById('ref-notes')?.value.trim() || '';
-
-    return `Hello Opti-X Labs Team,\n\nI want to refer a laboratory for Opti-X Labs software installation to claim our 6 Months Free Service:\n\n• Referred Lab: ${labName || '[Lab Name]'}\n• Contact Person: ${contactName || '[Contact Person]'}\n• Mobile Number: ${phone || '[Phone]'}\n• City: ${city || '[City]'}\n${notes ? `• Notes: ${notes}\n` : ''}\nReferred by: ${currentLabName} (License: ${currentLabLicense})\n\nPlease arrange installation. Thank you!`;
-  }
-
-  const form = document.getElementById('referral-submit-form');
+  const form = document.getElementById('referral-direct-form');
   form?.addEventListener('submit', (e) => {
     e.preventDefault();
     const labName = document.getElementById('ref-lab-name').value.trim();
     const contactName = document.getElementById('ref-contact-name').value.trim();
     const phone = document.getElementById('ref-phone').value.trim();
-    const city = document.getElementById('ref-city').value.trim();
-    const notes = document.getElementById('ref-notes').value.trim();
 
     if (!labName || !phone) {
       showToast('Please fill in the lab name and 10-digit mobile number.', 'error');
@@ -3592,8 +3506,6 @@ function renderReferralPromotionPage(container) {
       labName,
       contactName,
       phone,
-      city,
-      notes,
       date: new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }),
       status: 'Installation in Progress'
     };
@@ -3605,7 +3517,7 @@ function renderReferralPromotionPage(container) {
 
     showToast('Referral saved! Opening WhatsApp dispatch...', 'success');
 
-    const msg = getReferralMessage();
+    const msg = `Hello Opti-X Labs,\n\nI want to refer a laboratory for Opti-X Labs software installation to claim our 6 Months Free Service:\n\n• Referred Lab: ${labName}\n• Contact Person: ${contactName || 'Doctor/Owner'}\n• Mobile Number: +91 ${phone}\n• Referred by: ${currentLabName} (License: ${currentLabLicense})\n\nPlease arrange installation. Thank you!`;
     const waUrl = `https://wa.me/918123649448?text=${encodeURIComponent(msg)}`;
     if (window.labflowAPI && window.labflowAPI.openExternal) {
       window.labflowAPI.openExternal(waUrl);
@@ -3615,32 +3527,6 @@ function renderReferralPromotionPage(container) {
 
     form.reset();
     renderReferralPromotionPage(container);
-  });
-
-  document.getElementById('btn-whatsapp-referral')?.addEventListener('click', () => {
-    const msg = getReferralMessage();
-    const waUrl = `https://wa.me/918123649448?text=${encodeURIComponent(msg)}`;
-    if (window.labflowAPI && window.labflowAPI.openExternal) {
-      window.labflowAPI.openExternal(waUrl);
-    } else {
-      window.open(waUrl, '_blank');
-    }
-  });
-
-  document.getElementById('btn-copy-referral-text')?.addEventListener('click', async () => {
-    const msg = getReferralMessage();
-    try {
-      await navigator.clipboard.writeText(msg);
-      showToast('Referral details copied to clipboard!', 'success');
-    } catch (err) {
-      const ta = document.createElement('textarea');
-      ta.value = msg;
-      document.body.appendChild(ta);
-      ta.select();
-      document.execCommand('copy');
-      document.body.removeChild(ta);
-      showToast('Referral details copied to clipboard!', 'success');
-    }
   });
 }
 

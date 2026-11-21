@@ -242,33 +242,31 @@ test('Labflow Desktop UI: Login, Billing, Reports, Printing and Settings validat
   assert(w.document.body.textContent.includes('DPDPA 2023') || w.document.body.textContent.includes('DPDPA'), 'Privacy policy should mention DPDPA compliance');
   assert(w.document.body.textContent.includes('DISHA'), 'Privacy policy should mention DISHA compliance');
 
-  // 10. Test Refer & Free Service Promotion Page (via Sidebar Nav)
+  // 10. Test Referrals Page (via Sidebar Nav)
   const referralNavBtn = w.document.querySelector('.nav-item[data-nav="referral"]');
-  assert(referralNavBtn, 'Sidebar should contain Refer & Free Service nav button');
-  assert(referralNavBtn.textContent.includes('Refer & Free Service'), 'Nav button should display Refer & Free Service');
-  assert(referralNavBtn.textContent.includes('6 Mo Free'), 'Nav button should contain 6 Mo Free pill badge');
+  assert(referralNavBtn, 'Sidebar should contain Referrals nav button');
+  assert(referralNavBtn.textContent.includes('Referrals'), 'Nav button should display Referrals');
 
   referralNavBtn.click();
   await tick(50);
 
-  // Verify Hero and 3-step claim workflow
-  assert(w.document.body.textContent.includes('Refer a Diagnostic Lab & Enjoy 6 Months of Free Service!'), 'Hero title should render');
-  assert(w.document.body.textContent.includes('1. Share Referral Detail & Number With Us'), 'Step 1 should be clearly stated');
-  assert(w.document.body.textContent.includes('2. Wait Till We Install This Software'), 'Step 2 should be clearly stated');
-  assert(w.document.body.textContent.includes('3. Get 6 Months Free Service'), 'Step 3 should be clearly stated');
+  // Verify Hero and 3-step claim workflow matching mockup
+  assert(w.document.body.textContent.includes('Refer a lab.'), 'Hero heading line 1 should render');
+  assert(w.document.body.textContent.includes('Get 6 months free.'), 'Hero heading line 2 should render');
+  assert(w.document.body.textContent.includes('Share the details'), 'Step 1 title should be Share the details');
+  assert(w.document.body.textContent.includes('We set up the lab'), 'Step 2 title should be We set up the lab');
+  assert(w.document.body.textContent.includes('Your fee is waived'), 'Step 3 title should be Your fee is waived');
 
-  // Verify Referral Submission
+  // Verify Referral Submission Form
   const refLabInput = w.document.querySelector('#ref-lab-name');
   const refContactInput = w.document.querySelector('#ref-contact-name');
   const refPhoneInput = w.document.querySelector('#ref-phone');
-  const refCityInput = w.document.querySelector('#ref-city');
-  const refForm = w.document.querySelector('#referral-submit-form');
+  const refForm = w.document.querySelector('#referral-direct-form');
 
   assert(refLabInput && refPhoneInput && refForm, 'Referral submission form should render');
   refLabInput.value = 'Adarsh Clinical Laboratory';
   refContactInput.value = 'Dr. Adarsh';
   refPhoneInput.value = '9845112233';
-  refCityInput.value = 'Chikkaballapur';
 
   refForm.dispatchEvent(new w.Event('submit', { bubbles: true, cancelable: true }));
   await tick(50);
@@ -277,14 +275,14 @@ test('Labflow Desktop UI: Login, Billing, Reports, Printing and Settings validat
   assert(w.document.body.textContent.includes('9845112233'), 'Submitted phone should appear in tracked list');
   assert(w.document.body.textContent.includes('Installation in Progress'), 'Initial status should be Installation in Progress');
 
-  // 11. Test Refer & Free Service (via Settings Sub-Tab)
+  // 11. Test Referrals (via Settings Sub-Tab)
   settingsNavBtn.click();
   await tick(50);
   const refSettingsTabBtn = w.document.querySelector('#tab-set-referral');
   assert(refSettingsTabBtn, 'Referral tab should exist in Settings sub-tabs');
   refSettingsTabBtn.click();
   await tick(50);
-  assert(w.document.body.textContent.includes('How to Claim Your 6 Months Free Service'), 'Referral page should render inside Settings');
+  assert(w.document.body.textContent.includes('Refer a lab.'), 'Referrals page should render inside Settings');
 
   console.log('PASS: All Labflow desktop flows (Login, Billing, Reports, Settings, Support, Privacy, Fixed License, Refer & Free Service) verified.');
 });
