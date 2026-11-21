@@ -4,7 +4,7 @@
  */
 
 import { TESTS, PARAMETERS, reportNotes } from './catalog.js';
-import { renderReport, REPORT_TEMPLATES } from './report.js';
+import { renderReport, REPORT_TEMPLATES, wrapReportHtml, REPORT_CSS } from './report.js';
 
 // Application State
 const state = {
@@ -255,34 +255,75 @@ async function init() {
         clearSession: async () => { localStorage.removeItem('labflow_session'); return { success: true }; },
         getPrinters: async () => [],
         printReceipt: async ({ html }) => {
-          const w = window.open('', '_blank', 'width=450,height=600');
-          if (!w) {
-            alert('Popup blocked. Please allow popups for this site to print receipts.');
-            return { success: false, failureReason: 'Popup blocked by browser' };
-          }
-          w.document.write(html);
-          w.document.close();
-          w.focus();
-          setTimeout(() => { w.print(); }, 250);
-          return { success: true };
+          return printHtmlSmoothly(html);
         },
         printReport: async ({ html }) => {
-          const w = window.open('', '_blank');
-          if (!w) {
-            alert('Popup blocked. Please allow popups for this site to print reports.');
-            return { success: false, failureReason: 'Popup blocked by browser' };
-          }
-          w.document.write(html);
-          w.document.close();
-          w.focus();
-          setTimeout(() => { w.print(); }, 250);
-          return { success: true };
+          return printHtmlSmoothly(html);
         },
-        printToPDF: async () => {
-          window.print();
-          return { success: true };
+        printToPDF: async ({ html }) => {
+          return printHtmlSmoothly(html);
         }
       };
+    }
+
+    function printHtmlSmoothly(html) {
+      return new Promise((resolve) => {
+        try {
+          let printFrame = document.getElementById('labflow-print-frame');
+          if (printFrame) {
+            printFrame.remove();
+          }
+          printFrame = document.createElement('iframe');
+          printFrame.id = 'labflow-print-frame';
+          printFrame.setAttribute('style', 'position:fixed;top:-9999px;left:-9999px;width:1px;height:1px;border:none;visibility:hidden;opacity:0;');
+          document.body.appendChild(printFrame);
+
+          const frameDoc = printFrame.contentWindow.document;
+          frameDoc.open();
+          frameDoc.write(html);
+          frameDoc.close();
+
+          const triggerPrint = () => {
+            try {
+              printFrame.contentWindow.focus();
+              printFrame.contentWindow.print();
+              resolve({ success: true });
+            } catch (printErr) {
+              fallbackPopupPrint(html, resolve);
+            }
+          };
+
+          if (frameDoc.readyState === 'complete') {
+            setTimeout(triggerPrint, 150);
+          } else {
+            printFrame.contentWindow.addEventListener('load', () => setTimeout(triggerPrint, 150), { once: true });
+            setTimeout(triggerPrint, 600);
+          }
+        } catch (err) {
+          fallbackPopupPrint(html, resolve);
+        }
+      });
+    }
+
+    function fallbackPopupPrint(html, resolve) {
+      try {
+        const w = window.open('', '_blank');
+        if (!w) {
+          alert('Please allow popups for this site to print.');
+          return resolve({ success: false, failureReason: 'Popup blocked by browser' });
+        }
+        w.document.open();
+        w.document.write(html);
+        w.document.close();
+        w.focus();
+        w.onafterprint = () => { try { w.close(); } catch (_) {} };
+        setTimeout(() => {
+          try { w.print(); } catch (_) {}
+          resolve({ success: true });
+        }, 250);
+      } catch (popupErr) {
+        resolve({ success: false, failureReason: popupErr.message });
+      }
     }
 
     state.config = await window.labflowAPI.getSupabaseConfig();
@@ -2631,22 +2672,21 @@ function generateReceiptHTML(bill, lab, format = 'a4', fullPage = false) {
 
             if (!fullPage) return billBody;
 
-            return `
-            <!DOCTYPE html>
-            <html>
-              <head>
-                <meta charset="utf-8">
-                  <title>Bill - ${escapeHTML(bill.bill_no)}</title>
-                  <link rel="stylesheet" href="./dist/report.css">
-                    <style>
-                      @page {size: A4; margin: 10mm; }
-                      body {margin: 0; padding: 0; background: #ffffff; }
-                    </style>
-                  </head>
-                  <body>
-                    ${billBody}
-                  </body>
-                </html>`;
+            return `<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Bill - ${escapeHTML(bill.bill_no)}</title>
+    <style>
+      ${REPORT_CSS}
+      @page { size: A4; margin: 10mm; }
+      body { margin: 0; padding: 0; background: #ffffff; }
+    </style>
+  </head>
+  <body>
+    ${billBody}
+  </body>
+</html>`;
 }
 
                 // -------------------------------------------------------------
@@ -2729,11 +2769,11 @@ function generateReceiptHTML(bill, lab, format = 'a4', fullPage = false) {
                 const viewContainer = document.getElementById('report-rendered-view');
 
                 function renderActiveHTML() {
-      const template = tplSelect.value;
-                const html = renderReport(orderAdapter, settingsAdapter, {template});
-                viewContainer.innerHTML = html;
-                return `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Report ${orderAdapter.id}</title><link rel="stylesheet" href="./report.css"></head><body>${html}</body></html>`;
-    }
+                  const template = tplSelect.value;
+                  const html = renderReport(orderAdapter, settingsAdapter, {template});
+                  viewContainer.innerHTML = html;
+                  return wrapReportHtml(`Report ${orderAdapter.id}`, html);
+                }
 
                   renderActiveHTML();
                   tplSelect.addEventListener('change', renderActiveHTML);

@@ -236,6 +236,22 @@ function setupIPC() {
     }
   });
 
+  // Helper to guarantee report styles are inlined in data: URL print windows
+  const ensureReportStyles = (htmlContent) => {
+    if (htmlContent.includes('<style') && (htmlContent.includes('report-document') || htmlContent.includes('--report-accent'))) {
+      return htmlContent;
+    }
+    const cssPath = path.join(__dirname, '../../dist/report.css');
+    if (fs.existsSync(cssPath)) {
+      const css = fs.readFileSync(cssPath, 'utf8');
+      if (htmlContent.includes('</head>')) {
+        return htmlContent.replace('</head>', `<style id="injected-report-styles">${css}</style></head>`);
+      }
+      return `<style id="injected-report-styles">${css}</style>${htmlContent}`;
+    }
+    return htmlContent;
+  };
+
   // Print Report (A4 Clinical)
   ipcMain.handle('print:report', async (event, { html, silent = false, printerName = '' }) => {
     const printWin = new BrowserWindow({
@@ -247,7 +263,8 @@ function setupIPC() {
     });
 
     try {
-      await printWin.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(html)}`);
+      const styledHtml = ensureReportStyles(html);
+      await printWin.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(styledHtml)}`);
 
       const printOptions = {
         silent: silent,
@@ -260,7 +277,7 @@ function setupIPC() {
 
       return new Promise((resolve) => {
         printWin.webContents.print(printOptions, (success, failureReason) => {
-          printWin.destroy();
+          if (!printWin.isDestroyed()) printWin.destroy();
           resolve({ success, failureReason });
         });
       });
@@ -281,13 +298,14 @@ function setupIPC() {
     });
 
     try {
-      await printWin.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(html)}`);
+      const styledHtml = ensureReportStyles(html);
+      await printWin.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(styledHtml)}`);
       const pdfData = await printWin.webContents.printToPDF({
         pageSize: 'A4',
         landscape: false,
         printBackground: true
       });
-      printWin.destroy();
+      if (!printWin.isDestroyed()) printWin.destroy();
 
       const { canceled, filePath } = await dialog.showSaveDialog(mainWindow, {
         title: 'Save Report as PDF',

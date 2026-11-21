@@ -13,4 +13,5 @@ validation/clinical.json
 
 build-out/
 release/
+*.pdf
 lighthouse-report.json

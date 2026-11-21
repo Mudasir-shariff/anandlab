@@ -10,7 +10,9 @@
     "create-user": "node scripts/create-user.js",
     "test": "node --test --test-force-exit test/*.test.mjs",
     "smoke-test": "node scripts/smoke-test.mjs",
-    "build": "echo Web build ready",
+    "bundle:css": "node scripts/bundle-report-css.mjs",
+    "verify-print": "node scripts/verify-print-and-pdf.mjs",
+    "build": "node scripts/bundle-report-css.mjs && echo Web build ready",
     "build:electron": "electron-builder --win nsis",
     "dist": "electron-builder --win nsis"
   },

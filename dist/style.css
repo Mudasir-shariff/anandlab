@@ -3863,19 +3863,32 @@ tbody tr:hover {
 
   #app,
   #toast,
+  #toast-container,
   .modal-head,
   .modal-foot,
+  .modal-header,
+  .modal-footer,
+  .modal-close,
+  .template-selector,
   .no-print,
   .report-toolbar {
     display: none !important;
   }
 
   #overlay,
-  .overlay-backdrop {
+  .overlay-backdrop,
+  #modal-container,
+  .modal-overlay,
+  .modal-dialog,
+  .modal-dialog.modal-xl,
+  .report-preview-frame {
     position: static;
     background: none;
     display: block;
     padding: 0;
+    margin: 0;
+    width: 100%;
+    max-width: 100%;
     backdrop-filter: none;
   }
 

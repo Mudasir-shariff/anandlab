@@ -1,4 +1,26 @@
 import { TESTS, PARAMETERS } from './catalog.js';
+import { REPORT_CSS } from './report-css.js';
+
+export { REPORT_CSS };
+
+export function wrapReportHtml(title, reportHtml) {
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>${escape(title)}</title>
+<style>
+${REPORT_CSS}
+body { margin: 0; padding: 20px; background: #eaeff2; }
+@media print { body { padding: 0; background: white; } }
+</style>
+</head>
+<body>
+${reportHtml}
+</body>
+</html>`;
+}
 
 export const REPORT_TEMPLATES = [
   { id: 'classic', name: 'Classic blue', description: 'A blue letterhead with a compact clinical results table.', color: '#07557a' },

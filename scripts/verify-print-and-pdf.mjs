@@ -93,7 +93,7 @@ const scenarios = [
     title: 'Minimal Layout - Thyroid & Metabolic Profile',
     template: 'minimal',
     order: {
-      ...makeTestOrder('THYROID'),
+      ...makeTestOrder('THYROID_PROFILE'),
       name: 'Mr. Vikramaditya Harshavardhan Singhania',
       age: 58,
       sex: 'Male',
