@@ -9,6 +9,7 @@
     "serve": "node scripts/serve-web.js",
     "create-user": "node scripts/create-user.js",
     "test": "node --test --test-force-exit test/*.test.mjs",
+    "smoke-test": "node scripts/smoke-test.mjs",
     "build": "electron-builder --win nsis",
     "dist": "electron-builder --win nsis"
   },
