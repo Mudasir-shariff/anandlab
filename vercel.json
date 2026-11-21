@@ -1,0 +1,9 @@
+{
+  "version": 2,
+  "outputDirectory": "dist",
+  "cleanUrls": true,
+  "rewrites": [
+    { "source": "/api/config", "destination": "/api/config" },
+    { "source": "/(.*)", "destination": "/$1" }
+  ]
+}

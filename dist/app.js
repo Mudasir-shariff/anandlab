@@ -238,6 +238,10 @@ async function init() {
               }
             } catch (_) { }
           }
+          if (!u || !k) {
+            u = u || 'https://zynqvlhxregoxskzhnmu.supabase.co';
+            k = k || 'sb_publishable_4jLbQjPP8QbSD161_8xc6g_oquzKV85';
+          }
           return { supabaseUrl: u, supabaseAnonKey: k };
         },
         saveSupabaseConfig: async (cfg) => {

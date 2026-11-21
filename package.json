@@ -10,7 +10,8 @@
     "create-user": "node scripts/create-user.js",
     "test": "node --test --test-force-exit test/*.test.mjs",
     "smoke-test": "node scripts/smoke-test.mjs",
-    "build": "electron-builder --win nsis",
+    "build": "echo Web build ready",
+    "build:electron": "electron-builder --win nsis",
     "dist": "electron-builder --win nsis"
   },
   "build": {
@@ -39,7 +40,7 @@
     }
   },
   "engines": {
-    "node": ">=24"
+    "node": ">=18"
   },
   "devDependencies": {
     "electron": "^45.3.3",
