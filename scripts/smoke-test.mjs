@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import http from 'node:http';
 
 const BASE_URL = process.env.LABFLOW_URL || 'http://127.0.0.1:3000';
 
@@ -29,9 +30,68 @@ const DOMAIN = envConfig.LAB_EMAIL_DOMAIN || 'labflow.local';
 const EMAIL = `${USERNAME}@${DOMAIN}`;
 
 async function runSmokeTests() {
+  let inProcessServer = null;
+  let testUrl = BASE_URL;
+
+  try {
+    const probe = await fetch(`${BASE_URL}/api/config`, { signal: AbortSignal.timeout(1000) });
+    if (!probe.ok && probe.status !== 200) throw new Error('Not ready');
+  } catch {
+    const distDir = path.resolve('dist');
+    const mimeTypes = {
+      '.html': 'text/html; charset=utf-8',
+      '.js': 'text/javascript; charset=utf-8',
+      '.css': 'text/css; charset=utf-8',
+      '.png': 'image/png',
+      '.jpg': 'image/jpeg',
+      '.jpeg': 'image/jpeg',
+      '.ico': 'image/x-icon',
+      '.json': 'application/json',
+      '.svg': 'image/svg+xml',
+      '.woff2': 'font/woff2'
+    };
+
+    inProcessServer = http.createServer((req, res) => {
+      let reqPath = req.url.split('?')[0];
+      if (reqPath === '/api/config') {
+        res.writeHead(200, {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*'
+        });
+        const supabaseUrl = envConfig.SUPABASE_URL || process.env.SUPABASE_URL || '';
+        const supabaseAnonKey = envConfig.SUPABASE_PUBLISHABLE_KEY || envConfig.SUPABASE_ANON_KEY || process.env.SUPABASE_PUBLISHABLE_KEY || process.env.SUPABASE_ANON_KEY || '';
+        res.end(JSON.stringify({ supabaseUrl, supabaseAnonKey }));
+        return;
+      }
+      if (reqPath === '/' || reqPath === '') reqPath = '/index.html';
+      if (reqPath === '/favicon.ico') reqPath = '/assets/favicon.ico';
+      let filePath = path.join(distDir, reqPath);
+      if (!fs.existsSync(filePath) && reqPath === '/assets/favicon.ico') {
+        filePath = path.resolve('assets', 'icon.ico');
+      }
+      if (!fs.existsSync(filePath)) {
+        res.writeHead(404, { 'Content-Type': 'text/plain' });
+        res.end('Not Found');
+        return;
+      }
+      const ext = path.extname(filePath);
+      const contentType = mimeTypes[ext] || 'application/octet-stream';
+      res.writeHead(200, { 'Content-Type': contentType, 'Access-Control-Allow-Origin': '*' });
+      fs.createReadStream(filePath).pipe(res);
+    });
+
+    await new Promise((resolve) => {
+      inProcessServer.listen(0, '127.0.0.1', () => {
+        const addr = inProcessServer.address();
+        testUrl = `http://127.0.0.1:${addr.port}`;
+        resolve();
+      });
+    });
+  }
+
   console.log(`\n======================================================`);
   console.log(` LABFLOW DIAGNOSTICS - PRODUCTION SMOKE TEST RUNNER`);
-  console.log(` Target Server: ${BASE_URL}`);
+  console.log(` Target Server: ${testUrl}`);
   console.log(` Target Operator: ${EMAIL}`);
   console.log(`======================================================\n`);
 
@@ -49,34 +109,35 @@ async function runSmokeTests() {
     }
   }
 
-  // 1. Root page availability
-  await check('GET / returns 200 OK with HTML content', async () => {
-    const res = await fetch(`${BASE_URL}/`);
-    if (!res.ok) throw new Error(`Status ${res.status}`);
-    const text = await res.text();
-    if (!text.includes('Labflow Diagnostics')) throw new Error('Missing title in HTML');
-  });
+  try {
+    // 1. Root page availability
+    await check('GET / returns 200 OK with HTML content', async () => {
+      const res = await fetch(`${testUrl}/`);
+      if (!res.ok) throw new Error(`Status ${res.status}`);
+      const text = await res.text();
+      if (!text.includes('Labflow Diagnostics')) throw new Error('Missing title in HTML');
+    });
 
-  // 2. Config endpoint returns public credentials only
-  let configData = null;
-  await check('GET /api/config returns valid public Supabase config', async () => {
-    const res = await fetch(`${BASE_URL}/api/config`);
-    if (!res.ok) throw new Error(`Status ${res.status}`);
-    configData = await res.json();
-    if (!configData.supabaseUrl) throw new Error('Missing supabaseUrl');
-    if (!configData.supabaseAnonKey) throw new Error('Missing supabaseAnonKey');
-    if (configData.supabaseAnonKey.startsWith('sb_secret')) {
-      throw new Error('CRITICAL SECURITY: Secret key leaked in public config!');
-    }
-  });
+    // 2. Config endpoint returns public credentials only
+    let configData = null;
+    await check('GET /api/config returns valid public Supabase config', async () => {
+      const res = await fetch(`${testUrl}/api/config`);
+      if (!res.ok) throw new Error(`Status ${res.status}`);
+      configData = await res.json();
+      if (!configData.supabaseUrl) throw new Error('Missing supabaseUrl');
+      if (!configData.supabaseAnonKey) throw new Error('Missing supabaseAnonKey');
+      if (configData.supabaseAnonKey.startsWith('sb_secret')) {
+        throw new Error('CRITICAL SECURITY: Secret key leaked in public config!');
+      }
+    });
 
-  // 3. Static asset delivery
-  await check('Static assets (/style.css, /app.js, /report.js, /catalog.js) serve correctly', async () => {
-    for (const asset of ['/style.css', '/app.js', '/report.js', '/catalog.js']) {
-      const res = await fetch(`${BASE_URL}${asset}`);
-      if (!res.ok) throw new Error(`Failed to load ${asset}: ${res.status}`);
-    }
-  });
+    // 3. Static asset delivery
+    await check('Static assets (/style.css, /app.js, /report.js, /catalog.js) serve correctly', async () => {
+      for (const asset of ['/style.css', '/app.js', '/report.js', '/catalog.js']) {
+        const res = await fetch(`${testUrl}${asset}`);
+        if (!res.ok) throw new Error(`Failed to load ${asset}: ${res.status}`);
+      }
+    });
 
   // 4. Supabase Auth and Data Connectivity
   if (configData && configData.supabaseUrl && configData.supabaseAnonKey) {
@@ -128,6 +189,11 @@ async function runSmokeTests() {
         if (!data || data.length === 0) throw new Error('lab_settings table is empty');
         console.log(`      Active Laboratory: ${data[0].lab_name}`);
       });
+    }
+  }
+  } finally {
+    if (inProcessServer) {
+      inProcessServer.close();
     }
   }
 

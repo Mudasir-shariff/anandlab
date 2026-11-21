@@ -20,6 +20,8 @@ This document tracks all bugs, security vulnerabilities, edge-case failures, and
 | BUG-010 | Missing Production Deployment Guide and Health Check | Medium | Phase 9 | Fixed | Current |
 | BUG-011 | Browser Print Shim Crashes when Popup is Blocked | Medium | Phase 8 | Fixed | `2746373` |
 | BUG-012 | Redundant Duplicated Keys in settingsAdapter Object Literal | Low | Phase 2 | Fixed | `a44a39c` |
+| HARD-013 | Immutable Registration & State License Number (`KA-BLR-LAB-2026-089`) | High | Hardening | Fixed | `qa-hardening` |
+| HARD-014 | "Refer & Free Service" Workflow Page (6 Mo Service Waiver per Referral) | Feature | Hardening | Fixed | `qa-hardening` |
 
 ---
 
@@ -148,3 +150,24 @@ This document tracks all bugs, security vulnerabilities, edge-case failures, and
 - **Verification**: Verified via `npm test`.
 - **Status**: Fixed
 - **Commit**: `a44a39c`
+
+### [HARD-013] Immutable Registration & State License Number
+- **Severity**: High (Compliance & Integrity)
+- **Found in**: Clinical compliance review
+- **Description**: Laboratory establishment registration license number was previously an editable input in Settings, allowing operators or unauthorized staff to accidentally alter or erase the statutory government registration ID (`KA-BLR-LAB-2026-089`).
+- **Fix**: Locked `#lab-reg` input with `readonly`, `disabled`, and visual lock badge in `renderLabProfileSettings`. Enforced immutability in the form submission payload so `registration_no` strictly preserves `lab.registration_no || 'KA-BLR-LAB-2026-089'`.
+- **Verification**: Added automated test in `test/ui.test.mjs` verifying `readOnly === true`, `disabled === true`, and immutable license value.
+- **Status**: Fixed
+- **Commit**: Current
+
+### [HARD-014] "Refer & Free Service" Workflow Page
+- **Severity**: Feature / Growth
+- **Found in**: Partner promotion requirement
+- **Description**: Laboratory needed an accessible in-app workflow to refer other clinical diagnostic centres and claim 6 months of complimentary service charge waiver per referral.
+- **Claim Process Implemented**:
+  1. **Share Referral Detail & Number With Us**: Staff enters referred lab name, doctor/incharge contact person, 10-digit mobile number, city, and notes, with 1-click WhatsApp pre-fill to hotline `+91 8123649448` and clipboard copy.
+  2. **Wait Till We Install This Software**: Opti-X deployment team visits on-site or connects remotely for complete installation, letterhead configuration, and staff training.
+  3. **Get 6 Months Free Service**: Account automatically receives 6 months complimentary service charge waiver per live installation (cumulative with no referral cap).
+- **Verification**: Verified in `test/ui.test.mjs` (navigation, step card rendering, form submission, and tracked history).
+- **Status**: Fixed
+- **Commit**: Current

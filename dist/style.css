@@ -5993,3 +5993,141 @@ tbody tr:hover {
     grid-template-columns: repeat(2, 1fr);
   }
 }
+
+/* Referral & Free Service Promotion Page */
+.nav-badge-pill {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  background: #10b981;
+  color: #ffffff;
+  padding: 2px 7px;
+  border-radius: 12px;
+  margin-left: auto;
+  line-height: 1.3;
+}
+
+.referral-hero-card {
+  background: linear-gradient(135deg, #063934 0%, #004F49 60%, #0a5c55 100%);
+  color: #ffffff;
+  border-radius: var(--radius-panel, 12px);
+  padding: 32px 28px;
+  margin-bottom: 24px;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0, 79, 73, 0.15);
+}
+
+.referral-hero-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.16);
+  backdrop-filter: blur(8px);
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  margin-bottom: 12px;
+  color: #a7f3d0;
+}
+
+.referral-hero-title {
+  font-size: 28px;
+  font-weight: 700;
+  line-height: 1.25;
+  margin-bottom: 10px;
+  letter-spacing: -0.02em;
+}
+
+.referral-hero-subtitle {
+  font-size: 15px;
+  opacity: 0.92;
+  max-width: 720px;
+  line-height: 1.5;
+  margin-bottom: 20px;
+}
+
+.referral-perks-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+  margin-top: 20px;
+}
+
+.referral-perk-card {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(6px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 10px;
+  padding: 16px;
+}
+
+.referral-perk-number {
+  font-size: 26px;
+  font-weight: 800;
+  color: #34d399;
+  line-height: 1;
+  margin-bottom: 6px;
+}
+
+.referral-perk-title {
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.referral-perk-desc {
+  font-size: 12px;
+  opacity: 0.82;
+  line-height: 1.4;
+}
+
+.referral-steps-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 20px;
+}
+
+.referral-step-card {
+  background: #ffffff;
+  border: 1px solid #dce2e0;
+  border-radius: var(--radius-panel, 12px);
+  padding: 24px;
+  position: relative;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.referral-step-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.06);
+}
+
+.referral-step-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: #e6f4f2;
+  color: #004F49;
+  font-weight: 800;
+  font-size: 16px;
+  margin-bottom: 14px;
+}
+
+.referral-step-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: #161b1b;
+  margin-bottom: 8px;
+}
+
+.referral-step-text {
+  font-size: 13.5px;
+  color: #596464;
+  line-height: 1.5;
+}

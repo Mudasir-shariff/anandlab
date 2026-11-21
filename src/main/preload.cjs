@@ -9,5 +9,6 @@ contextBridge.exposeInMainWorld('labflowAPI', {
   getPrinters: () => ipcRenderer.invoke('print:get-printers'),
   printReceipt: (options) => ipcRenderer.invoke('print:receipt', options),
   printReport: (options) => ipcRenderer.invoke('print:report', options),
-  printToPDF: (options) => ipcRenderer.invoke('print:to-pdf', options)
+  printToPDF: (options) => ipcRenderer.invoke('print:to-pdf', options),
+  openExternal: (url) => ipcRenderer.invoke('shell:open-external', url)
 });

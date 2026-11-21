@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, dialog, safeStorage } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog, safeStorage, shell } = require('electron');
 const path = require('node:path');
 const fs = require('node:fs');
 
@@ -305,5 +305,16 @@ function setupIPC() {
       if (!printWin.isDestroyed()) printWin.destroy();
       return { success: false, error: err.message };
     }
+  });
+
+  // Open External URL safely (WhatsApp, Email, Tel)
+  ipcMain.handle('shell:open-external', async (event, url) => {
+    if (typeof url !== 'string') return false;
+    const allowed = ['https://wa.me/', 'https://', 'mailto:', 'tel:'];
+    if (allowed.some(prefix => url.startsWith(prefix))) {
+      await shell.openExternal(url);
+      return true;
+    }
+    return false;
   });
 }
