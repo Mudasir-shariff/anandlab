@@ -6,9 +6,9 @@ export const REPORT_TEMPLATES = [
   { id: 'minimal', name: 'Minimal teal', description: 'A clean hospital-style layout with restrained teal accents.', color: '#218b8b' }
 ];
 
-const escape = value => String(value ?? '').replace(/[&<>"']/g, character => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[character]));
+const escape = value => String(value ?? '').replace(/[&<>"']/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[character]));
 const text = value => value === '' || value == null ? '—' : escape(value);
-const own = (object,key) => object != null && Object.hasOwn(object,key);
+const own = (object, key) => object != null && Object.hasOwn(object, key);
 const numericValue = value => {
   if (typeof value !== 'number' && typeof value !== 'string') return null;
   if (typeof value === 'string' && !/^[+-]?(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?$/.test(value.trim())) return null;
@@ -239,7 +239,7 @@ function bottomBanner() {
 }
 
 const brandIcon = '<svg viewBox="0 0 48 48" aria-hidden="true"><path d="M19 5h10m-8 0v15L10 37a4 4 0 0 0 3 6h22a4 4 0 0 0 3-6L27 20V5M16 29h16"/><circle cx="22" cy="34" r="1.5"/><circle cx="28" cy="38" r="1"/></svg>';
-const lineCount = (value,width) => String(value ?? '').split(/\r?\n/).reduce((sum,line)=>sum+Math.max(1,Math.ceil(Array.from(line).length/width)),0);
+const lineCount = (value, width) => String(value ?? '').split(/\r?\n/).reduce((sum, line) => sum + Math.max(1, Math.ceil(Array.from(line).length / width)), 0);
 
 function reportDefinitions(order) {
   const frozen = order.status === 'Approved' && order.catalogSnapshot && typeof order.catalogSnapshot === 'object';
@@ -247,111 +247,111 @@ function reportDefinitions(order) {
   const parameters = frozen ? order.catalogSnapshot.parameters || {} : PARAMETERS;
   const assigned = new Set();
   const codes = [...new Set(Array.isArray(order.tests) ? order.tests : [])];
-  const sections = codes.map(code=>{
-    const definition = own(tests,code) && tests[code] && typeof tests[code] === 'object' ? tests[code] : null;
+  const sections = codes.map(code => {
+    const definition = own(tests, code) && tests[code] && typeof tests[code] === 'object' ? tests[code] : null;
     const keys = [...new Set(Array.isArray(definition?.parameters) ? definition.parameters : [])];
-    const rows = keys.map(key=>{
+    const rows = keys.map(key => {
       assigned.add(key);
-      const parameter = own(parameters,key) && parameters[key] && typeof parameters[key] === 'object' ? parameters[key] : null;
-      return {key,parameter,value:order.results?.[key],unknown:!parameter};
+      const parameter = own(parameters, key) && parameters[key] && typeof parameters[key] === 'object' ? parameters[key] : null;
+      return { key, parameter, value: order.results?.[key], unknown: !parameter };
     });
-    if (!definition || !rows.length) rows.push({key:`unavailable-${code}`,notice:'The test definition was not captured. Contact the laboratory to verify this report.'});
-    return {code,test:definition || {name:`${String(code)} · definition unavailable`,department:'Recorded test',sample:'Not recorded'},rows};
+    if (!definition || !rows.length) rows.push({ key: `unavailable-${code}`, notice: 'The test definition was not captured. Contact the laboratory to verify this report.' });
+    return { code, test: definition || { name: `${String(code)} · definition unavailable`, department: 'Recorded test', sample: 'Not recorded' }, rows };
   });
   // Never silently drop a historical result when a catalog panel or parameter was removed.
-  const unmatched = Object.keys(order.results || {}).filter(key=>!assigned.has(key));
-  if (unmatched.length) sections.push({code:'UNMAPPED',test:{name:'Additional recorded results',department:'Definition unavailable',sample:'Not recorded'},rows:unmatched.map(key=>({key,parameter:own(parameters,key)?parameters[key]:null,value:order.results[key],unknown:true}))});
-  return {sections,frozen:Boolean(frozen),hasUnknown:sections.some(section=>section.rows.some(row=>row.unknown || row.notice))};
+  const unmatched = Object.keys(order.results || {}).filter(key => !assigned.has(key));
+  if (unmatched.length) sections.push({ code: 'UNMAPPED', test: { name: 'Additional recorded results', department: 'Definition unavailable', sample: 'Not recorded' }, rows: unmatched.map(key => ({ key, parameter: own(parameters, key) ? parameters[key] : null, value: order.results[key], unknown: true })) });
+  return { sections, frozen: Boolean(frozen), hasUnknown: sections.some(section => section.rows.some(row => row.unknown || row.notice)) };
 }
 
 function rowHeight(row) {
   if (row.notice) return 11;
   const parameter = row.parameter || {};
   const reference = parameter.reference || (Number.isFinite(parameter.min) && Number.isFinite(parameter.max) ? `${parameter.min} – ${parameter.max}` : 'Not recorded');
-  const lines = Math.max(lineCount(parameter.name || row.key,44),lineCount(row.value,14),lineCount(parameter.unit || '—',15),lineCount(reference,22));
-  return 2.4 + lines * 3.6 + (row.unknown?3.5:0);
+  const lines = Math.max(lineCount(parameter.name || row.key, 44), lineCount(row.value, 14), lineCount(parameter.unit || '—', 15), lineCount(reference, 22));
+  return 2.4 + lines * 3.6 + (row.unknown ? 3.5 : 0);
 }
 
-function frameHeight(order,profile,template,hasRibbon,hasWarning) {
-  const nameLines = lineCount(profile.labName || 'Laboratory report',template==='sahara'?23:29);
-  const addressLines = profile.address ? lineCount(profile.address,50) : 0;
-  const contactLines = [profile.registration,profile.phone,profile.email,profile.website].filter(Boolean).reduce((sum,value)=>sum+lineCount(value,29),0);
-  const brand = Math.max(template==='sahara'?32:30,12 + nameLines*6.4 + addressLines*3.4,10+contactLines*3.6);
-  const left = lineCount(order.name,38)*4.8 + 3 + lineCount(`${order.age} years / ${order.sex}`,48)*3.6 + lineCount(order.patientId,47)*3.6 + lineCount(order.referrer || 'Self',47)*3.6;
-  const patient = Math.max(29,left+7);
-  const footer = 10+(profile.reportFooter?lineCount(profile.reportFooter,105)*3.1:4)+(profile.workingHours?lineCount(profile.workingHours,100)*3.1:0);
-  return brand+patient+footer+12+(hasRibbon?7:0)+(hasWarning?9:0);
+function frameHeight(order, profile, template, hasRibbon, hasWarning) {
+  const nameLines = lineCount(profile.labName || 'Laboratory report', template === 'sahara' ? 23 : 29);
+  const addressLines = profile.address ? lineCount(profile.address, 50) : 0;
+  const contactLines = [profile.registration, profile.phone, profile.email, profile.website].filter(Boolean).reduce((sum, value) => sum + lineCount(value, 29), 0);
+  const brand = Math.max(template === 'sahara' ? 32 : 30, 12 + nameLines * 6.4 + addressLines * 3.4, 10 + contactLines * 3.6);
+  const left = lineCount(order.name, 38) * 4.8 + 3 + lineCount(`${order.age} years / ${order.sex}`, 48) * 3.6 + lineCount(order.patientId, 47) * 3.6 + lineCount(order.referrer || 'Self', 47) * 3.6;
+  const patient = Math.max(29, left + 7);
+  const footer = 10 + (profile.reportFooter ? lineCount(profile.reportFooter, 105) * 3.1 : 4) + (profile.workingHours ? lineCount(profile.workingHours, 100) * 3.1 : 0);
+  return brand + patient + footer + 12 + (hasRibbon ? 7 : 0) + (hasWarning ? 9 : 0);
 }
 
 function splitNoteLines(value) {
   const lines = [];
-  for (const line of String(value || '').replace(/\r\n?/g,'\n').split('\n')) {
+  for (const line of String(value || '').replace(/\r\n?/g, '\n').split('\n')) {
     const characters = Array.from(line);
     if (!characters.length) lines.push('');
-    for (let index=0;index<characters.length;index+=85) lines.push(characters.slice(index,index+85).join(''));
+    for (let index = 0; index < characters.length; index += 85) lines.push(characters.slice(index, index + 85).join(''));
   }
   return lines;
 }
 
-function paginate(order,profile,template,definitions,hasRibbon,warning) {
+function paginate(order, profile, template, definitions, hasRibbon, warning) {
   // Dimensions include conservative wrapping and a20mm safety allowance within printable A4.
-  const bodyBudget = Math.max(35,277-frameHeight(order,profile,template,hasRibbon,Boolean(warning))-20);
-  const pages = [{sections:[],used:0,notes:null}];
+  const bodyBudget = Math.max(35, 277 - frameHeight(order, profile, template, hasRibbon, Boolean(warning)) - 20);
+  const pages = [{ sections: [], used: 0, notes: null }];
   let current = pages[0];
   for (const section of definitions.sections) {
     let offset = 0;
-    while (offset<section.rows.length) {
-      const heading = 22 + Math.max(0,lineCount(section.test.name,55)-1)*4.2;
-      let room = bodyBudget-current.used-heading;
-      if (room<rowHeight(section.rows[offset]) && current.sections.length) {
-        current={sections:[],used:0,notes:null};pages.push(current);room=bodyBudget-heading;
+    while (offset < section.rows.length) {
+      const heading = 22 + Math.max(0, lineCount(section.test.name, 55) - 1) * 4.2;
+      let room = bodyBudget - current.used - heading;
+      if (room < rowHeight(section.rows[offset]) && current.sections.length) {
+        current = { sections: [], used: 0, notes: null }; pages.push(current); room = bodyBudget - heading;
       }
-      const rows=[];
-      let used=heading;
-      while(offset<section.rows.length) {
-        const height=rowHeight(section.rows[offset]);
-        if(rows.length && used+height>bodyBudget-current.used) break;
-        rows.push(section.rows[offset++]);used+=height;
-        if(used>=bodyBudget-current.used)break;
+      const rows = [];
+      let used = heading;
+      while (offset < section.rows.length) {
+        const height = rowHeight(section.rows[offset]);
+        if (rows.length && used + height > bodyBudget - current.used) break;
+        rows.push(section.rows[offset++]); used += height;
+        if (used >= bodyBudget - current.used) break;
       }
-      current.sections.push({...section,rows,continued:offset>rows.length});
-      current.used+=used;
-      if(offset<section.rows.length){current={sections:[],used:0,notes:null};pages.push(current);}
+      current.sections.push({ ...section, rows, continued: offset > rows.length });
+      current.used += used;
+      if (offset < section.rows.length) { current = { sections: [], used: 0, notes: null }; pages.push(current); }
     }
   }
   const notes = splitNoteLines(order.notes || 'No additional clinical notes.');
-  const authorHeight = 16 + Math.max(lineCount(profile.labIncharge || 'Checked by',42)+lineCount(profile.labInchargeQualification,48),lineCount(profile.pathologist || order.approvedByName || order.approvedBy || 'Reviewer details not configured',42)+lineCount(profile.pathologistQualification,48))*3.6;
-  const noteHeight = 13+notes.length*3.8;
-  if(current.used+noteHeight+authorHeight<=bodyBudget) {
-    current.notes=notes.join('\n');current.signatures=true;
+  const authorHeight = 16 + Math.max(lineCount(profile.labIncharge || 'Checked by', 42) + lineCount(profile.labInchargeQualification, 48), lineCount(profile.pathologist || order.approvedByName || order.approvedBy || 'Reviewer details not configured', 42) + lineCount(profile.pathologistQualification, 48)) * 3.6;
+  const noteHeight = 13 + notes.length * 3.8;
+  if (current.used + noteHeight + authorHeight <= bodyBudget) {
+    current.notes = notes.join('\n'); current.signatures = true;
   } else {
-    let offset=0;
-    while(offset<notes.length) {
-      const room=Math.max(1,Math.floor((bodyBudget-13)/3.8));
-      const lines=notes.slice(offset,offset+Math.min(24,room));
-      current={sections:[],used:13+lines.length*3.8,notes:lines.join('\n'),noteOnly:true,notesContinued:offset>0};
-      pages.push(current);offset+=lines.length;
+    let offset = 0;
+    while (offset < notes.length) {
+      const room = Math.max(1, Math.floor((bodyBudget - 13) / 3.8));
+      const lines = notes.slice(offset, offset + Math.min(24, room));
+      current = { sections: [], used: 13 + lines.length * 3.8, notes: lines.join('\n'), noteOnly: true, notesContinued: offset > 0 };
+      pages.push(current); offset += lines.length;
     }
-    if(current.used+authorHeight>bodyBudget) pages.push({sections:[],used:authorHeight,notes:null,noteOnly:true,signatures:true});
-    else current.signatures=true;
+    if (current.used + authorHeight > bodyBudget) pages.push({ sections: [], used: authorHeight, notes: null, noteOnly: true, signatures: true });
+    else current.signatures = true;
   }
   return pages;
 }
 
-function resultRow(row,code,sex) {
+function resultRow(row, code, sex) {
   if (row.notice) return `<tr class="report-definition-notice"><td colspan="4">${escape(row.notice)}</td></tr>`;
-  const parameter=row.parameter || {name:row.key,unit:'Not recorded',reference:'Not recorded'};
-  const numeric=numericValue(row.value),available=numeric!==null;
-  const recordedText=row.unknown&&typeof row.value==='string'&&row.value.trim()?row.value:null;
-  const flag=!row.unknown && available && Number.isFinite(parameter.min) && numeric<parameter.min?'L':!row.unknown && available && Number.isFinite(parameter.max) && numeric>parameter.max?'H':'';
+  const parameter = row.parameter || { name: row.key, unit: 'Not recorded', reference: 'Not recorded' };
+  const numeric = numericValue(row.value), available = numeric !== null;
+  const recordedText = row.unknown && typeof row.value === 'string' && row.value.trim() ? row.value : null;
+  const flag = !row.unknown && available && Number.isFinite(parameter.min) && numeric < parameter.min ? 'L' : !row.unknown && available && Number.isFinite(parameter.max) && numeric > parameter.max ? 'H' : '';
   // Use sex-specific reference interval string when available (display only; min/max thresholds are unchanged),
   // unless an archived or custom reference was explicitly specified for this parameter.
   const isCustomRef = parameter.reference && (!PARAMETERS[row.key] || parameter.reference !== PARAMETERS[row.key].reference);
-  const sexRef = !isCustomRef && (sex==='Male' && parameter.referenceM ? parameter.referenceM : sex==='Female' && parameter.referenceF ? parameter.referenceF : null);
-  const reference=row.unknown?'Not captured':sexRef||parameter.reference || (Number.isFinite(parameter.min)&&Number.isFinite(parameter.max)?`${parameter.min} – ${parameter.max}`:'Not captured');
+  const sexRef = !isCustomRef && (sex === 'Male' && parameter.referenceM ? parameter.referenceM : sex === 'Female' && parameter.referenceF ? parameter.referenceF : null);
+  const reference = row.unknown ? 'Not captured' : sexRef || parameter.reference || (Number.isFinite(parameter.min) && Number.isFinite(parameter.max) ? `${parameter.min} – ${parameter.max}` : 'Not captured');
   const method = PARAMETER_METHODS[row.key] || '';
   const subheader = (code === 'CBC' && row.key === 'neutrophils') ? '<tr class="report-subheading-row"><td colspan="4">DIFFERENTIAL COUNT</td></tr>' : '';
-  return `${subheader}<tr class="report-result-row ${flag?'report-abnormal':''}" ${method?`data-method="${escape(method)}" `:''}data-test="${escape(code)}" data-parameter="${escape(row.key)}"><td>${text(parameter.name || row.key)}${row.unknown?'<small class="report-definition-label">Definition not captured</small>':''}</td><td class="report-result-value">${available?escape(row.value):recordedText?escape(recordedText):'—'}${flag?`<span class="report-result-flag" aria-label="${flag==='H'?'Above reference range':'Below reference range'}">${flag}</span>`:''}</td><td>${row.unknown?'Not captured':text(parameter.unit)}</td><td>${escape(reference)}</td></tr>`;
+  return `${subheader}<tr class="report-result-row ${flag ? 'report-abnormal' : ''}" ${method ? `data-method="${escape(method)}" ` : ''}data-test="${escape(code)}" data-parameter="${escape(row.key)}"><td>${text(parameter.name || row.key)}${row.unknown ? '<small class="report-definition-label">Definition not captured</small>' : ''}</td><td class="report-result-value">${available ? escape(row.value) : recordedText ? escape(recordedText) : '—'}${flag ? `<span class="report-result-flag" aria-label="${flag === 'H' ? 'Above reference range' : 'Below reference range'}">${flag}</span>` : ''}</td><td>${row.unknown ? 'Not captured' : text(parameter.unit)}</td><td>${escape(reference)}</td></tr>`;
 }
 
 function letterhead(profile) {
@@ -423,11 +423,11 @@ function patientDetails(order) {
     </div>
   </section>`;
 }
-function signatures(order,profile) {
-  const approved=order.status==='Approved';
-  const corrected=Boolean(order.originalOrderId);
-  const approvedByLabel=approved && order.approvedByName ? order.approvedByName : approved && order.approvedBy ? (order.approvedBy.startsWith('usr-') ? 'Authorized reviewer' : order.approvedBy) : null;
-  return `${corrected?`<div class="report-correction-notice">Corrected report · Revision ${order.resultsRevision}</div>`:''}` +
+function signatures(order, profile) {
+  const approved = order.status === 'Approved';
+  const corrected = Boolean(order.originalOrderId);
+  const approvedByLabel = approved && order.approvedByName ? order.approvedByName : approved && order.approvedBy ? (order.approvedBy.startsWith('usr-') ? 'Authorized reviewer' : order.approvedBy) : null;
+  return `${corrected ? `<div class="report-correction-notice">Corrected report · Revision ${order.resultsRevision}</div>` : ''}` +
     `<section class="report-reviewers" id="ref-signatures-block">
       <div class="report-reviewer ref-reviewer-placeholder"></div>
       <div class="report-reviewer report-reviewer-authorizer ref-tech-block">
@@ -438,31 +438,31 @@ function signatures(order,profile) {
             <span class="ref-tech-sub">Technician Sign</span>
           </div>
         </div>
-        <span style="display:none">${approved?'Authorized reviewer':'Draft · not authorized'}${approved&&approvedByLabel?` · Approved by ${escape(approvedByLabel)}`:''}</span>
+        <span style="display:none">${approved ? 'Authorized reviewer' : 'Draft · not authorized'}${approved && approvedByLabel ? ` · Approved by ${escape(approvedByLabel)}` : ''}</span>
       </div>
     </section>`;
 }
 
 /** Render a complete escaped report. Approved reports prefer their captured definitions. */
-export function renderReport(order={},settings={},options={}) {
-  const profile=order.reportSnapshot?{...order.reportSnapshot}:{...settings};
-  const candidate=options.template || profile.reportTemplate || 'classic';
-  const template=REPORT_TEMPLATES.some(item=>item.id===candidate)?candidate:'classic';
-  const definitions=reportDefinitions(order);
-  const demo=options.demo===true || order.demo===true;
-  const sample=options.preview===true || order.sampleReport===true;
-  const draft=order.status!=='Approved';
-  const status=[];
-  if(sample) status.push('SAMPLE REPORT · FICTIONAL DATA · NOT FOR CLINICAL USE');
-  else if(demo) status.push('DEMONSTRATION REPORT · FICTIONAL PATIENT · NOT FOR CLINICAL USE');
-  if(order.originalOrderId) status.push(`AMENDED REPORT · REPLACES ${order.originalOrderId}`);
-  if(draft) status.push('DRAFT REPORT · AWAITING REVIEW AND APPROVAL');
-  const mode=status.join(' · ');
-  const historical=order.status==='Approved'&&!definitions.frozen&&!sample;
-  const warnings=[];
-  if(order.amendmentReason)warnings.push(`Amended report: ${order.amendmentReason} (Replaces ${order.originalOrderId||'previous release'}).`);
-  if(definitions.hasUnknown)warnings.push('Some recorded test definitions are unavailable. Verify this report with the laboratory.');
-  const warning=warnings.join(' ');
-  const pages=paginate(order,profile,template,definitions,Boolean(mode),warning);
-  return `<div class="report report-document report-theme-${template}" data-report-template="${template}">${pages.map((page,index)=>`<article class="report-page" aria-label="Report page ${index+1} of ${pages.length}">${watermarkSvg}<div class="molecular-lattice-tr" aria-hidden="true">${molecularLatticeSvg}</div><div class="molecular-lattice-bl" aria-hidden="true">${molecularLatticeSvg}</div>${mode?`<div class="report-status-ribbon ${draft?'report-status-draft':''}">${escape(mode)}</div>`:''}${letterhead(profile)}${patientDetails(order)}${warning?`<p class="report-data-warning">${escape(warning)}</p>`:''}<div class="report-document-title"><span>LABORATORY REPORT</span><b>${draft?'DRAFT':'RESULTS'}</b></div><main class="report-results-content">${page.sections.length?page.sections.map(section=>`<section class="report-test-section"><div class="report-test-heading"><span>${text(section.test.department)}</span><h3>${text(section.test.name)}${section.continued?' <small>(continued)</small>':''}</h3><div>Specimen: ${text(section.test.sample)}</div></div><table class="report-results-table"><colgroup><col style="width:43%"><col style="width:16%"><col style="width:17%"><col style="width:24%"></colgroup><thead><tr><th>TEST DESCRIPTION</th><th>RESULT</th><th>UNITS</th><th>BIOLOGICAL REFERENCE</th></tr></thead><tbody>${section.rows.map(row=>resultRow(row,section.code,order.sex)).join('')}</tbody></table></section>`).join(''):page.noteOnly?'':'<p class="report-no-results">No test results are available for this order.</p>'}</main>${page.notes!==null?`<section class="report-clinical-notes"><h4>Interpretation :${page.notesContinued?' (continued)':''}</h4><p>${escape(page.notes)}</p><small>H = above reference interval · L = below reference interval. Interpret results with clinical findings. Reference intervals require laboratory validation.</small></section>`:''}<div class="report-end-marker">****End Of The Report****</div>${page.signatures?signatures(order,profile):'<p class="report-continued-note">Report continued on the next page.</p>'}<footer class="report-page-footer"><div class="report-footer-rule"></div><div class="report-footer-row"><span>${text(order.id)}</span><strong>Page ${index+1} of ${pages.length}</strong><span>${index===pages.length-1?'End of report':'Continued'}</span></div>${profile.reportFooter?`<p>${escape(profile.reportFooter)}</p>`:'<p>Results relate only to the sample tested. Please correlate with clinical findings.</p>'}${profile.workingHours?`<p>Working hours: ${escape(profile.workingHours)}</p>`:''}</footer>${bottomBanner()}</article>`).join('')}</div>`;
+export function renderReport(order = {}, settings = {}, options = {}) {
+  const profile = order.reportSnapshot ? { ...order.reportSnapshot } : { ...settings };
+  const candidate = options.template || profile.reportTemplate || 'classic';
+  const template = REPORT_TEMPLATES.some(item => item.id === candidate) ? candidate : 'classic';
+  const definitions = reportDefinitions(order);
+  const demo = options.demo === true || order.demo === true;
+  const sample = options.preview === true || order.sampleReport === true;
+  const draft = order.status !== 'Approved';
+  const status = [];
+  if (sample) status.push('SAMPLE REPORT · FICTIONAL DATA · NOT FOR CLINICAL USE');
+  else if (demo) status.push('DEMONSTRATION REPORT · FICTIONAL PATIENT · NOT FOR CLINICAL USE');
+  if (order.originalOrderId) status.push(`AMENDED REPORT · REPLACES ${order.originalOrderId}`);
+  if (draft) status.push('DRAFT REPORT · AWAITING REVIEW AND APPROVAL');
+  const mode = status.join(' · ');
+  const historical = order.status === 'Approved' && !definitions.frozen && !sample;
+  const warnings = [];
+  if (order.amendmentReason) warnings.push(`Amended report: ${order.amendmentReason} (Replaces ${order.originalOrderId || 'previous release'}).`);
+  if (definitions.hasUnknown) warnings.push('Some recorded test definitions are unavailable. Verify this report with the laboratory.');
+  const warning = warnings.join(' ');
+  const pages = paginate(order, profile, template, definitions, Boolean(mode), warning);
+  return `<div class="report report-document report-theme-${template}" data-report-template="${template}">${pages.map((page, index) => `<article class="report-page" aria-label="Report page ${index + 1} of ${pages.length}">${watermarkSvg}<div class="molecular-lattice-tr" aria-hidden="true">${molecularLatticeSvg}</div><div class="molecular-lattice-bl" aria-hidden="true">${molecularLatticeSvg}</div>${mode ? `<div class="report-status-ribbon ${draft ? 'report-status-draft' : ''}">${escape(mode)}</div>` : ''}${letterhead(profile)}${patientDetails(order)}${warning ? `<p class="report-data-warning">${escape(warning)}</p>` : ''}<div class="report-document-title"><span>LABORATORY REPORT</span><b>${draft ? 'DRAFT' : 'RESULTS'}</b></div><main class="report-results-content">${page.sections.length ? page.sections.map(section => `<section class="report-test-section"><div class="report-test-heading"><span>${text(section.test.department)}</span><h3>${text(section.test.name)}${section.continued ? ' <small>(continued)</small>' : ''}</h3><div>Specimen: ${text(section.test.sample)}</div></div><table class="report-results-table"><colgroup><col style="width:43%"><col style="width:16%"><col style="width:17%"><col style="width:24%"></colgroup><thead><tr><th>TEST DESCRIPTION</th><th>RESULT</th><th>UNITS</th><th>BIOLOGICAL REFERENCE</th></tr></thead><tbody>${section.rows.map(row => resultRow(row, section.code, order.sex)).join('')}</tbody></table></section>`).join('') : page.noteOnly ? '' : '<p class="report-no-results">No test results are available for this order.</p>'}</main>${page.notes !== null ? `<section class="report-clinical-notes"><h4>Interpretation :${page.notesContinued ? ' (continued)' : ''}</h4><p>${escape(page.notes)}</p><small>H = above reference interval · L = below reference interval. Interpret results with clinical findings. Reference intervals require laboratory validation.</small></section>` : ''}<div class="report-end-marker">****End Of The Report****</div>${page.signatures ? signatures(order, profile) : '<p class="report-continued-note">Report continued on the next page.</p>'}<footer class="report-page-footer"><div class="report-footer-rule"></div><div class="report-footer-row"><span>${text(order.id)}</span><strong>Page ${index + 1} of ${pages.length}</strong><span>${index === pages.length - 1 ? 'End of report' : 'Continued'}</span></div>${profile.reportFooter ? `<p>${escape(profile.reportFooter)}</p>` : '<p>Results relate only to the sample tested. Please correlate with clinical findings.</p>'}${profile.workingHours ? `<p>Working hours: ${escape(profile.workingHours)}</p>` : ''}</footer>${bottomBanner()}</article>`).join('')}</div>`;
 }

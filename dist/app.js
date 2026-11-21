@@ -279,10 +279,29 @@ async function init() {
 
     state.supabase = window.supabase.createClient(state.config.supabaseUrl, state.config.supabaseAnonKey, {
       auth: {
-        persistSession: false,
+        persistSession: true,
         autoRefreshToken: true
       }
     });
+
+    if (state.supabase.auth?.onAuthStateChange) {
+      state.supabase.auth.onAuthStateChange(async (event, session) => {
+        if (session?.user) {
+          state.user = session.user;
+          if (window.labflowAPI) {
+            await window.labflowAPI.saveSession(JSON.stringify({
+              access_token: session.access_token,
+              refresh_token: session.refresh_token
+            }));
+          }
+        } else if (event === 'SIGNED_OUT') {
+          state.user = null;
+          if (window.labflowAPI) {
+            await window.labflowAPI.clearSession();
+          }
+        }
+      });
+    }
 
     // Check saved encrypted session from safeStorage
     const savedSession = await window.labflowAPI.loadSession();
@@ -1525,6 +1544,10 @@ async function loadReportsTable() {
     if (state.reportsFilter.dateRange === 'Today') {
       const s = new Date(); s.setHours(0, 0, 0, 0);
       query = query.gte('created_at', s.toISOString());
+    } else if (state.reportsFilter.dateRange === 'Yesterday') {
+      const yStart = new Date(); yStart.setDate(yStart.getDate() - 1); yStart.setHours(0, 0, 0, 0);
+      const yEnd = new Date(); yEnd.setHours(0, 0, 0, 0);
+      query = query.gte('created_at', yStart.toISOString()).lt('created_at', yEnd.toISOString());
     } else if (state.reportsFilter.dateRange === 'Week') {
       const w = new Date(); w.setDate(w.getDate() - 7);
       query = query.gte('created_at', w.toISOString());
@@ -1545,7 +1568,19 @@ async function loadReportsTable() {
     }
 
     if (filtered.length === 0) {
-      container.innerHTML = `<div class="empty-state">No ${state.reportsSubTab} reports found.</div>`;
+      const isDateFiltered = state.reportsFilter.dateRange !== 'All';
+      const tabLabel = state.reportsSubTab === 'all' ? '' : `${state.reportsSubTab} `;
+      container.innerHTML = `
+        <div class="empty-state">
+          <p>No ${tabLabel}reports found${isDateFiltered ? ` for ${state.reportsFilter.dateRange}` : ''}.</p>
+          ${isDateFiltered ? `<button class="btn btn-outline btn-sm mt-3" id="btn-show-all-time-reports">View All Time Reports</button>` : ''}
+        </div>`;
+      document.getElementById('btn-show-all-time-reports')?.addEventListener('click', () => {
+        state.reportsFilter.dateRange = 'All';
+        const filterSelect = document.getElementById('reports-filter-date');
+        if (filterSelect) filterSelect.value = 'All';
+        loadReportsTable();
+      });
       return;
     }
 
@@ -1917,7 +1952,8 @@ function evaluateLiveFlag(input) {
 async function handleSaveReport(markCompleted = false) {
   if (!state.activeReport) return;
 
-  const notes = document.getElementById('report-clinical-notes').value.trim();
+  const notesEl = document.getElementById('report-clinical-notes');
+  const notes = (notesEl?.value || '').trim();
   const inputs = document.querySelectorAll('.result-value-input');
 
   const updates = [];
@@ -1929,15 +1965,40 @@ async function handleSaveReport(markCompleted = false) {
   });
 
   try {
-    // 1. Batch update report_results
-    for (const u of updates) {
-      await state.supabase
-        .from('report_results')
-        .update({ value: u.value, flag: u.flag })
-        .eq('id', u.id);
+    // 1. Ensure valid auth session if available
+    let session = null;
+    if (state.supabase.auth?.getSession) {
+      try {
+        const { data: sessionData, error: sessionErr } = await state.supabase.auth.getSession();
+        session = sessionData?.session;
+        if (sessionErr || !session) {
+          if (state.supabase.auth.refreshSession) {
+            const { data: refreshData, error: refreshErr } = await state.supabase.auth.refreshSession();
+            if (!refreshErr && refreshData?.session) {
+              session = refreshData.session;
+              state.user = refreshData.user;
+            }
+          }
+        }
+      } catch (authE) {
+        console.warn('Auth check warning:', authE);
+      }
     }
 
-    // 2. Update report status and notes
+    // 2. Batch update report_results
+    for (const u of updates) {
+      if (!u.id) continue;
+      const { error: resErr } = await state.supabase
+        .from('report_results')
+        .update({ value: u.value, flag: u.flag || '' })
+        .eq('id', u.id);
+      if (resErr) {
+        console.error('Failed to update result row:', u.id, resErr);
+        throw new Error(resErr.message || 'Failed to update result values');
+      }
+    }
+
+    // 3. Update report status and notes
     const updatePayload = {
       clinical_notes: notes,
       updated_at: new Date().toISOString()
@@ -1946,7 +2007,11 @@ async function handleSaveReport(markCompleted = false) {
     if (markCompleted) {
       updatePayload.status = 'Completed';
       updatePayload.completed_at = new Date().toISOString();
-      updatePayload.completed_by = state.user.id;
+      const uid = state.user?.id || session?.user?.id;
+      // PostgreSQL requires a valid UUID syntax referencing auth.users(id)
+      if (uid && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(uid)) {
+        updatePayload.completed_by = uid;
+      }
     }
 
     const { error: repErr } = await state.supabase
@@ -1955,6 +2020,20 @@ async function handleSaveReport(markCompleted = false) {
       .eq('id', state.activeReport.id);
 
     if (repErr) throw repErr;
+
+    // Update in-memory state
+    state.activeReport.clinical_notes = notes;
+    if (markCompleted) {
+      state.activeReport.status = 'Completed';
+      state.activeReport.completed_at = updatePayload.completed_at;
+    }
+    for (const u of updates) {
+      const match = state.activeReport.report_results?.find(r => r.id === u.id);
+      if (match) {
+        match.value = u.value;
+        match.flag = u.flag;
+      }
+    }
 
     if (markCompleted) {
       showToast('Report completed and finalized!', 'success');
@@ -1967,7 +2046,7 @@ async function handleSaveReport(markCompleted = false) {
     }
   } catch (err) {
     console.error('Failed to save report:', err);
-    showToast('Failed to save report: ' + err.message, 'error');
+    showToast('Failed to save report: ' + (err.message || 'Database transaction failed'), 'error');
   }
 }
 
@@ -2002,6 +2081,7 @@ async function openReceiptModal(billId) {
     const modalContainer = document.getElementById('modal-container');
     modalContainer.innerHTML = `
       <div class="modal-overlay">
+        <div class="modal-dialog modal-lg">
         <div class="modal-dialog modal-xl">
           <div class="modal-header">
             <h3>Diagnostic Bill &amp; Payment Receipt</h3>
@@ -2119,14 +2199,14 @@ const billMicroscopeIcon = `<svg class="ref-microscope-svg" viewBox="0 0 56 56" 
   <path d="M32 27V42" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
   <rect x="10" y="48" width="34" height="5" rx="2.5" fill="white"/>
   <line x1="11" y1="41" x2="45" y2="41" stroke="white" stroke-width="1.5" opacity="0.4"/>
-</svg>`;
+</svg > `;
 
-const billHospitalWaves = `<svg class="ref-waves-svg" viewBox="0 0 100 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+const billHospitalWaves = `< svg class="ref-waves-svg" viewBox = "0 0 100 12" fill = "none" xmlns = "http://www.w3.org/2000/svg" >
   <path d="M0 6C25 0 25 12 50 6C75 0 75 12 100 6" stroke="#006b76" stroke-width="2" stroke-linecap="round"/>
   <path d="M0 10C25 4 25 16 50 10C75 4 75 16 100 10" stroke="#2dd4bf" stroke-width="1.2" stroke-linecap="round" opacity="0.7"/>
-</svg>`;
+</svg > `;
 
-const billWatermarkSvg = `<div class="report-watermark" aria-hidden="true">
+const billWatermarkSvg = `< div class="report-watermark" aria - hidden="true" >
   <svg class="watermark-microscope" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
     <circle cx="100" cy="100" r="92" stroke="#006b76" stroke-width="3" opacity="0.3"/>
     <circle cx="100" cy="100" r="82" stroke="#006b76" stroke-width="1.5" stroke-dasharray="4 4" opacity="0.2"/>
@@ -2139,9 +2219,9 @@ const billWatermarkSvg = `<div class="report-watermark" aria-hidden="true">
   </svg>
   <div class="watermark-label">Anand Laboratory</div>
   <svg class="watermark-wave" viewBox="0 0 160 14" fill="none"><path d="M0 7C40 0 40 14 80 7C120 0 120 14 160 7" stroke="#006b76" stroke-width="2.5" opacity="0.25"/></svg>
-</div>`;
+</div > `;
 
-const billMolecularLatticeSvg = `<svg class="molecular-lattice" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+const billMolecularLatticeSvg = `< svg class="molecular-lattice" viewBox = "0 0 120 120" fill = "none" xmlns = "http://www.w3.org/2000/svg" >
   <path d="M30 10L50 22V46L30 58L10 46V22L30 10Z" stroke="#006b76" stroke-width="1" opacity="0.12"/>
   <path d="M70 10L90 22V46L70 58L50 46V22L70 10Z" stroke="#006b76" stroke-width="1" opacity="0.12"/>
   <path d="M50 46L70 58V82L50 94L30 82V58L50 46Z" stroke="#006b76" stroke-width="1" opacity="0.12"/>
@@ -2153,7 +2233,7 @@ const billMolecularLatticeSvg = `<svg class="molecular-lattice" viewBox="0 0 120
   <circle cx="30" cy="58" r="2.5" fill="#006b76" opacity="0.18"/>
   <circle cx="70" cy="58" r="2.5" fill="#006b76" opacity="0.18"/>
   <circle cx="50" cy="94" r="2.5" fill="#006b76" opacity="0.18"/>
-</svg>`;
+</svg > `;
 
 function formatBillTimestamp(dateString) {
   if (!dateString) return 'Not recorded';
@@ -2165,14 +2245,14 @@ function formatBillTimestamp(dateString) {
     hour12: true, timeZone: 'Asia/Kolkata'
   }).formatToParts(d);
   const map = Object.fromEntries(parts.map(p => [p.type, p.value]));
-  return `${map.day}-${map.month}-${map.year} ${map.hour}:${map.minute}:${map.second} ${(map.dayPeriod || '').toUpperCase()}`.trim();
+  return `${ map.day } -${ map.month } -${ map.year } ${ map.hour }:${ map.minute }:${ map.second } ${ (map.dayPeriod || '').toUpperCase() } `.trim();
 }
 
 function formatPatientTitle(patients) {
   if (!patients) return '—';
   const name = String(patients.full_name || '').trim();
   if (/^(Mr|Mrs|Ms|Miss|Dr|Master)\.?\s/i.test(name)) return name;
-  const prefix = patients.title ? `${patients.title}. ` : (patients.sex === 'Female' ? 'Mrs. ' : 'Mr. ');
+  const prefix = patients.title ? `${ patients.title }.` : (patients.sex === 'Female' ? 'Mrs. ' : 'Mr. ');
   return prefix + name;
 }
 
@@ -2187,74 +2267,74 @@ function generateReceiptHTML(bill, lab, format = 'a4', fullPage = false) {
 
   if (format === 'thermal') {
     const itemsRows = (bill.bill_items || []).map(item => `
-      <tr>
+    < tr >
         <td>${escapeHTML(item.test_name)}</td>
         <td class="text-right">${formatCurrency(item.price)}</td>
-      </tr>
+      </tr >
     `).join('');
 
     return `
-      <!DOCTYPE html>
+    < !DOCTYPE html >
       <html>
-      <head>
-        <meta charset="utf-8">
-        <style>
-          @page { size: 80mm auto; margin: 2mm; }
-          body { font-family: monospace, sans-serif; width: 72mm; margin: 0 auto; font-size: 11px; line-height: 1.3; color: #000; }
-          .center { text-align: center; }
-          .text-right { text-align: right; }
-          .bold { font-weight: bold; }
-          .divider { border-top: 1px dashed #000; margin: 4px 0; }
-          .double-divider { border-top: 2px solid #000; margin: 4px 0; }
-          table { width: 100%; border-collapse: collapse; font-size: 11px; }
-          th, td { padding: 2px 0; }
-          .words { font-size: 10px; font-style: italic; margin-top: 4px; }
-          .signature-box { margin-top: 16px; text-align: right; }
-        </style>
-      </head>
-      <body>
-        <div class="center bold" style="font-size: 13px; text-transform: uppercase;">DR. ANAND HOSPITAL</div>
-        <div class="center bold" style="font-size: 14px; color: #006b76;">${escapeHTML(labName)}</div>
-        <div class="center" style="font-size: 9px;">${escapeHTML(labAddr)}</div>
-        <div class="center" style="font-size: 9px;">Phone: ${escapeHTML(labPhone)} | ${escapeHTML(labEmail)}</div>
-        <div class="center" style="margin: 4px 0;">${generateBillBarcode(bill.bill_no)}</div>
-        <div class="double-divider"></div>
-        <div class="center bold">DIAGNOSTIC PAYMENT RECEIPT</div>
-        <div class="divider"></div>
-        <div>Bill / Receipt: <strong>${escapeHTML(bill.bill_no)}</strong></div>
-        <div>Date &amp; Time: ${billTimeStr}</div>
-        <div>Patient: <strong>${escapeHTML(patientDisplayName)}</strong></div>
-        <div>ID / Sex / Age: ${bill.patients?.patient_no || '—'} / ${bill.patients?.sex || '—'} / ${bill.patients?.age_value || ''}${bill.patients?.age_unit || 'Y'}</div>
-        <div>Ref Doctor: ${escapeHTML(bill.doctors?.name || 'SELF')}</div>
-        <div class="divider"></div>
-        <table>
-          <thead>
-            <tr><th style="text-align: left;">Test Description</th><th class="text-right">Price</th></tr>
-          </thead>
-          <tbody>${itemsRows}</tbody>
-        </table>
-        <div class="divider"></div>
-        <table>
-          <tr><td>Subtotal:</td><td class="text-right">${formatCurrency(bill.subtotal)}</td></tr>
-          ${bill.discount > 0 ? `<tr><td>Discount:</td><td class="text-right">-${formatCurrency(bill.discount)}</td></tr>` : ''}
-          <tr class="bold"><td>Total:</td><td class="text-right">${formatCurrency(bill.total)}</td></tr>
-          <tr class="bold"><td>Amount Paid:</td><td class="text-right">${formatCurrency(bill.paid_amount)}</td></tr>
-          <tr><td>Balance Due:</td><td class="text-right">${formatCurrency(bill.balance)}</td></tr>
-          <tr><td>Mode:</td><td class="text-right">${escapeHTML(bill.payments?.[0]?.mode || 'Cash')}</td></tr>
-        </table>
-        <div class="divider"></div>
-        <div class="words">${escapeHTML(inWords)}</div>
-        <div class="signature-box">
-          <p><strong>Lab Technician</strong><br><small>Technician Sign</small></p>
-        </div>
-        <div class="center" style="margin-top: 10px; font-size: 9px;">Thank you for choosing ${escapeHTML(labName)}</div>
-      </body>
+        <head>
+          <meta charset="utf-8">
+            <style>
+              @page {size: 80mm auto; margin: 2mm; }
+              body {font - family: monospace, sans-serif; width: 72mm; margin: 0 auto; font-size: 11px; line-height: 1.3; color: #000; }
+              .center {text - align: center; }
+              .text-right {text - align: right; }
+              .bold {font - weight: bold; }
+              .divider {border - top: 1px dashed #000; margin: 4px 0; }
+              .double-divider {border - top: 2px solid #000; margin: 4px 0; }
+              table {width: 100%; border-collapse: collapse; font-size: 11px; }
+              th, td {padding: 2px 0; }
+              .words {font - size: 10px; font-style: italic; margin-top: 4px; }
+              .signature-box {margin - top: 16px; text-align: right; }
+            </style>
+        </head>
+        <body>
+          <div class="center bold" style="font-size: 13px; text-transform: uppercase;">DR. ANAND HOSPITAL</div>
+          <div class="center bold" style="font-size: 14px; color: #006b76;">${escapeHTML(labName)}</div>
+          <div class="center" style="font-size: 9px;">${escapeHTML(labAddr)}</div>
+          <div class="center" style="font-size: 9px;">Phone: ${escapeHTML(labPhone)} | ${escapeHTML(labEmail)}</div>
+          <div class="center" style="margin: 4px 0;">${generateBillBarcode(bill.bill_no)}</div>
+          <div class="double-divider"></div>
+          <div class="center bold">DIAGNOSTIC PAYMENT RECEIPT</div>
+          <div class="divider"></div>
+          <div>Bill / Receipt: <strong>${escapeHTML(bill.bill_no)}</strong></div>
+          <div>Date &amp; Time: ${billTimeStr}</div>
+          <div>Patient: <strong>${escapeHTML(patientDisplayName)}</strong></div>
+          <div>ID / Sex / Age: ${bill.patients?.patient_no || '—'} / ${bill.patients?.sex || '—'} / ${bill.patients?.age_value || ''}${bill.patients?.age_unit || 'Y'}</div>
+          <div>Ref Doctor: ${escapeHTML(bill.doctors?.name || 'SELF')}</div>
+          <div class="divider"></div>
+          <table>
+            <thead>
+              <tr><th style="text-align: left;">Test Description</th><th class="text-right">Price</th></tr>
+            </thead>
+            <tbody>${itemsRows}</tbody>
+          </table>
+          <div class="divider"></div>
+          <table>
+            <tr><td>Subtotal:</td><td class="text-right">${formatCurrency(bill.subtotal)}</td></tr>
+            ${bill.discount > 0 ? `<tr><td>Discount:</td><td class="text-right">-${formatCurrency(bill.discount)}</td></tr>` : ''}
+            <tr class="bold"><td>Total:</td><td class="text-right">${formatCurrency(bill.total)}</td></tr>
+            <tr class="bold"><td>Amount Paid:</td><td class="text-right">${formatCurrency(bill.paid_amount)}</td></tr>
+            <tr><td>Balance Due:</td><td class="text-right">${formatCurrency(bill.balance)}</td></tr>
+            <tr><td>Mode:</td><td class="text-right">${escapeHTML(bill.payments?.[0]?.mode || 'Cash')}</td></tr>
+          </table>
+          <div class="divider"></div>
+          <div class="words">${escapeHTML(inWords)}</div>
+          <div class="signature-box">
+            <p><strong>Lab Technician</strong><br><small>Technician Sign</small></p>
+          </div>
+          <div class="center" style="margin-top: 10px; font-size: 9px;">Thank you for choosing ${escapeHTML(labName)}</div>
+        </body>
       </html>`;
   }
 
   // A4 Format with EXACT same letterhead and layout as diagnostic report
   const billLetterhead = `
-    <header class="report-brand" id="ref-letterhead-header">
+        < header class="report-brand" id = "ref-letterhead-header" >
       <div class="ref-brand-left">
         <div class="ref-caduceus-icon">${billCaduceusIcon}</div>
         <div class="ref-hospital-text">
@@ -2273,10 +2353,10 @@ function generateReceiptHTML(bill, lab, format = 'a4', fullPage = false) {
       <div class="ref-header-swoosh-corner">
         <div class="ref-microscope-emblem">${billMicroscopeIcon}</div>
       </div>
-    </header>`;
+    </header > `;
 
   const billPatientDetails = `
-    <section class="report-patient-block" aria-label="Patient and billing details">
+    < section class="report-patient-block" aria - label="Patient and billing details" >
       <div class="ref-patient-layout">
         <div class="ref-patient-col ref-pat-left">
           <div class="ref-pat-row"><span class="ref-field-label">Name</span><span class="ref-field-colon">:</span><span class="ref-field-val"><strong class="ref-pat-fullname">${escapeHTML(patientDisplayName)}</strong></span></div>
@@ -2293,26 +2373,26 @@ function generateReceiptHTML(bill, lab, format = 'a4', fullPage = false) {
           <div class="ref-pat-row"><span class="ref-field-label">Payment Status</span><span class="ref-field-colon">:</span><span class="ref-field-val"><strong style="color: ${bill.payment_status === 'Paid' ? '#0d9488' : bill.payment_status === 'Partial' ? '#d97706' : '#dc2626'}">${escapeHTML(bill.payment_status)}</strong></span></div>
         </div>
       </div>
-    </section>`;
+    </section > `;
 
   const billItemsTable = `
-    <table class="report-results-table bill-items-table">
+    < table class="report-results-table bill-items-table" >
       <colgroup>
         <col style="width: 8%">
-        <col style="width: 52%">
-        <col style="width: 20%">
-        <col style="width: 20%">
-      </colgroup>
-      <thead>
-        <tr>
-          <th>SL.</th>
-          <th>TEST DESCRIPTION</th>
-          <th>SPECIMEN</th>
-          <th style="text-align: right;">AMOUNT (₹)</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${(bill.bill_items || []).map((item, idx) => `
+          <col style="width: 52%">
+            <col style="width: 20%">
+              <col style="width: 20%">
+              </colgroup>
+              <thead>
+                <tr>
+                  <th>SL.</th>
+                  <th>TEST DESCRIPTION</th>
+                  <th>SPECIMEN</th>
+                  <th style="text-align: right;">AMOUNT (₹)</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${(bill.bill_items || []).map((item, idx) => `
           <tr class="report-result-row">
             <td>${idx + 1}</td>
             <td><strong>${escapeHTML(item.test_name)}</strong></td>
@@ -2320,39 +2400,39 @@ function generateReceiptHTML(bill, lab, format = 'a4', fullPage = false) {
             <td class="report-result-value" style="text-align: right;">${formatCurrency(item.price)}</td>
           </tr>
         `).join('')}
-      </tbody>
-    </table>`;
+              </tbody>
+            </table>`;
 
-  const billSummary = `
-    <div class="bill-summary-container">
-      <div class="bill-words-box">
-        <div class="bill-words-label">Amount in Words:</div>
-        <div class="bill-words-text">${escapeHTML(inWords)}</div>
-        <div class="bill-terms-note">
-          <p>• Computer-generated diagnostic tax invoice &amp; payment receipt.</p>
-          <p>• Reports will be issued only against presentation of this bill.</p>
-        </div>
-      </div>
-      <table class="bill-calc-table">
-        <tr>
-          <td>Subtotal:</td>
-          <td class="text-right">${formatCurrency(bill.subtotal)}</td>
-        </tr>
-        ${bill.discount > 0 ? `
+            const billSummary = `
+            <div class="bill-summary-container">
+              <div class="bill-words-box">
+                <div class="bill-words-label">Amount in Words:</div>
+                <div class="bill-words-text">${escapeHTML(inWords)}</div>
+                <div class="bill-terms-note">
+                  <p>• Computer-generated diagnostic tax invoice &amp; payment receipt.</p>
+                  <p>• Reports will be issued only against presentation of this bill.</p>
+                </div>
+              </div>
+              <table class="bill-calc-table">
+                <tr>
+                  <td>Subtotal:</td>
+                  <td class="text-right">${formatCurrency(bill.subtotal)}</td>
+                </tr>
+                ${bill.discount > 0 ? `
         <tr style="color: #006b76;">
           <td>Discount:</td>
           <td class="text-right">-${formatCurrency(bill.discount)}</td>
         </tr>
         ` : ''}
-        <tr class="bill-total-row">
-          <td><strong>Total Amount:</strong></td>
-          <td class="text-right"><strong>${formatCurrency(bill.total)}</strong></td>
-        </tr>
-        <tr style="color: #006b76; font-weight: 700;">
-          <td>Amount Paid:</td>
-          <td class="text-right">${formatCurrency(bill.paid_amount)}</td>
-        </tr>
-        ${bill.balance > 0 ? `
+                <tr class="bill-total-row">
+                  <td><strong>Total Amount:</strong></td>
+                  <td class="text-right"><strong>${formatCurrency(bill.total)}</strong></td>
+                </tr>
+                <tr style="color: #006b76; font-weight: 700;">
+                  <td>Amount Paid:</td>
+                  <td class="text-right">${formatCurrency(bill.paid_amount)}</td>
+                </tr>
+                ${bill.balance > 0 ? `
         <tr style="color: #b91c1c; font-weight: 800;">
           <td>Balance Due:</td>
           <td class="text-right">${formatCurrency(bill.balance)}</td>
@@ -2363,173 +2443,177 @@ function generateReceiptHTML(bill, lab, format = 'a4', fullPage = false) {
           <td class="text-right">₹0.00 (Cleared)</td>
         </tr>
         `}
-        <tr>
-          <td>Payment Mode:</td>
-          <td class="text-right">${escapeHTML(bill.payments?.[0]?.mode || 'Cash')}</td>
-        </tr>
-      </table>
-    </div>`;
+                <tr>
+                  <td>Payment Mode:</td>
+                  <td class="text-right">${escapeHTML(bill.payments?.[0]?.mode || 'Cash')}</td>
+                </tr>
+              </table>
+            </div>`;
 
-  const billSignatures = `
-    <section class="report-reviewers" id="ref-signatures-block">
-      <div class="report-reviewer" style="font-size: 8.5pt; color: #475569;">
-        <div>Patient / Attendant Sign: __________________</div>
-      </div>
-      <div class="report-reviewer report-reviewer-authorizer ref-tech-block">
-        <div class="ref-tech-sign-box">
-          <div class="ref-tech-teal-bar"></div>
-          <div class="ref-tech-labels">
-            <strong class="ref-tech-title">Lab Technician</strong>
-            <span class="ref-tech-sub">Authorized Billing Sign</span>
-          </div>
-        </div>
-      </div>
-    </section>`;
+            const billSignatures = `
+            <section class="report-reviewers" id="ref-signatures-block">
+              <div class="report-reviewer" style="font-size: 8.5pt; color: #475569;">
+                <div>Patient / Attendant Sign: __________________</div>
+              </div>
+              <div class="report-reviewer report-reviewer-authorizer ref-tech-block">
+                <div class="ref-tech-sign-box">
+                  <div class="ref-tech-teal-bar"></div>
+                  <div class="ref-tech-labels">
+                    <strong class="ref-tech-title">Lab Technician</strong>
+                    <span class="ref-tech-sub">Authorized Billing Sign</span>
+                  </div>
+                </div>
+              </div>
+            </section>`;
 
-  const billBottomRibbon = `
-    <div class="ref-bottom-ribbon">
-      <div class="ref-ribbon-content">
-        <span class="ref-ribbon-title">Anand Laboratory &amp; General Stores</span>
-        <span class="ref-ribbon-email">
-          <svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4-8 5-8-5V6l8 5 8-5v2z"/></svg>
-          ${escapeHTML(labEmail)}
-        </span>
-        <span class="ref-ribbon-divider">|</span>
-        <span class="ref-ribbon-phone">
-          <svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor"><path d="M6.62 10.79a15.05 15.05 0 006.59 6.59l2.2-2.2a1 1 0 011.02-.24 11.41 11.41 0 003.58.57 1 1 0 011 1V20a1 1 0 01-1 1A17 17 0 013 4a1 1 0 011-1h3.5a1 1 0 011 1 11.41 11.41 0 00.57 3.58 1 1 0 01-.24 1.02l-2.2 2.2z"/></svg>
-          ${escapeHTML(labPhone)}
-        </span>
-      </div>
-    </div>`;
+            const billBottomRibbon = `
+            <div class="ref-bottom-ribbon">
+              <div class="ref-ribbon-content">
+                <span class="ref-ribbon-title">Anand Laboratory &amp; General Stores</span>
+                <span class="ref-ribbon-email">
+                  <svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4-8 5-8-5V6l8 5 8-5v2z" /></svg>
+                  ${escapeHTML(labEmail)}
+                </span>
+                <span class="ref-ribbon-divider">|</span>
+                <span class="ref-ribbon-phone">
+                  <svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor"><path d="M6.62 10.79a15.05 15.05 0 006.59 6.59l2.2-2.2a1 1 0 011.02-.24 11.41 11.41 0 003.58.57 1 1 0 011 1V20a1 1 0 01-1 1A17 17 0 013 4a1 1 0 011-1h3.5a1 1 0 011 1 11.41 11.41 0 00.57 3.58 1 1 0 01-.24 1.02l-2.2 2.2z" /></svg>
+                  ${escapeHTML(labPhone)}
+                </span>
+              </div>
+            </div>`;
 
-  const billBody = `
-    <div class="report report-document">
-      <article class="report-page" aria-label="Diagnostic Bill &amp; Tax Invoice">
-        ${billWatermarkSvg}
-        <div class="molecular-lattice-tr" aria-hidden="true">${billMolecularLatticeSvg}</div>
-        <div class="molecular-lattice-bl" aria-hidden="true">${billMolecularLatticeSvg}</div>
-        ${billLetterhead}
-        ${billPatientDetails}
-        <div class="report-document-title">
-          <span>DIAGNOSTIC BILL &amp; TAX INVOICE</span>
-          <b>OFFICIAL PAYMENT RECEIPT</b>
-        </div>
-        ${billItemsTable}
-        ${billSummary}
-        <div class="report-end-marker">****End Of Bill / Receipt****</div>
-        ${billSignatures}
-        ${billBottomRibbon}
-      </article>
-    </div>`;
+            const billBody = `
+            <div class="report report-document">
+              <article class="report-page" aria-label="Diagnostic Bill &amp; Tax Invoice">
+                ${billWatermarkSvg}
+                <div class="molecular-lattice-tr" aria-hidden="true">${billMolecularLatticeSvg}</div>
+                <div class="molecular-lattice-bl" aria-hidden="true">${billMolecularLatticeSvg}</div>
+                ${billLetterhead}
+                ${billPatientDetails}
+                <div class="report-document-title">
+                  <span>DIAGNOSTIC BILL &amp; TAX INVOICE</span>
+                  <b>OFFICIAL PAYMENT RECEIPT</b>
+                </div>
+                ${billItemsTable}
+                ${billSummary}
+                <div class="report-end-marker">****End Of Bill / Receipt****</div>
+                ${billSignatures}
+                ${billBottomRibbon}
+              </article>
+            </div>`;
 
-  if (!fullPage) return billBody;
+            if (!fullPage) return billBody;
 
-  return `
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <meta charset="utf-8">
-      <title>Bill - ${escapeHTML(bill.bill_no)}</title>
-      <link rel="stylesheet" href="./dist/report.css">
-      <style>
-        @page { size: A4; margin: 10mm; }
-        body { margin: 0; padding: 0; background: #ffffff; }
-      </style>
-    </head>
-    <body>
-      ${billBody}
-    </body>
-    </html>`;
+            return `
+            <!DOCTYPE html>
+            <html>
+              <head>
+                <meta charset="utf-8">
+                  <title>Bill - ${escapeHTML(bill.bill_no)}</title>
+                  <link rel="stylesheet" href="./dist/report.css">
+                    <style>
+                      @page {size: A4; margin: 10mm; }
+                      body {margin: 0; padding: 0; background: #ffffff; }
+                    </style>
+                  </head>
+                  <body>
+                    ${billBody}
+                  </body>
+                </html>`;
 }
 
-// -------------------------------------------------------------
-// Report Printing with 3 Letterhead Styles
-// -------------------------------------------------------------
-async function openReportPrintPreview(reportId) {
+                // -------------------------------------------------------------
+                // Report Printing with 3 Letterhead Styles
+                // -------------------------------------------------------------
+                async function openReportPrintPreview(reportId) {
   try {
-    const { data: report, error } = await state.supabase
-      .from('reports')
-      .select('*, bills(*, doctors(*)), patients(*), report_results(*)')
-      .eq('id', reportId)
-      .single();
+    const {data: report, error } = await state.supabase
+                .from('reports')
+                .select('*, bills(*, doctors(*)), patients(*), report_results(*)')
+                .eq('id', reportId)
+                .single();
 
-    if (error || !report) throw error || new Error('Report not found');
+                if (error || !report) throw error || new Error('Report not found');
 
-    // Adapt database report structure to renderReport format
-    const orderAdapter = {
-      id: report.bills?.bill_no,
-      patientId: report.patients?.patient_no,
-      name: `${report.patients?.title} ${report.patients?.full_name}`,
-      age: report.patients?.age_value,
-      sex: report.patients?.sex,
-      referrer: report.bills?.doctors?.name || 'Self',
-      createdAt: report.created_at,
-      collectedAt: report.created_at,
-      receivedAt: report.created_at,
-      approvedAt: report.completed_at,
-      status: report.status === 'Completed' ? 'Approved' : 'Draft',
-      notes: report.clinical_notes,
+                // Adapt database report structure to renderReport format
+                const orderAdapter = {
+                  id: report.bills?.bill_no,
+                patientId: report.patients?.patient_no,
+                name: `${report.patients?.title} ${report.patients?.full_name}`,
+                age: report.patients?.age_value,
+                sex: report.patients?.sex,
+                referrer: report.bills?.doctors?.name || 'Self',
+                createdAt: report.created_at,
+                collectedAt: report.created_at,
+                receivedAt: report.created_at,
+                approvedAt: report.completed_at,
+                status: report.status === 'Completed' ? 'Approved' : 'Draft',
+                notes: report.clinical_notes,
       tests: [...new Set(report.report_results?.map(r => r.test_code) || [])],
       results: Object.fromEntries(report.report_results?.map(r => [r.parameter_code, r.value]) || [])
     };
 
-    const settingsAdapter = {
-      labName: (state.labSettings.lab_name && state.labSettings.lab_name !== 'Anand Diagnostic Center') ? state.labSettings.lab_name : 'Anand Laboratory',
-      address: (state.labSettings.address && !state.labSettings.address.includes('Vijayanagar')) ? state.labSettings.address : 'Silk Filature Quarters Road, Ward No. 14, Sidlaghatta – 562105, Chikkaballapur (Dist.)',
-      phone: state.labSettings.phone || '6361303305',
-      email: 'anandhealthcaresdl@gmail.com',
-      registration: state.labSettings.registration_no,
-      pathologist: state.labSettings.pathologist_name,
-      pathologistQualification: state.labSettings.pathologist_qualification,
-      labIncharge: state.labSettings.lab_incharge,
-      labInchargeQualification: state.labSettings.lab_incharge_qualification,
-      reportFooter: state.labSettings.report_footer,
-      workingHours: state.labSettings.working_hours,
-      reportTemplate: state.labSettings.letterhead_template || 'classic'
+                const settingsAdapter = {
+                  labName: state.labSettings.lab_name,
+                address: state.labSettings.address,
+                phone: state.labSettings.phone,
+                email: state.labSettings.email,
+                labName: (state.labSettings.lab_name && state.labSettings.lab_name !== 'Anand Diagnostic Center') ? state.labSettings.lab_name : 'Anand Laboratory',
+                address: (state.labSettings.address && !state.labSettings.address.includes('Vijayanagar')) ? state.labSettings.address : 'Silk Filature Quarters Road, Ward No. 14, Sidlaghatta – 562105, Chikkaballapur (Dist.)',
+                phone: state.labSettings.phone || '6361303305',
+                email: 'anandhealthcaresdl@gmail.com',
+                registration: state.labSettings.registration_no,
+                pathologist: state.labSettings.pathologist_name,
+                pathologistQualification: state.labSettings.pathologist_qualification,
+                labIncharge: state.labSettings.lab_incharge,
+                labInchargeQualification: state.labSettings.lab_incharge_qualification,
+                reportFooter: state.labSettings.report_footer,
+                workingHours: state.labSettings.working_hours,
+                reportTemplate: state.labSettings.letterhead_template || 'classic'
     };
 
-    const modalContainer = document.getElementById('modal-container');
-    modalContainer.innerHTML = `
-      <div class="modal-overlay">
-        <div class="modal-dialog modal-xl">
-          <div class="modal-header">
-            <h3>Diagnostic Clinical Report - ${escapeHTML(report.bills?.bill_no)}</h3>
-            <div class="template-selector">
-              <label>Letterhead Style:</label>
-              <select id="report-template-select">
-                ${REPORT_TEMPLATES.map(tpl =>
-      `<option value="${tpl.id}" ${tpl.id === settingsAdapter.reportTemplate ? 'selected' : ''}>${tpl.name}</option>`
-    ).join('')}
-              </select>
-            </div>
-            <button class="modal-close" id="modal-close-btn">&times;</button>
-          </div>
-          <div class="modal-body">
-            <div id="report-rendered-view" class="report-preview-frame"></div>
-          </div>
-          <div class="modal-footer">
-            <button class="btn btn-outline" id="btn-close-rep-modal">Close</button>
-            ${report.bills?.id ? `
+                const modalContainer = document.getElementById('modal-container');
+                modalContainer.innerHTML = `
+                <div class="modal-overlay">
+                  <div class="modal-dialog modal-xl">
+                    <div class="modal-header">
+                      <h3>Diagnostic Clinical Report - ${escapeHTML(report.bills?.bill_no)}</h3>
+                      <div class="template-selector">
+                        <label>Letterhead Style:</label>
+                        <select id="report-template-select">
+                          ${REPORT_TEMPLATES.map(tpl =>
+                            `<option value="${tpl.id}" ${tpl.id === settingsAdapter.reportTemplate ? 'selected' : ''}>${tpl.name}</option>`
+                          ).join('')}
+                        </select>
+                      </div>
+                      <button class="modal-close" id="modal-close-btn">&times;</button>
+                    </div>
+                    <div class="modal-body">
+                      <div id="report-rendered-view" class="report-preview-frame"></div>
+                    </div>
+                    <div class="modal-footer">
+                      <button class="btn btn-outline" id="btn-close-rep-modal">Close</button>
+                      ${report.bills?.id ? `
               <button class="btn btn-outline" id="btn-modal-print-bill">${uiIcon('credit-card', 14)} Print Bill / Receipt</button>
             ` : ''}
-            <button class="btn btn-outline" id="btn-export-pdf">${uiIcon('download', 14)} Export PDF</button>
-            <button class="btn btn-primary" id="btn-print-report-now">${uiIcon('printer', 14)} Print Clinical Report</button>
-          </div>
-        </div>
-      </div>`;
+                      <button class="btn btn-outline" id="btn-export-pdf">${uiIcon('download', 14)} Export PDF</button>
+                      <button class="btn btn-primary" id="btn-print-report-now">${uiIcon('printer', 14)} Print Clinical Report</button>
+                    </div>
+                  </div>
+                </div>`;
 
-    const tplSelect = document.getElementById('report-template-select');
-    const viewContainer = document.getElementById('report-rendered-view');
+                const tplSelect = document.getElementById('report-template-select');
+                const viewContainer = document.getElementById('report-rendered-view');
 
-    function renderActiveHTML() {
+                function renderActiveHTML() {
       const template = tplSelect.value;
-      const html = renderReport(orderAdapter, settingsAdapter, { template });
-      viewContainer.innerHTML = html;
-      return `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Report ${orderAdapter.id}</title><link rel="stylesheet" href="./report.css"></head><body>${html}</body></html>`;
+                const html = renderReport(orderAdapter, settingsAdapter, {template});
+                viewContainer.innerHTML = html;
+                return `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Report ${orderAdapter.id}</title><link rel="stylesheet" href="./report.css"></head><body>${html}</body></html>`;
     }
 
-    renderActiveHTML();
-    tplSelect.addEventListener('change', renderActiveHTML);
+                  renderActiveHTML();
+                  tplSelect.addEventListener('change', renderActiveHTML);
 
     document.getElementById('modal-close-btn').addEventListener('click', () => modalContainer.innerHTML = '');
     document.getElementById('btn-close-rep-modal').addEventListener('click', () => modalContainer.innerHTML = '');
@@ -2540,34 +2624,34 @@ async function openReportPrintPreview(reportId) {
 
     document.getElementById('btn-print-report-now').addEventListener('click', async () => {
       const fullHtml = renderActiveHTML();
-      const res = await window.labflowAPI.printReport({ html: fullHtml });
-      if (res.success) {
-        showToast('Report printed successfully', 'success');
+                  const res = await window.labflowAPI.printReport({html: fullHtml });
+                  if (res.success) {
+                    showToast('Report printed successfully', 'success');
       } else {
-        showToast('Print failed: ' + (res.failureReason || 'Error'), 'error');
+                    showToast('Print failed: ' + (res.failureReason || 'Error'), 'error');
       }
     });
 
     document.getElementById('btn-export-pdf').addEventListener('click', async () => {
       const fullHtml = renderActiveHTML();
-      const filename = `Report-${orderAdapter.id}-${orderAdapter.name.replace(/\s+/g, '_')}.pdf`;
-      const res = await window.labflowAPI.printToPDF({ html: fullHtml, defaultFilename: filename });
-      if (res.success) {
-        showToast('Saved PDF to ' + res.filePath, 'success');
+                  const filename = `Report-${orderAdapter.id}-${orderAdapter.name.replace(/\s+/g, '_')}.pdf`;
+                  const res = await window.labflowAPI.printToPDF({html: fullHtml, defaultFilename: filename });
+                  if (res.success) {
+                    showToast('Saved PDF to ' + res.filePath, 'success');
       } else if (!res.canceled) {
-        showToast('Failed to export PDF: ' + res.error, 'error');
+                    showToast('Failed to export PDF: ' + res.error, 'error');
       }
     });
   } catch (err) {
-    showToast('Failed to load report preview: ' + err.message, 'error');
+                    showToast('Failed to load report preview: ' + err.message, 'error');
   }
 }
 
-// -------------------------------------------------------------
-// MODULE 4: SETTINGS (Minimal)
-// -------------------------------------------------------------
-function renderSettingsModule(container) {
-  container.innerHTML = `
+                  // -------------------------------------------------------------
+                  // MODULE 4: SETTINGS (Minimal)
+                  // -------------------------------------------------------------
+                  function renderSettingsModule(container) {
+                    container.innerHTML = `
     <div class="module-header">
       <div class="module-title">
         <h1>Laboratory Settings &amp; Compliance</h1>
@@ -2585,151 +2669,151 @@ function renderSettingsModule(container) {
     </div>
     <div class="module-body" id="settings-body"></div>`;
 
-  document.getElementById('tab-set-profile').addEventListener('click', () => { state.settingsSubTab = 'profile'; renderSettingsModule(container); });
-  document.getElementById('tab-set-doctors').addEventListener('click', () => { state.settingsSubTab = 'doctors'; renderSettingsModule(container); });
-  document.getElementById('tab-set-referrals').addEventListener('click', () => { state.settingsSubTab = 'referrals'; renderSettingsModule(container); });
-  document.getElementById('tab-set-catalog').addEventListener('click', () => { state.settingsSubTab = 'catalog'; renderSettingsModule(container); });
-  document.getElementById('tab-set-security').addEventListener('click', () => { state.settingsSubTab = 'security'; renderSettingsModule(container); });
-  document.getElementById('tab-set-support').addEventListener('click', () => { state.settingsSubTab = 'support'; renderSettingsModule(container); });
-  document.getElementById('tab-set-privacy').addEventListener('click', () => { state.settingsSubTab = 'privacy'; renderSettingsModule(container); });
+  document.getElementById('tab-set-profile').addEventListener('click', () => {state.settingsSubTab = 'profile'; renderSettingsModule(container); });
+  document.getElementById('tab-set-doctors').addEventListener('click', () => {state.settingsSubTab = 'doctors'; renderSettingsModule(container); });
+  document.getElementById('tab-set-referrals').addEventListener('click', () => {state.settingsSubTab = 'referrals'; renderSettingsModule(container); });
+  document.getElementById('tab-set-catalog').addEventListener('click', () => {state.settingsSubTab = 'catalog'; renderSettingsModule(container); });
+  document.getElementById('tab-set-security').addEventListener('click', () => {state.settingsSubTab = 'security'; renderSettingsModule(container); });
+  document.getElementById('tab-set-support').addEventListener('click', () => {state.settingsSubTab = 'support'; renderSettingsModule(container); });
+  document.getElementById('tab-set-privacy').addEventListener('click', () => {state.settingsSubTab = 'privacy'; renderSettingsModule(container); });
 
-  const body = document.getElementById('settings-body');
-  if (state.settingsSubTab === 'profile') renderLabProfileSettings(body);
-  else if (state.settingsSubTab === 'doctors') renderDoctorsSettings(body);
-  else if (state.settingsSubTab === 'referrals') renderReferralsSettings(body);
-  else if (state.settingsSubTab === 'catalog') renderCatalogSettings(body);
-  else if (state.settingsSubTab === 'security') renderSecuritySettings(body);
-  else if (state.settingsSubTab === 'support') renderSupportPage(body);
-  else if (state.settingsSubTab === 'privacy') renderPrivacyPolicyPage(body);
+                  const body = document.getElementById('settings-body');
+                  if (state.settingsSubTab === 'profile') renderLabProfileSettings(body);
+                  else if (state.settingsSubTab === 'doctors') renderDoctorsSettings(body);
+                  else if (state.settingsSubTab === 'referrals') renderReferralsSettings(body);
+                  else if (state.settingsSubTab === 'catalog') renderCatalogSettings(body);
+                  else if (state.settingsSubTab === 'security') renderSecuritySettings(body);
+                  else if (state.settingsSubTab === 'support') renderSupportPage(body);
+                  else if (state.settingsSubTab === 'privacy') renderPrivacyPolicyPage(body);
 }
 
-function renderLabProfileSettings(container) {
+                  function renderLabProfileSettings(container) {
   const lab = state.labSettings;
-  container.innerHTML = `
-    <form id="lab-profile-form">
-      <!-- 1. Identity -->
-      <div class="card mb-4">
-        <div class="card-header">
-          <h3>1. Laboratory Identity</h3>
-        </div>
-        <div class="card-body">
-          <div class="form-row">
-            <div class="form-group col-6">
-              <label>Laboratory Name *</label>
-              <input type="text" id="lab-name" value="${escapeHTML(lab.lab_name || '')}" required />
-            </div>
-            <div class="form-group col-6">
-              <label>Registration / License No.</label>
-              <input type="text" id="lab-reg" value="${escapeHTML(lab.registration_no || '')}" />
-            </div>
-          </div>
-          <div class="form-row">
-            <div class="form-group col-12">
-              <label>Tagline / Motto</label>
-              <input type="text" id="lab-tagline" value="${escapeHTML(lab.tagline || '')}" />
-            </div>
-          </div>
-        </div>
-      </div>
+                  container.innerHTML = `
+                  <form id="lab-profile-form">
+                    <!-- 1. Identity -->
+                    <div class="card mb-4">
+                      <div class="card-header">
+                        <h3>1. Laboratory Identity</h3>
+                      </div>
+                      <div class="card-body">
+                        <div class="form-row">
+                          <div class="form-group col-6">
+                            <label>Laboratory Name *</label>
+                            <input type="text" id="lab-name" value="${escapeHTML(lab.lab_name || '')}" required />
+                          </div>
+                          <div class="form-group col-6">
+                            <label>Registration / License No.</label>
+                            <input type="text" id="lab-reg" value="${escapeHTML(lab.registration_no || '')}" />
+                          </div>
+                        </div>
+                        <div class="form-row">
+                          <div class="form-group col-12">
+                            <label>Tagline / Motto</label>
+                            <input type="text" id="lab-tagline" value="${escapeHTML(lab.tagline || '')}" />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
 
-      <!-- 2. Contact Details -->
-      <div class="card mb-4">
-        <div class="card-header">
-          <h3>2. Contact Details</h3>
-        </div>
-        <div class="card-body">
-          <div class="form-row">
-            <div class="form-group col-12">
-              <label>Full Physical Address</label>
-              <input type="text" id="lab-address" value="${escapeHTML(lab.address || '')}" />
-            </div>
-          </div>
-          <div class="form-row">
-            <div class="form-group col-4">
-              <label>Phone Number</label>
-              <input type="text" id="lab-phone" value="${escapeHTML(lab.phone || '')}" />
-            </div>
-            <div class="form-group col-4">
-              <label>Official Email</label>
-              <input type="email" id="lab-email" value="${escapeHTML(lab.email || '')}" />
-            </div>
-            <div class="form-group col-4">
-              <label>Working Hours</label>
-              <input type="text" id="lab-hours" value="${escapeHTML(lab.working_hours || '')}" />
-            </div>
-          </div>
-        </div>
-      </div>
+                    <!-- 2. Contact Details -->
+                    <div class="card mb-4">
+                      <div class="card-header">
+                        <h3>2. Contact Details</h3>
+                      </div>
+                      <div class="card-body">
+                        <div class="form-row">
+                          <div class="form-group col-12">
+                            <label>Full Physical Address</label>
+                            <input type="text" id="lab-address" value="${escapeHTML(lab.address || '')}" />
+                          </div>
+                        </div>
+                        <div class="form-row">
+                          <div class="form-group col-4">
+                            <label>Phone Number</label>
+                            <input type="text" id="lab-phone" value="${escapeHTML(lab.phone || '')}" />
+                          </div>
+                          <div class="form-group col-4">
+                            <label>Official Email</label>
+                            <input type="email" id="lab-email" value="${escapeHTML(lab.email || '')}" />
+                          </div>
+                          <div class="form-group col-4">
+                            <label>Working Hours</label>
+                            <input type="text" id="lab-hours" value="${escapeHTML(lab.working_hours || '')}" />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
 
-      <!-- 3. Letterhead & Printing -->
-      <div class="card mb-4">
-        <div class="card-header">
-          <h3>3. Letterhead &amp; Printing</h3>
-        </div>
-        <div class="card-body">
-          <div class="form-row">
-            <div class="form-group col-12">
-              <label>Default Letterhead Theme</label>
-              <select id="lab-template">
-                ${REPORT_TEMPLATES.map(t =>
-    `<option value="${t.id}" ${t.id === lab.letterhead_template ? 'selected' : ''}>${t.name} (${t.description})</option>`
-  ).join('')}
-              </select>
-            </div>
-          </div>
-          <div class="form-row">
-            <div class="form-group col-12">
-              <label>Report Footer Disclaimer</label>
-              <input type="text" id="lab-footer" value="${escapeHTML(lab.report_footer || '')}" />
-            </div>
-          </div>
-          <div class="mt-3">
-            <button type="submit" class="btn btn-primary">Save Laboratory Settings</button>
-          </div>
-        </div>
-      </div>
-    </form>`;
+                    <!-- 3. Letterhead & Printing -->
+                    <div class="card mb-4">
+                      <div class="card-header">
+                        <h3>3. Letterhead &amp; Printing</h3>
+                      </div>
+                      <div class="card-body">
+                        <div class="form-row">
+                          <div class="form-group col-12">
+                            <label>Default Letterhead Theme</label>
+                            <select id="lab-template">
+                              ${REPORT_TEMPLATES.map(t =>
+                                `<option value="${t.id}" ${t.id === lab.letterhead_template ? 'selected' : ''}>${t.name} (${t.description})</option>`
+                              ).join('')}
+                            </select>
+                          </div>
+                        </div>
+                        <div class="form-row">
+                          <div class="form-group col-12">
+                            <label>Report Footer Disclaimer</label>
+                            <input type="text" id="lab-footer" value="${escapeHTML(lab.report_footer || '')}" />
+                          </div>
+                        </div>
+                        <div class="mt-3">
+                          <button type="submit" class="btn btn-primary">Save Laboratory Settings</button>
+                        </div>
+                      </div>
+                    </div>
+                  </form>`;
 
   document.getElementById('lab-profile-form').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const payload = {
-      lab_name: document.getElementById('lab-name').value.trim(),
-      tagline: document.getElementById('lab-tagline').value.trim(),
-      address: document.getElementById('lab-address').value.trim(),
-      phone: document.getElementById('lab-phone').value.trim(),
-      email: document.getElementById('lab-email').value.trim(),
-      registration_no: document.getElementById('lab-reg').value.trim(),
-      letterhead_template: document.getElementById('lab-template').value,
-      working_hours: document.getElementById('lab-hours').value.trim(),
-      report_footer: document.getElementById('lab-footer').value.trim(),
-      updated_at: new Date().toISOString()
+                    e.preventDefault();
+                  const payload = {
+                    lab_name: document.getElementById('lab-name').value.trim(),
+                  tagline: document.getElementById('lab-tagline').value.trim(),
+                  address: document.getElementById('lab-address').value.trim(),
+                  phone: document.getElementById('lab-phone').value.trim(),
+                  email: document.getElementById('lab-email').value.trim(),
+                  registration_no: document.getElementById('lab-reg').value.trim(),
+                  letterhead_template: document.getElementById('lab-template').value,
+                  working_hours: document.getElementById('lab-hours').value.trim(),
+                  report_footer: document.getElementById('lab-footer').value.trim(),
+                  updated_at: new Date().toISOString()
     };
 
-    try {
-      const { error } = await state.supabase.from('lab_settings').upsert({ id: lab.id, ...payload });
-      if (error) throw error;
-      state.labSettings = { ...lab, ...payload };
-      showToast('Lab profile updated successfully', 'success');
-      renderApp();
+                  try {
+      const {error} = await state.supabase.from('lab_settings').upsert({id: lab.id, ...payload });
+                  if (error) throw error;
+                  state.labSettings = {...lab, ...payload };
+                  showToast('Lab profile updated successfully', 'success');
+                  renderApp();
     } catch (err) {
-      showToast('Failed to save settings: ' + err.message, 'error');
+                    showToast('Failed to save settings: ' + err.message, 'error');
     }
   });
 }
 
-function renderDoctorsSettings(container) {
+                  function renderDoctorsSettings(container) {
   const doctors = state.doctors || [];
-  container.innerHTML = `
-    <div class="card">
-      <div class="card-header d-flex justify-between align-center">
-        <div>
-          <h3>Referring Doctors Directory</h3>
-          <p class="muted mt-1">Manage external medical consultants and referring physicians for diagnostic billing.</p>
-        </div>
-        <button class="btn btn-primary btn-sm" id="btn-add-doc-modal">+ Add Doctor</button>
-      </div>
-      <div class="card-body">
-        ${doctors.length === 0 ? `
+                  container.innerHTML = `
+                  <div class="card">
+                    <div class="card-header d-flex justify-between align-center">
+                      <div>
+                        <h3>Referring Doctors Directory</h3>
+                        <p class="muted mt-1">Manage external medical consultants and referring physicians for diagnostic billing.</p>
+                      </div>
+                      <button class="btn btn-primary btn-sm" id="btn-add-doc-modal">+ Add Doctor</button>
+                    </div>
+                    <div class="card-body">
+                      ${doctors.length === 0 ? `
           <div class="empty-state text-center p-4">
             <p class="muted mb-2">No referring doctors registered yet.</p>
             <p><small class="muted">Click <strong>+ Add Doctor</strong> above to register consulting physicians.</small></p>
@@ -2769,52 +2853,52 @@ function renderDoctorsSettings(container) {
             </tbody>
           </table>
         `}
-      </div>
-    </div>`;
+                    </div>
+                  </div>`;
 
-  document.getElementById('btn-add-doc-modal').addEventListener('click', openAddDoctorModal);
+                  document.getElementById('btn-add-doc-modal').addEventListener('click', openAddDoctorModal);
 
   container.querySelectorAll('.btn-toggle-doctor').forEach(btn => {
-    btn.addEventListener('click', async () => {
-      const id = btn.dataset.id;
-      const nextActive = btn.dataset.active === 'false';
-      await state.supabase.from('doctors').update({ active: nextActive }).eq('id', id);
-      await loadReferenceData();
-      renderDoctorsSettings(container);
-    });
+                    btn.addEventListener('click', async () => {
+                      const id = btn.dataset.id;
+                      const nextActive = btn.dataset.active === 'false';
+                      await state.supabase.from('doctors').update({ active: nextActive }).eq('id', id);
+                      await loadReferenceData();
+                      renderDoctorsSettings(container);
+                    });
   });
 
   container.querySelectorAll('.btn-delete-doctor').forEach(btn => {
-    btn.addEventListener('click', async () => {
-      const id = btn.dataset.id;
-      const name = btn.dataset.name;
-      if (confirm(`Are you sure you want to delete ${name}?`)) {
-        const { error } = await state.supabase.from('doctors').delete().eq('id', id);
-        if (error) {
-          showToast('Could not delete doctor: ' + error.message, 'error');
-        } else {
-          showToast(`Doctor ${name} deleted successfully`, 'success');
-          await loadReferenceData();
-          renderDoctorsSettings(container);
-        }
-      }
-    });
+                    btn.addEventListener('click', async () => {
+                      const id = btn.dataset.id;
+                      const name = btn.dataset.name;
+                      if (confirm(`Are you sure you want to delete ${name}?`)) {
+                        const { error } = await state.supabase.from('doctors').delete().eq('id', id);
+                        if (error) {
+                          showToast('Could not delete doctor: ' + error.message, 'error');
+                        } else {
+                          showToast(`Doctor ${name} deleted successfully`, 'success');
+                          await loadReferenceData();
+                          renderDoctorsSettings(container);
+                        }
+                      }
+                    });
   });
 }
 
-function renderReferralsSettings(container) {
+                  function renderReferralsSettings(container) {
   const labs = state.referralLabs || [];
-  const hosps = state.referralHospitals || [];
-  container.innerHTML = `
-    <div class="form-row">
-      <div class="col-6">
-        <div class="card">
-          <div class="card-header d-flex justify-between align-center">
-            <h3>Referral Laboratories</h3>
-            <button class="btn btn-primary btn-sm" id="btn-add-lab-modal">+ Add Lab</button>
-          </div>
-          <div class="card-body">
-            ${labs.length === 0 ? `
+                  const hosps = state.referralHospitals || [];
+                  container.innerHTML = `
+                  <div class="form-row">
+                    <div class="col-6">
+                      <div class="card">
+                        <div class="card-header d-flex justify-between align-center">
+                          <h3>Referral Laboratories</h3>
+                          <button class="btn btn-primary btn-sm" id="btn-add-lab-modal">+ Add Lab</button>
+                        </div>
+                        <div class="card-body">
+                          ${labs.length === 0 ? `
               <div class="empty-state text-center p-3">
                 <p class="muted">No referral laboratories registered.</p>
               </div>
@@ -2836,17 +2920,17 @@ function renderReferralsSettings(container) {
                 </tbody>
               </table>
             `}
-          </div>
-        </div>
-      </div>
-      <div class="col-6">
-        <div class="card">
-          <div class="card-header d-flex justify-between align-center">
-            <h3>Referral Hospitals</h3>
-            <button class="btn btn-primary btn-sm" id="btn-add-hosp-modal">+ Add Hospital</button>
-          </div>
-          <div class="card-body">
-            ${hosps.length === 0 ? `
+                        </div>
+                      </div>
+                    </div>
+                    <div class="col-6">
+                      <div class="card">
+                        <div class="card-header d-flex justify-between align-center">
+                          <h3>Referral Hospitals</h3>
+                          <button class="btn btn-primary btn-sm" id="btn-add-hosp-modal">+ Add Hospital</button>
+                        </div>
+                        <div class="card-body">
+                          ${hosps.length === 0 ? `
               <div class="empty-state text-center p-3">
                 <p class="muted">No referral hospitals registered.</p>
               </div>
@@ -2868,49 +2952,49 @@ function renderReferralsSettings(container) {
                 </tbody>
               </table>
             `}
-          </div>
-        </div>
-      </div>
-    </div>`;
+                        </div>
+                      </div>
+                    </div>
+                  </div>`;
 
-  document.getElementById('btn-add-lab-modal').addEventListener('click', openAddReferralLabModal);
-  document.getElementById('btn-add-hosp-modal').addEventListener('click', openAddReferralHospitalModal);
+                  document.getElementById('btn-add-lab-modal').addEventListener('click', openAddReferralLabModal);
+                  document.getElementById('btn-add-hosp-modal').addEventListener('click', openAddReferralHospitalModal);
 
   container.querySelectorAll('.btn-delete-lab').forEach(btn => {
-    btn.addEventListener('click', async () => {
-      const id = btn.dataset.id;
-      const name = btn.dataset.name;
-      if (confirm(`Are you sure you want to delete ${name}?`)) {
-        const { error } = await state.supabase.from('referral_labs').delete().eq('id', id);
-        if (error) showToast('Error deleting lab: ' + error.message, 'error');
-        else {
-          showToast(`Referral lab ${name} deleted`, 'success');
-          await loadReferenceData();
-          renderReferralsSettings(container);
-        }
-      }
-    });
+                    btn.addEventListener('click', async () => {
+                      const id = btn.dataset.id;
+                      const name = btn.dataset.name;
+                      if (confirm(`Are you sure you want to delete ${name}?`)) {
+                        const { error } = await state.supabase.from('referral_labs').delete().eq('id', id);
+                        if (error) showToast('Error deleting lab: ' + error.message, 'error');
+                        else {
+                          showToast(`Referral lab ${name} deleted`, 'success');
+                          await loadReferenceData();
+                          renderReferralsSettings(container);
+                        }
+                      }
+                    });
   });
 
   container.querySelectorAll('.btn-delete-hosp').forEach(btn => {
-    btn.addEventListener('click', async () => {
-      const id = btn.dataset.id;
-      const name = btn.dataset.name;
-      if (confirm(`Are you sure you want to delete ${name}?`)) {
-        const { error } = await state.supabase.from('referral_hospitals').delete().eq('id', id);
-        if (error) showToast('Error deleting hospital: ' + error.message, 'error');
-        else {
-          showToast(`Referral hospital ${name} deleted`, 'success');
-          await loadReferenceData();
-          renderReferralsSettings(container);
-        }
-      }
-    });
+                    btn.addEventListener('click', async () => {
+                      const id = btn.dataset.id;
+                      const name = btn.dataset.name;
+                      if (confirm(`Are you sure you want to delete ${name}?`)) {
+                        const { error } = await state.supabase.from('referral_hospitals').delete().eq('id', id);
+                        if (error) showToast('Error deleting hospital: ' + error.message, 'error');
+                        else {
+                          showToast(`Referral hospital ${name} deleted`, 'success');
+                          await loadReferenceData();
+                          renderReferralsSettings(container);
+                        }
+                      }
+                    });
   });
 }
 
-function renderCatalogSettings(container) {
-  container.innerHTML = `
+                  function renderCatalogSettings(container) {
+                    container.innerHTML = `
     <div class="card">
       <div class="card-header">
         <h3>Diagnostic Test Catalog &amp; Prices</h3>
@@ -2952,24 +3036,24 @@ function renderCatalogSettings(container) {
     </div>`;
 
   container.querySelectorAll('.btn-save-test-price').forEach(btn => {
-    btn.addEventListener('click', async () => {
-      const id = btn.dataset.id;
-      const input = container.querySelector(`.price-edit-input[data-id="${id}"]`);
-      const newPrice = Number(input.value || 0);
-      try {
-        const { error } = await state.supabase.from('tests').update({ price: newPrice }).eq('id', id);
-        if (error) throw error;
-        showToast('Test price updated', 'success');
-        await loadReferenceData();
-      } catch (err) {
-        showToast('Error updating price: ' + err.message, 'error');
-      }
-    });
+                    btn.addEventListener('click', async () => {
+                      const id = btn.dataset.id;
+                      const input = container.querySelector(`.price-edit-input[data-id="${id}"]`);
+                      const newPrice = Number(input.value || 0);
+                      try {
+                        const { error } = await state.supabase.from('tests').update({ price: newPrice }).eq('id', id);
+                        if (error) throw error;
+                        showToast('Test price updated', 'success');
+                        await loadReferenceData();
+                      } catch (err) {
+                        showToast('Error updating price: ' + err.message, 'error');
+                      }
+                    });
   });
 }
 
-function renderSecuritySettings(container) {
-  container.innerHTML = `
+                  function renderSecuritySettings(container) {
+                    container.innerHTML = `
     <div class="card" style="max-width: 500px;">
       <div class="card-header">
         <h3>Change Staff Password</h3>
@@ -2990,26 +3074,26 @@ function renderSecuritySettings(container) {
     </div>`;
 
   document.getElementById('change-pwd-form').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const p1 = document.getElementById('new-password').value;
-    const p2 = document.getElementById('confirm-password').value;
-    if (p1 !== p2) {
-      showToast('Passwords do not match.', 'error');
-      return;
+                    e.preventDefault();
+                  const p1 = document.getElementById('new-password').value;
+                  const p2 = document.getElementById('confirm-password').value;
+                  if (p1 !== p2) {
+                    showToast('Passwords do not match.', 'error');
+                  return;
     }
-    try {
-      const { error } = await state.supabase.auth.updateUser({ password: p1 });
-      if (error) throw error;
-      showToast('Password updated successfully', 'success');
-      document.getElementById('change-pwd-form').reset();
+                  try {
+      const {error} = await state.supabase.auth.updateUser({password: p1 });
+                  if (error) throw error;
+                  showToast('Password updated successfully', 'success');
+                  document.getElementById('change-pwd-form').reset();
     } catch (err) {
-      showToast('Password change failed: ' + err.message, 'error');
+                    showToast('Password change failed: ' + err.message, 'error');
     }
   });
 }
 
-function renderSupportPage(container) {
-  container.innerHTML = `
+                  function renderSupportPage(container) {
+                    container.innerHTML = `
     <div class="support-page-wrapper">
       <div class="card mb-4">
         <div class="card-header d-flex justify-between align-center">
@@ -3078,8 +3162,8 @@ function renderSupportPage(container) {
   `;
 }
 
-function renderPrivacyPolicyPage(container) {
-  container.innerHTML = `
+                  function renderPrivacyPolicyPage(container) {
+                    container.innerHTML = `
     <div class="privacy-page-wrapper">
       <div class="card">
         <div class="card-header bg-subtle d-flex justify-between align-center">
@@ -3138,221 +3222,221 @@ function renderPrivacyPolicyPage(container) {
   `;
 }
 
-// -------------------------------------------------------------
-// Quick Add Modals (Doctors, Labs, Hospitals, Payment)
-// -------------------------------------------------------------
-function openAddDoctorModal() {
+                  // -------------------------------------------------------------
+                  // Quick Add Modals (Doctors, Labs, Hospitals, Payment)
+                  // -------------------------------------------------------------
+                  function openAddDoctorModal() {
   const modalContainer = document.getElementById('modal-container');
-  modalContainer.innerHTML = `
-      <div class="modal-overlay">
-        <div class="modal-dialog">
-          <div class="modal-header">
-            <h3>Add Referring Doctor</h3>
-            <button class="modal-close" id="modal-close-btn">&times;</button>
-          </div>
-          <form id="quick-add-doc-form">
-            <div class="modal-body">
-              <div class="form-group mb-3">
-                <label>Doctor Full Name *</label>
-                <input type="text" id="new-doc-name" placeholder="Dr. Firstname Lastname" required />
-              </div>
-              <div class="form-group mb-3">
-                <label>Degrees / Speciality</label>
-                <input type="text" id="new-doc-qual" placeholder="MBBS, MD" />
-              </div>
-              <div class="form-group">
-                <label>Phone Number</label>
-                <input type="tel" id="new-doc-phone" placeholder="+91 ..." />
-              </div>
-            </div>
-            <div class="modal-footer">
-              <button type="button" class="btn btn-outline" id="modal-cancel-btn">Cancel</button>
-              <button type="submit" class="btn btn-primary">Save Doctor</button>
-            </div>
-          </form>
-        </div>
-      </div>`;
+                  modalContainer.innerHTML = `
+                  <div class="modal-overlay">
+                    <div class="modal-dialog">
+                      <div class="modal-header">
+                        <h3>Add Referring Doctor</h3>
+                        <button class="modal-close" id="modal-close-btn">&times;</button>
+                      </div>
+                      <form id="quick-add-doc-form">
+                        <div class="modal-body">
+                          <div class="form-group mb-3">
+                            <label>Doctor Full Name *</label>
+                            <input type="text" id="new-doc-name" placeholder="Dr. Firstname Lastname" required />
+                          </div>
+                          <div class="form-group mb-3">
+                            <label>Degrees / Speciality</label>
+                            <input type="text" id="new-doc-qual" placeholder="MBBS, MD" />
+                          </div>
+                          <div class="form-group">
+                            <label>Phone Number</label>
+                            <input type="tel" id="new-doc-phone" placeholder="+91 ..." />
+                          </div>
+                        </div>
+                        <div class="modal-footer">
+                          <button type="button" class="btn btn-outline" id="modal-cancel-btn">Cancel</button>
+                          <button type="submit" class="btn btn-primary">Save Doctor</button>
+                        </div>
+                      </form>
+                    </div>
+                  </div>`;
 
   document.getElementById('modal-close-btn').addEventListener('click', () => modalContainer.innerHTML = '');
   document.getElementById('modal-cancel-btn').addEventListener('click', () => modalContainer.innerHTML = '');
 
   document.getElementById('quick-add-doc-form').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const name = document.getElementById('new-doc-name').value.trim();
-    const qualification = document.getElementById('new-doc-qual').value.trim();
-    const phone = document.getElementById('new-doc-phone').value.trim();
+                    e.preventDefault();
+                  const name = document.getElementById('new-doc-name').value.trim();
+                  const qualification = document.getElementById('new-doc-qual').value.trim();
+                  const phone = document.getElementById('new-doc-phone').value.trim();
 
-    try {
-      const { data, error } = await state.supabase.from('doctors').insert({ name, qualification, phone }).select().single();
-      if (error) throw error;
-      showToast('Doctor added successfully', 'success');
-      await loadReferenceData();
-      modalContainer.innerHTML = '';
-      if (state.currentPage === 'billing' && state.billingSubTab === 'new') {
-        state.newBill.doctorId = data.id;
-        renderNewBillForm(document.getElementById('billing-body'));
+                  try {
+      const {data, error} = await state.supabase.from('doctors').insert({name, qualification, phone}).select().single();
+                  if (error) throw error;
+                  showToast('Doctor added successfully', 'success');
+                  await loadReferenceData();
+                  modalContainer.innerHTML = '';
+                  if (state.currentPage === 'billing' && state.billingSubTab === 'new') {
+                    state.newBill.doctorId = data.id;
+                  renderNewBillForm(document.getElementById('billing-body'));
       }
     } catch (err) {
-      showToast('Error: ' + err.message, 'error');
+                    showToast('Error: ' + err.message, 'error');
     }
   });
 }
 
-function openAddReferralLabModal() {
+                  function openAddReferralLabModal() {
   const modalContainer = document.getElementById('modal-container');
-  modalContainer.innerHTML = `
-      <div class="modal-overlay">
-        <div class="modal-dialog">
-          <div class="modal-header">
-            <h3>Add Referral Laboratory</h3>
-            <button class="modal-close" id="modal-close-btn">&times;</button>
-          </div>
-          <form id="quick-add-lab-form">
-            <div class="modal-body">
-              <div class="form-group">
-                <label>Lab Name *</label>
-                <input type="text" id="new-lab-name" required />
-              </div>
-            </div>
-            <div class="modal-footer">
-              <button type="button" class="btn btn-outline" id="modal-cancel-btn">Cancel</button>
-              <button type="submit" class="btn btn-primary">Save</button>
-            </div>
-          </form>
-        </div>
-      </div>`;
+                  modalContainer.innerHTML = `
+                  <div class="modal-overlay">
+                    <div class="modal-dialog">
+                      <div class="modal-header">
+                        <h3>Add Referral Laboratory</h3>
+                        <button class="modal-close" id="modal-close-btn">&times;</button>
+                      </div>
+                      <form id="quick-add-lab-form">
+                        <div class="modal-body">
+                          <div class="form-group">
+                            <label>Lab Name *</label>
+                            <input type="text" id="new-lab-name" required />
+                          </div>
+                        </div>
+                        <div class="modal-footer">
+                          <button type="button" class="btn btn-outline" id="modal-cancel-btn">Cancel</button>
+                          <button type="submit" class="btn btn-primary">Save</button>
+                        </div>
+                      </form>
+                    </div>
+                  </div>`;
 
   document.getElementById('modal-close-btn').addEventListener('click', () => modalContainer.innerHTML = '');
   document.getElementById('modal-cancel-btn').addEventListener('click', () => modalContainer.innerHTML = '');
 
   document.getElementById('quick-add-lab-form').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const name = document.getElementById('new-lab-name').value.trim();
-    try {
-      const { data, error } = await state.supabase.from('referral_labs').insert({ name }).select().single();
-      if (error) throw error;
-      showToast('Referral Lab added', 'success');
-      await loadReferenceData();
-      modalContainer.innerHTML = '';
-      if (state.currentPage === 'billing' && state.billingSubTab === 'new') {
-        state.newBill.referralLabId = data.id;
-        renderNewBillForm(document.getElementById('billing-body'));
+                    e.preventDefault();
+                  const name = document.getElementById('new-lab-name').value.trim();
+                  try {
+      const {data, error} = await state.supabase.from('referral_labs').insert({name}).select().single();
+                  if (error) throw error;
+                  showToast('Referral Lab added', 'success');
+                  await loadReferenceData();
+                  modalContainer.innerHTML = '';
+                  if (state.currentPage === 'billing' && state.billingSubTab === 'new') {
+                    state.newBill.referralLabId = data.id;
+                  renderNewBillForm(document.getElementById('billing-body'));
       }
     } catch (err) {
-      showToast('Error: ' + err.message, 'error');
+                    showToast('Error: ' + err.message, 'error');
     }
   });
 }
 
-function openAddReferralHospitalModal() {
+                  function openAddReferralHospitalModal() {
   const modalContainer = document.getElementById('modal-container');
-  modalContainer.innerHTML = `
-      <div class="modal-overlay">
-        <div class="modal-dialog">
-          <div class="modal-header">
-            <h3>Add Referral Hospital</h3>
-            <button class="modal-close" id="modal-close-btn">&times;</button>
-          </div>
-          <form id="quick-add-hosp-form">
-            <div class="modal-body">
-              <div class="form-group">
-                <label>Hospital Name *</label>
-                <input type="text" id="new-hosp-name" required />
-              </div>
-            </div>
-            <div class="modal-footer">
-              <button type="button" class="btn btn-outline" id="modal-cancel-btn">Cancel</button>
-              <button type="submit" class="btn btn-primary">Save</button>
-            </div>
-          </form>
-        </div>
-      </div>`;
+                  modalContainer.innerHTML = `
+                  <div class="modal-overlay">
+                    <div class="modal-dialog">
+                      <div class="modal-header">
+                        <h3>Add Referral Hospital</h3>
+                        <button class="modal-close" id="modal-close-btn">&times;</button>
+                      </div>
+                      <form id="quick-add-hosp-form">
+                        <div class="modal-body">
+                          <div class="form-group">
+                            <label>Hospital Name *</label>
+                            <input type="text" id="new-hosp-name" required />
+                          </div>
+                        </div>
+                        <div class="modal-footer">
+                          <button type="button" class="btn btn-outline" id="modal-cancel-btn">Cancel</button>
+                          <button type="submit" class="btn btn-primary">Save</button>
+                        </div>
+                      </form>
+                    </div>
+                  </div>`;
 
   document.getElementById('modal-close-btn').addEventListener('click', () => modalContainer.innerHTML = '');
   document.getElementById('modal-cancel-btn').addEventListener('click', () => modalContainer.innerHTML = '');
 
   document.getElementById('quick-add-hosp-form').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const name = document.getElementById('new-hosp-name').value.trim();
-    try {
-      const { data, error } = await state.supabase.from('referral_hospitals').insert({ name }).select().single();
-      if (error) throw error;
-      showToast('Referral Hospital added', 'success');
-      await loadReferenceData();
-      modalContainer.innerHTML = '';
-      if (state.currentPage === 'billing' && state.billingSubTab === 'new') {
-        state.newBill.referralHospitalId = data.id;
-        renderNewBillForm(document.getElementById('billing-body'));
+                    e.preventDefault();
+                  const name = document.getElementById('new-hosp-name').value.trim();
+                  try {
+      const {data, error} = await state.supabase.from('referral_hospitals').insert({name}).select().single();
+                  if (error) throw error;
+                  showToast('Referral Hospital added', 'success');
+                  await loadReferenceData();
+                  modalContainer.innerHTML = '';
+                  if (state.currentPage === 'billing' && state.billingSubTab === 'new') {
+                    state.newBill.referralHospitalId = data.id;
+                  renderNewBillForm(document.getElementById('billing-body'));
       }
     } catch (err) {
-      showToast('Error: ' + err.message, 'error');
+                    showToast('Error: ' + err.message, 'error');
     }
   });
 }
 
-function openCollectPaymentModal(billId, maxBalance) {
+                  function openCollectPaymentModal(billId, maxBalance) {
   const modalContainer = document.getElementById('modal-container');
-  modalContainer.innerHTML = `
-      <div class="modal-overlay">
-        <div class="modal-dialog">
-          <div class="modal-header">
-            <h3>Collect Balance Payment</h3>
-            <button class="modal-close" id="modal-close-btn">&times;</button>
-          </div>
-          <form id="collect-pay-form">
-            <div class="modal-body">
-              <div class="form-group mb-3">
-                <label>Payment Amount (₹) *</label>
-                <input type="number" id="pay-amount" min="1" max="${maxBalance}" value="${maxBalance}" required />
-              </div>
-              <div class="form-group mb-3">
-                <label>Payment Mode</label>
-                <select id="pay-mode">
-                  ${['Cash', 'UPI', 'Card', 'Net Banking', 'Other'].map(m => `<option value="${m}">${m}</option>`).join('')}
-                </select>
-              </div>
-              <div class="form-group">
-                <label>Payment Notes</label>
-                <input type="text" id="pay-notes" placeholder="Optional transaction ID or note" />
-              </div>
-            </div>
-            <div class="modal-footer">
-              <button type="button" class="btn btn-outline" id="modal-cancel-btn">Cancel</button>
-              <button type="submit" class="btn btn-primary">Record Payment</button>
-            </div>
-          </form>
-        </div>
-      </div>`;
+                  modalContainer.innerHTML = `
+                  <div class="modal-overlay">
+                    <div class="modal-dialog">
+                      <div class="modal-header">
+                        <h3>Collect Balance Payment</h3>
+                        <button class="modal-close" id="modal-close-btn">&times;</button>
+                      </div>
+                      <form id="collect-pay-form">
+                        <div class="modal-body">
+                          <div class="form-group mb-3">
+                            <label>Payment Amount (₹) *</label>
+                            <input type="number" id="pay-amount" min="1" max="${maxBalance}" value="${maxBalance}" required />
+                          </div>
+                          <div class="form-group mb-3">
+                            <label>Payment Mode</label>
+                            <select id="pay-mode">
+                              ${['Cash', 'UPI', 'Card', 'Net Banking', 'Other'].map(m => `<option value="${m}">${m}</option>`).join('')}
+                            </select>
+                          </div>
+                          <div class="form-group">
+                            <label>Payment Notes</label>
+                            <input type="text" id="pay-notes" placeholder="Optional transaction ID or note" />
+                          </div>
+                        </div>
+                        <div class="modal-footer">
+                          <button type="button" class="btn btn-outline" id="modal-cancel-btn">Cancel</button>
+                          <button type="submit" class="btn btn-primary">Record Payment</button>
+                        </div>
+                      </form>
+                    </div>
+                  </div>`;
 
   document.getElementById('modal-close-btn').addEventListener('click', () => modalContainer.innerHTML = '');
   document.getElementById('modal-cancel-btn').addEventListener('click', () => modalContainer.innerHTML = '');
 
   document.getElementById('collect-pay-form').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const amount = Number(document.getElementById('pay-amount').value);
-    const mode = document.getElementById('pay-mode').value;
-    const notes = document.getElementById('pay-notes').value.trim();
+                    e.preventDefault();
+                  const amount = Number(document.getElementById('pay-amount').value);
+                  const mode = document.getElementById('pay-mode').value;
+                  const notes = document.getElementById('pay-notes').value.trim();
 
-    try {
-      const { data, error } = await state.supabase.rpc('collect_bill_payment', {
-        p_bill_id: billId,
-        p_amount: amount,
-        p_mode: mode,
-        p_notes: notes
+                  try {
+      const {data, error} = await state.supabase.rpc('collect_bill_payment', {
+                    p_bill_id: billId,
+                  p_amount: amount,
+                  p_mode: mode,
+                  p_notes: notes
       });
 
-      if (error) throw error;
-      showToast('Payment recorded successfully', 'success');
-      modalContainer.innerHTML = '';
-      loadBillsTable();
-      openReceiptModal(billId);
+                  if (error) throw error;
+                  showToast('Payment recorded successfully', 'success');
+                  modalContainer.innerHTML = '';
+                  loadBillsTable();
+                  openReceiptModal(billId);
     } catch (err) {
-      showToast('Payment error: ' + err.message, 'error');
+                    showToast('Payment error: ' + err.message, 'error');
     }
   });
 }
 
-// -------------------------------------------------------------
-// Launch on DOM Ready
-// -------------------------------------------------------------
-window.addEventListener('DOMContentLoaded', init);
+                  // -------------------------------------------------------------
+                  // Launch on DOM Ready
+                  // -------------------------------------------------------------
+                  window.addEventListener('DOMContentLoaded', init);
