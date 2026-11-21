@@ -38,7 +38,7 @@ const state = {
       height: '',
       weight: '',
       area: '',
-      city: 'Bangalore',
+      city: 'Sidlaghatta',
       pincode: ''
     },
     doctorId: '',
@@ -117,8 +117,12 @@ function numberToWords(amount) {
   return 'Rupees ' + words.trim() + ' Only';
 }
 
+function roundCurrency(val) {
+  return Math.round((Number(val || 0) + Number.EPSILON) * 100) / 100;
+}
+
 function formatCurrency(val) {
-  const n = Number(val || 0);
+  const n = roundCurrency(val);
   return '₹ ' + n.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
@@ -244,6 +248,10 @@ async function init() {
         getPrinters: async () => [],
         printReceipt: async ({ html }) => {
           const w = window.open('', '_blank', 'width=450,height=600');
+          if (!w) {
+            alert('Popup blocked. Please allow popups for this site to print receipts.');
+            return { success: false, failureReason: 'Popup blocked by browser' };
+          }
           w.document.write(html);
           w.document.close();
           w.focus();
@@ -252,6 +260,10 @@ async function init() {
         },
         printReport: async ({ html }) => {
           const w = window.open('', '_blank');
+          if (!w) {
+            alert('Popup blocked. Please allow popups for this site to print reports.');
+            return { success: false, failureReason: 'Popup blocked by browser' };
+          }
           w.document.write(html);
           w.document.close();
           w.focus();
@@ -1048,7 +1060,9 @@ function attachNewBillListeners(container) {
   const discountInput = container.querySelector('#bill-discount');
   if (discountInput) {
     discountInput.addEventListener('input', (e) => {
-      state.newBill.discount = Number(e.target.value || 0);
+      let val = Number(e.target.value || 0);
+      if (val < 0) val = 0;
+      state.newBill.discount = roundCurrency(val);
       renderNewBillForm(container);
     });
   }
@@ -1056,7 +1070,9 @@ function attachNewBillListeners(container) {
   const paidInput = container.querySelector('#bill-paid');
   if (paidInput) {
     paidInput.addEventListener('input', (e) => {
-      state.newBill.paidAmount = Number(e.target.value || 0);
+      let val = Number(e.target.value || 0);
+      if (val < 0) val = 0;
+      state.newBill.paidAmount = roundCurrency(val);
     });
   }
 
@@ -1153,7 +1169,7 @@ async function handleCreateBill() {
   const height = document.getElementById('patient-height')?.value.trim() || null;
   const weight = document.getElementById('patient-weight')?.value.trim() || null;
   const area = document.getElementById('patient-area')?.value.trim() || '';
-  const city = document.getElementById('patient-city')?.value.trim() || 'Bangalore';
+  const city = document.getElementById('patient-city')?.value.trim() || 'Sidlaghatta';
   const pincode = document.getElementById('patient-pincode')?.value.trim() || '';
 
   if (!fullName) {
@@ -1162,14 +1178,79 @@ async function handleCreateBill() {
     submitBtn.innerHTML = `${uiIcon('credit-card', 18)} Create Bill &amp; Print Receipt`;
     return;
   }
-  if (isNaN(ageValue) || ageValue < 0) {
-    showToast('Please enter a valid age.', 'error');
+  if (fullName.length > 150) {
+    showToast('Patient name cannot exceed 150 characters.', 'error');
     submitBtn.disabled = false;
     submitBtn.innerHTML = `${uiIcon('credit-card', 18)} Create Bill &amp; Print Receipt`;
     return;
   }
+  if (isNaN(ageValue) || ageValue < 0) {
+    showToast('Please enter a valid non-negative age.', 'error');
+    submitBtn.disabled = false;
+    submitBtn.innerHTML = `${uiIcon('credit-card', 18)} Create Bill &amp; Print Receipt`;
+    return;
+  }
+  if (ageUnit === 'Y' && ageValue > 125) {
+    showToast('Age in years cannot exceed 125.', 'error');
+    submitBtn.disabled = false;
+    submitBtn.innerHTML = `${uiIcon('credit-card', 18)} Create Bill &amp; Print Receipt`;
+    return;
+  }
+  if (ageUnit === 'M' && ageValue > 12) {
+    showToast('Age in months cannot exceed 12.', 'error');
+    submitBtn.disabled = false;
+    submitBtn.innerHTML = `${uiIcon('credit-card', 18)} Create Bill &amp; Print Receipt`;
+    return;
+  }
+  if (ageUnit === 'D' && ageValue > 31) {
+    showToast('Age in days cannot exceed 31.', 'error');
+    submitBtn.disabled = false;
+    submitBtn.innerHTML = `${uiIcon('credit-card', 18)} Create Bill &amp; Print Receipt`;
+    return;
+  }
+  if (mobile) {
+    const cleanMobile = mobile.replace(/[\s-]/g, '');
+    if (!/^(?:\+91|0)?[6-9]\d{9}$/.test(cleanMobile)) {
+      showToast('Please enter a valid 10-digit Indian mobile number.', 'error');
+      submitBtn.disabled = false;
+      submitBtn.innerHTML = `${uiIcon('credit-card', 18)} Create Bill &amp; Print Receipt`;
+      return;
+    }
+  }
   if (state.newBill.selectedTestIds.length === 0) {
     showToast('Please select at least one test.', 'error');
+    submitBtn.disabled = false;
+    submitBtn.innerHTML = `${uiIcon('credit-card', 18)} Create Bill &amp; Print Receipt`;
+    return;
+  }
+
+  // Financial validation & rounding
+  const selectedTests = state.testsCatalog.filter(t => state.newBill.selectedTestIds.includes(t.id));
+  const subtotal = selectedTests.reduce((sum, t) => sum + Number(t.price || 0), 0);
+  const discount = roundCurrency(state.newBill.discount || 0);
+  const paidAmount = roundCurrency(state.newBill.paidAmount || 0);
+
+  if (discount < 0) {
+    showToast('Discount cannot be a negative value.', 'error');
+    submitBtn.disabled = false;
+    submitBtn.innerHTML = `${uiIcon('credit-card', 18)} Create Bill &amp; Print Receipt`;
+    return;
+  }
+  if (subtotal > 0 && discount > subtotal) {
+    showToast(`Discount cannot exceed the subtotal (₹ ${subtotal.toFixed(2)}).`, 'error');
+    submitBtn.disabled = false;
+    submitBtn.innerHTML = `${uiIcon('credit-card', 18)} Create Bill &amp; Print Receipt`;
+    return;
+  }
+  const netPayable = roundCurrency(Math.max(0, subtotal - discount));
+  if (paidAmount < 0) {
+    showToast('Paid amount cannot be negative.', 'error');
+    submitBtn.disabled = false;
+    submitBtn.innerHTML = `${uiIcon('credit-card', 18)} Create Bill &amp; Print Receipt`;
+    return;
+  }
+  if (netPayable >= 0 && paidAmount > netPayable) {
+    showToast(`Paid amount cannot exceed the net total payable (₹ ${netPayable.toFixed(2)}).`, 'error');
     submitBtn.disabled = false;
     submitBtn.innerHTML = `${uiIcon('credit-card', 18)} Create Bill &amp; Print Receipt`;
     return;
@@ -1233,7 +1314,7 @@ async function handleCreateBill() {
       height: '',
       weight: '',
       area: '',
-      city: 'Bangalore',
+      city: 'Sidlaghatta',
       pincode: ''
     };
   } catch (err) {
@@ -1923,17 +2004,21 @@ function evaluateLiveFlag(input) {
   const valStr = input.value.trim();
 
   if (!valStr || isNaN(Number(valStr))) {
-    flagBadge.textContent = '';
-    flagBadge.className = 'flag-badge';
-    rowElement.classList.remove('row-abnormal', 'row-critical');
+    if (flagBadge) {
+      flagBadge.textContent = '';
+      flagBadge.className = 'flag-badge';
+    }
+    if (rowElement) {
+      rowElement.classList.remove('row-abnormal', 'row-critical');
+    }
     return '';
   }
 
   const val = Number(valStr);
-  const min = input.dataset.min ? Number(input.dataset.min) : null;
-  const max = input.dataset.max ? Number(input.dataset.max) : null;
-  const critMin = input.dataset.critMin ? Number(input.dataset.critMin) : null;
-  const critMax = input.dataset.critMax ? Number(input.dataset.critMax) : null;
+  const min = (input.dataset.min && !isNaN(Number(input.dataset.min))) ? Number(input.dataset.min) : null;
+  const max = (input.dataset.max && !isNaN(Number(input.dataset.max))) ? Number(input.dataset.max) : null;
+  const critMin = (input.dataset.critMin && !isNaN(Number(input.dataset.critMin))) ? Number(input.dataset.critMin) : null;
+  const critMax = (input.dataset.critMax && !isNaN(Number(input.dataset.critMax))) ? Number(input.dataset.critMax) : null;
 
   let flag = '';
   if (critMin !== null && val < critMin) flag = 'C';
@@ -1941,11 +2026,15 @@ function evaluateLiveFlag(input) {
   else if (min !== null && val < min) flag = 'L';
   else if (max !== null && val > max) flag = 'H';
 
-  flagBadge.textContent = flag;
-  flagBadge.className = `flag-badge flag-${flag.toLowerCase()}`;
+  if (flagBadge) {
+    flagBadge.textContent = flag;
+    flagBadge.className = `flag-badge flag-${flag.toLowerCase()}`;
+  }
 
-  rowElement.classList.toggle('row-abnormal', flag === 'L' || flag === 'H');
-  rowElement.classList.toggle('row-critical', flag === 'C');
+  if (rowElement) {
+    rowElement.classList.toggle('row-abnormal', flag === 'L' || flag === 'H');
+    rowElement.classList.toggle('row-critical', flag === 'C');
+  }
   return flag;
 }
 
@@ -1963,6 +2052,16 @@ async function handleSaveReport(markCompleted = false) {
     const flag = evaluateLiveFlag(input);
     updates.push({ id, value, flag });
   });
+
+  // Safety draft persistence to sessionStorage
+  try {
+    sessionStorage.setItem(`draft_report_${state.activeReport.id}`, JSON.stringify({
+      reportId: state.activeReport.id,
+      notes,
+      updates,
+      timestamp: new Date().toISOString()
+    }));
+  } catch (_) {}
 
   try {
     // 1. Ensure valid auth session if available
@@ -2034,6 +2133,10 @@ async function handleSaveReport(markCompleted = false) {
         match.flag = u.flag;
       }
     }
+
+    try {
+      sessionStorage.removeItem(`draft_report_${state.activeReport.id}`);
+    } catch (_) {}
 
     if (markCompleted) {
       showToast('Report completed and finalized!', 'success');
@@ -2554,14 +2657,10 @@ function generateReceiptHTML(bill, lab, format = 'a4', fullPage = false) {
     };
 
                 const settingsAdapter = {
-                  labName: state.labSettings.lab_name,
-                address: state.labSettings.address,
-                phone: state.labSettings.phone,
-                email: state.labSettings.email,
-                labName: (state.labSettings.lab_name && state.labSettings.lab_name !== 'Anand Diagnostic Center') ? state.labSettings.lab_name : 'Anand Laboratory',
-                address: (state.labSettings.address && !state.labSettings.address.includes('Vijayanagar')) ? state.labSettings.address : 'Silk Filature Quarters Road, Ward No. 14, Sidlaghatta – 562105, Chikkaballapur (Dist.)',
-                phone: state.labSettings.phone || '6361303305',
-                email: 'anandhealthcaresdl@gmail.com',
+                  labName: (state.labSettings.lab_name && state.labSettings.lab_name !== 'Anand Diagnostic Center') ? state.labSettings.lab_name : 'Anand Laboratory',
+                  address: (state.labSettings.address && !state.labSettings.address.includes('Vijayanagar')) ? state.labSettings.address : 'Silk Filature Quarters Road, Ward No. 14, Sidlaghatta – 562105, Chikkaballapur (Dist.)',
+                  phone: state.labSettings.phone || '6361303305',
+                  email: state.labSettings.email || 'anandhealthcaresdl@gmail.com',
                 registration: state.labSettings.registration_no,
                 pathologist: state.labSettings.pathologist_name,
                 pathologistQualification: state.labSettings.pathologist_qualification,
@@ -3412,10 +3511,20 @@ function generateReceiptHTML(bill, lab, format = 'a4', fullPage = false) {
   document.getElementById('modal-cancel-btn').addEventListener('click', () => modalContainer.innerHTML = '');
 
   document.getElementById('collect-pay-form').addEventListener('submit', async (e) => {
-                    e.preventDefault();
-                  const amount = Number(document.getElementById('pay-amount').value);
-                  const mode = document.getElementById('pay-mode').value;
-                  const notes = document.getElementById('pay-notes').value.trim();
+    e.preventDefault();
+    const rawVal = Number(document.getElementById('pay-amount').value);
+    const amount = roundCurrency(rawVal);
+    const mode = document.getElementById('pay-mode').value;
+    const notes = document.getElementById('pay-notes').value.trim();
+
+    if (isNaN(amount) || amount <= 0) {
+      showToast('Payment amount must be greater than zero.', 'error');
+      return;
+    }
+    if (amount > maxBalance) {
+      showToast(`Payment amount cannot exceed current balance of ₹ ${maxBalance.toFixed(2)}.`, 'error');
+      return;
+    }
 
                   try {
       const {data, error} = await state.supabase.rpc('collect_bill_payment', {
