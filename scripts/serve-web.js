@@ -32,9 +32,12 @@ const mimeTypes = {
   '.js': 'text/javascript; charset=utf-8',
   '.css': 'text/css; charset=utf-8',
   '.png': 'image/png',
+  '.jpg': 'image/jpeg',
+  '.jpeg': 'image/jpeg',
   '.ico': 'image/x-icon',
   '.json': 'application/json',
-  '.svg': 'image/svg+xml'
+  '.svg': 'image/svg+xml',
+  '.woff2': 'font/woff2'
 };
 
 const server = http.createServer((req, res) => {
@@ -71,8 +74,12 @@ const server = http.createServer((req, res) => {
     'Content-Type': contentType,
     'Access-Control-Allow-Origin': '*'
   };
-  if (['.js', '.css', '.png', '.ico', '.svg', '.woff2'].includes(ext)) {
-    headers['Cache-Control'] = 'public, max-age=31536000, immutable';
+  if (['.html', '.js', '.css', '.json'].includes(ext)) {
+    headers['Cache-Control'] = 'no-cache, no-store, must-revalidate';
+    headers['Pragma'] = 'no-cache';
+    headers['Expires'] = '0';
+  } else if (['.png', '.jpg', '.jpeg', '.ico', '.svg', '.woff2'].includes(ext)) {
+    headers['Cache-Control'] = 'public, max-age=86400';
   }
   res.writeHead(200, headers);
   fs.createReadStream(filePath).pipe(res);

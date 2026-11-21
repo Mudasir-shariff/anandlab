@@ -106,7 +106,7 @@ function generateSvgBarcode(code) {
     x += 1.8;
   }
   const totalWidth = Math.ceil(x + 4);
-  return `<svg class="ref-barcode-svg" viewBox="0 0 ${totalWidth} 29" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">
+  return `<svg class="ref-barcode-svg" viewBox="0 0 ${totalWidth} 29" width="${totalWidth}" height="29" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">
     ${bars.join('')}
     <text x="${(totalWidth / 2).toFixed(1)}" y="27" font-family="monospace" font-size="7.5" font-weight="700" letter-spacing="1" text-anchor="middle" fill="#1e293b">${escape(textStr)}</text>
   </svg>`;
@@ -355,8 +355,8 @@ function resultRow(row,code,sex) {
 }
 
 function letterhead(profile) {
-  const labName = profile.labName || 'Anand Laboratory';
-  const address = profile.address || 'Silk Filature Quarters Road, Ward No. 14, Sidlaghatta – 562105, Chikkaballapur (Dist.)';
+  const labName = (profile.labName && profile.labName !== 'Anand Diagnostic Center') ? profile.labName : 'Anand Laboratory';
+  const address = (profile.address && !profile.address.includes('Vijayanagar')) ? profile.address : 'Silk Filature Quarters Road, Ward No. 14, Sidlaghatta – 562105, Chikkaballapur (Dist.)';
   // Two-tone: first word dark navy, remaining words in teal (e.g. "Anand" dark, "Laboratory" teal).
   // The full escaped name is placed as a visually-hidden text node so report-snapshot assertions still work;
   // the decorative overlay uses aria-hidden spans.

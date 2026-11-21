@@ -618,11 +618,11 @@ INSERT INTO public.lab_settings (
     working_hours
 ) VALUES (
     '00000000-0000-0000-0000-000000000001',
-    'Anand Diagnostic Center',
+    'Anand Laboratory',
     'Precision Diagnostics · Clinical Excellence',
     'Silk Filature Quarters Road, Ward No. 14, Sidlaghatta – 562105, Chikkaballapur (Dist.)',
     '6361303305',
-    'hello@opti-x.in',
+    'anandhealthcaresdl@gmail.com',
     'KA-BLR-LAB-2026-089',
     'Dr. Ramesh Kumar',
     'MD (Pathology), DCP',

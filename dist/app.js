@@ -365,80 +365,29 @@ function renderLogin(errorMessage = '') {
 
   document.getElementById('app').innerHTML = `
     <div class="login-wrapper login-split-page">
-      <!-- Left Clinical Identity & Diagnostic Hub -->
-      <div class="login-brand-side">
-        <div class="brand-side-content">
-          <div class="clinical-hospital-badge">
-            <span class="cross-icon-dot"></span>
-            <span>DR. ANAND HOSPITAL &bull; ANAND LABORATORY</span>
-          </div>
-
-          <div class="brand-hero-block">
-            <div class="brand-logo-pill">
-              <img src="./assets/logo.png" alt="OPTI - X LABS" class="login-logo-img" width="160" height="62" />
-            </div>
-            <h1>Opti-X Labs</h1>
-            <p class="brand-subtitle">Clinical Laboratory Information &amp; Diagnostic Reporting System</p>
-          </div>
-
-          <div class="clinical-highlights-list">
-            <div class="clinical-highlight-item">
-              <div class="hl-icon">${uiIcon('credit-card', 16)}</div>
-              <div class="hl-content">
-                <strong>Diagnostic Billing &amp; Thermal Receipts</strong>
-                <span>Instant patient intake, discount handling, thermal POS receipts &amp; payment ledger</span>
-              </div>
-            </div>
-
-            <div class="clinical-highlight-item">
-              <div class="hl-icon">${uiIcon('flask', 16)}</div>
-              <div class="hl-content">
-                <strong>38 Standard Pathology &amp; Biochemistry Panels</strong>
-                <span>CBC, Biochemistry, Hormones, Serology, Electrolytes, Thyroid &amp; Lipid Profiles</span>
-              </div>
-            </div>
-
-            <div class="clinical-highlight-item">
-              <div class="hl-icon">${uiIcon('printer', 16)}</div>
-              <div class="hl-content">
-                <strong>Anand Laboratory Letterhead Print Engine</strong>
-                <span>A4 hospital letterhead with Dr. Anand Hospital branding, watermarks &amp; direct print</span>
-              </div>
-            </div>
-
-            <div class="clinical-highlight-item">
-              <div class="hl-icon">${uiIcon('database', 16)}</div>
-              <div class="hl-content">
-                <strong>Realtime PostgreSQL Cloud Sync</strong>
-                <span>Continuous cloud database synchronization backed by local SafeStorage encryption</span>
-              </div>
-            </div>
-          </div>
-
-          <div class="clinical-support-card">
-            <div class="support-card-header">
-              ${uiIcon('phone', 14)}
-              <span>Laboratory Helpdesk &amp; Diagnostic Support</span>
-            </div>
-            <div class="support-card-body">
-              <div>Toll-Free: <strong>8123649448</strong></div>
-              <div>Email: <strong>hello@opti-x.in</strong></div>
-              <div>Direct Lab Line: <strong>6361303305</strong></div>
-            </div>
-          </div>
+      <!-- Left Column: Precision Microscope Objective Hero Image (Anand Laboratory) -->
+      <div class="login-brand-side" aria-label="Anand Laboratory - Dr. Anand Hospital">
+        <div class="sr-only">
+          <h2>DR. ANAND HOSPITAL - Anand Laboratory</h2>
+          <p>Patient billing, diagnostics and reports.</p>
         </div>
       </div>
 
-      <!-- Right Staff Authentication Side -->
+      <!-- Right Column: Staff Authentication -->
       <div class="login-form-side">
-        <div class="login-card-inner">
-          <div class="auth-header">
-            <div class="auth-tag">
-              ${uiIcon('shield-check', 13)}
-              <span>CLINICAL OPERATOR ACCESS</span>
-            </div>
-            <h2>Staff Sign In</h2>
-            <p class="auth-subtitle">Authorized laboratory personnel sign-in for patient billing and reports.</p>
+        <div class="login-auth-box">
+          <div class="login-brand-header">
+            <svg class="optix-logo-mark" viewBox="0 0 32 32" width="28" height="28" aria-hidden="true">
+              <circle cx="16" cy="16" r="15" fill="#111827"/>
+              <path d="M 16,3 A 13,13 0 0,0 5.5,23.5 C 7.5,15.5 12,9 16,3 Z" fill="#FAF8F5"/>
+              <path d="M 16,29 A 13,13 0 0,0 26.5,8.5 C 24.5,16.5 20,23 16,29 Z" fill="#FAF8F5"/>
+            </svg>
+            <h1>Opti-X Labs</h1>
+          </div>
+
+          <div class="login-title-group">
+            <h2 class="login-main-heading">Staff sign in</h2>
+            <p class="login-main-subheading">Access your laboratory workspace.</p>
           </div>
 
           ${errorMessage ? `
@@ -455,41 +404,38 @@ function renderLogin(errorMessage = '') {
             </div>
           ` : ''}
 
-          <form id="login-form" class="login-form" novalidate>
-            <div class="form-group">
-              <label for="username">Staff Username / Operator ID</label>
-              <div class="input-with-icon">
-                <span class="input-icon-slot">${uiIcon('user', 16)}</span>
-                <input type="text" id="username" name="username" placeholder="e.g. anandlab" required autocomplete="username" spellcheck="false" ${isLocked ? 'disabled' : ''} />
-              </div>
+          <form id="login-form" class="login-clean-form" novalidate>
+            <div class="login-field-group">
+              <label for="username" class="login-label">Username</label>
+              <input type="text" id="username" name="username" class="login-text-input" placeholder="Enter your username" required autocomplete="username" spellcheck="false" ${isLocked ? 'disabled' : ''} />
             </div>
 
-            <div class="form-group">
-              <label for="password">Access Password</label>
-              <div class="input-with-icon">
-                <span class="input-icon-slot">${uiIcon('lock', 16)}</span>
-                <input type="password" id="password" name="password" placeholder="••••••••••••" required autocomplete="current-password" ${isLocked ? 'disabled' : ''} />
-                <button type="button" class="btn-toggle-pwd" id="btn-toggle-pwd" title="Toggle password visibility" tabindex="-1">
-                  <span class="eye-open">${uiIcon('eye', 16)}</span>
-                  <span class="eye-closed" style="display:none;">${uiIcon('eye-off', 16)}</span>
+            <div class="login-field-group">
+              <label for="password" class="login-label">Password</label>
+              <div class="login-pwd-container">
+                <input type="password" id="password" name="password" class="login-text-input" placeholder="Enter your password" required autocomplete="current-password" ${isLocked ? 'disabled' : ''} />
+                <button type="button" class="login-eye-toggle" id="btn-toggle-pwd" title="Toggle password visibility" tabindex="-1">
+                  <span class="eye-open">${uiIcon('eye', 18)}</span>
+                  <span class="eye-closed" style="display:none;">${uiIcon('eye-off', 18)}</span>
                 </button>
               </div>
             </div>
 
-            <button type="submit" id="login-submit-btn" class="btn btn-primary btn-block btn-clinical-login" ${isLocked ? 'disabled' : ''}>
-              <span>Sign In to Labflow</span>
-              ${uiIcon('arrow-right', 16)}
+            <button type="submit" id="login-submit-btn" class="login-wine-btn" ${isLocked ? 'disabled' : ''}>
+              <span>Sign in</span>
+              <span class="login-btn-arrow">&rarr;</span>
             </button>
           </form>
 
-          <div class="login-hint-pill">
-            ${uiIcon('info', 14)}
-            <span>Default Laboratory Incharge: <strong>anandlab</strong></span>
-          </div>
+          <a href="#support" class="login-support-link" id="login-support-link">Contact support</a>
 
-          <div class="login-compliance-footer">
-            <p>${uiIcon('shield-check', 13)} Confidential Clinical Records &bull; DPDPA &amp; DISHA Compliant</p>
-            <small>Support: <strong>hello@opti-x.in</strong> | Toll-free: <strong>8123649448</strong></small>
+          <div class="login-card-footer">
+            <div class="login-footer-divider"></div>
+            <div class="login-footer-contacts">
+              <a href="mailto:hello@opti-x.in">hello@opti-x.in</a>
+              <span class="login-footer-sep">|</span>
+              <a href="tel:8123649448">8123649448</a>
+            </div>
           </div>
         </div>
       </div>
@@ -497,6 +443,14 @@ function renderLogin(errorMessage = '') {
 
   const form = document.getElementById('login-form');
   form.addEventListener('submit', handleLogin);
+
+  const supportLink = document.getElementById('login-support-link');
+  if (supportLink) {
+    supportLink.addEventListener('click', (e) => {
+      e.preventDefault();
+      showToast('Laboratory Helpdesk: Toll-Free 8123649448 | hello@opti-x.in | Direct: 6361303305', 'info');
+    });
+  }
 
   const toggleBtn = document.getElementById('btn-toggle-pwd');
   if (toggleBtn) {
@@ -593,7 +547,28 @@ async function loadReferenceData() {
   try {
     // 1. Settings
     const { data: settings } = await state.supabase.from('lab_settings').select('*').limit(1).maybeSingle();
-    if (settings) state.labSettings = settings;
+    state.labSettings = {
+      lab_name: 'Anand Laboratory',
+      address: 'Silk Filature Quarters Road, Ward No. 14, Sidlaghatta – 562105, Chikkaballapur (Dist.)',
+      phone: '6361303305',
+      email: 'anandhealthcaresdl@gmail.com',
+      working_hours: '7:00 AM – 9:00 PM (All 7 Days)',
+      report_footer: 'Results relate only to the sample tested. Please correlate with clinical findings.',
+      letterhead_template: 'classic',
+      ...(settings || {})
+    };
+    if (!state.labSettings.lab_name || state.labSettings.lab_name === 'Anand Diagnostic Center') {
+      state.labSettings.lab_name = 'Anand Laboratory';
+    }
+    if (!state.labSettings.address || state.labSettings.address.includes('Vijayanagar')) {
+      state.labSettings.address = 'Silk Filature Quarters Road, Ward No. 14, Sidlaghatta – 562105, Chikkaballapur (Dist.)';
+    }
+    if (!state.labSettings.email || state.labSettings.email === 'hello@opti-x.in') {
+      state.labSettings.email = 'anandhealthcaresdl@gmail.com';
+    }
+    if (!state.labSettings.phone) {
+      state.labSettings.phone = '6361303305';
+    }
 
     // 2. Doctors
     const { data: docs } = await state.supabase.from('doctors').select('*').order('name');
@@ -770,17 +745,17 @@ function renderNewBillForm(container) {
             </div>
           </div>
           <div class="card-body">
-            <div class="form-row">
-              <div class="form-group col-3">
-                <label>Title *</label>
+            <div class="form-row patient-name-row">
+              <div class="form-group col-title">
+                <label for="patient-title">Title *</label>
                 <select id="patient-title">
                   ${['Mr', 'Mrs', 'Ms', 'Master', 'Miss', 'Baby', 'B/O', 'Dr', 'Prof'].map(t =>
     `<option value="${t}" ${state.newBill.patient.title === t ? 'selected' : ''}>${t}</option>`
   ).join('')}
                 </select>
               </div>
-              <div class="form-group col-9">
-                <label>Full Patient Name *</label>
+              <div class="form-group col-fullname">
+                <label for="patient-fullname">Full Patient Name *</label>
                 <input type="text" id="patient-fullname" placeholder="Enter patient full name" value="${escapeHTML(state.newBill.patient.fullName)}" required />
               </div>
             </div>
@@ -788,10 +763,10 @@ function renderNewBillForm(container) {
             <div class="form-row">
               <div class="form-group col-6">
                 <label>Gender *</label>
-                <div class="radio-toggle-group">
+                <div class="radio-toggle-group" role="radiogroup" aria-label="Gender selection">
                   ${['Male', 'Female', 'Other'].map(g => `
-                    <label class="radio-label">
-                      <input type="radio" name="patient-sex" value="${g}" ${state.newBill.patient.sex === g ? 'checked' : ''} />
+                    <label class="radio-label ${state.newBill.patient.sex === g ? 'active' : ''}">
+                      <input type="radio" name="patient-sex" value="${g}" ${state.newBill.patient.sex === g ? 'checked' : ''} tabindex="0" />
                       <span>${g}</span>
                     </label>
                   `).join('')}
@@ -800,7 +775,7 @@ function renderNewBillForm(container) {
               <div class="form-group col-6">
                 <label>Age *</label>
                 <div class="input-unit-group">
-                  <input type="number" id="patient-age-val" min="0" max="150" placeholder="Age" value="${escapeHTML(state.newBill.patient.ageValue)}" required />
+                  <input type="number" id="patient-age-val" class="tabular-nums" min="0" max="150" placeholder="Age" value="${escapeHTML(state.newBill.patient.ageValue)}" required />
                   <select id="patient-age-unit">
                     <option value="Y" ${state.newBill.patient.ageUnit === 'Y' ? 'selected' : ''}>Years</option>
                     <option value="M" ${state.newBill.patient.ageUnit === 'M' ? 'selected' : ''}>Months</option>
@@ -912,26 +887,31 @@ function renderNewBillForm(container) {
         <div class="card">
           <div class="card-header">
             <h3>3. Test Catalog Selection</h3>
-            <input type="text" id="test-search-filter" class="table-search" placeholder="Filter tests..." />
+            <input type="text" id="test-search-filter" class="table-search" placeholder="Search tests by code or name..." />
           </div>
           <div class="card-body">
-            <div class="test-pill-container" id="test-catalog-pills">
+            <div class="test-pill-container test-catalog-list" id="test-catalog-pills">
               ${activeTests.map(t => {
     const isSelected = state.newBill.selectedTestIds.includes(t.id);
     return `
-                  <button type="button" class="test-pill ${isSelected ? 'selected' : ''}" data-test-id="${t.id}">
-                    <span class="test-pill-code">${escapeHTML(t.code)}</span>
-                    <span class="test-pill-name">${escapeHTML(t.name)}</span>
-                    <span class="test-pill-price">₹${t.price}</span>
-                  </button>`;
+                  <div class="test-pill test-list-row ${isSelected ? 'selected' : ''}" data-test-id="${t.id}" role="button" tabindex="0">
+                    <div class="test-list-left">
+                      <span class="test-pill-code">${escapeHTML(t.code)}</span>
+                      <span class="test-pill-name">${escapeHTML(t.name)}</span>
+                    </div>
+                    <div class="test-list-right">
+                      <span class="test-pill-price tabular-nums text-right">₹${t.price}</span>
+                      <span class="test-pill-action">${isSelected ? '✓ Added' : '+ Add'}</span>
+                    </div>
+                  </div>`;
   }).join('')}
             </div>
 
-            <!-- Selected Cart Table -->
+            <!-- Selected Cart & Payment Summary Together -->
             <div class="cart-section mt-4">
               <h4>Selected Tests (${selectedTests.length})</h4>
               ${selectedTests.length === 0 ? `
-                <div class="empty-cart-notice">No tests selected. Click tests above to add.</div>
+                <div class="empty-cart-notice">No tests selected. Choose tests from the list above.</div>
               ` : `
                 <table class="data-table cart-table">
                   <thead>
@@ -947,7 +927,7 @@ function renderNewBillForm(container) {
                       <tr>
                         <td><strong>${escapeHTML(t.name)}</strong> (${escapeHTML(t.code)})</td>
                         <td><small>${escapeHTML(t.sample_type)}</small></td>
-                        <td class="text-right">${formatCurrency(t.price)}</td>
+                        <td class="text-right tabular-nums">${formatCurrency(t.price)}</td>
                         <td class="text-center">
                           <button type="button" class="btn-remove-test" data-test-id="${t.id}" title="Remove test">&times;</button>
                         </td>
@@ -962,22 +942,22 @@ function renderNewBillForm(container) {
             <div class="billing-summary-box mt-4">
               <div class="summary-line">
                 <span>Subtotal:</span>
-                <strong>${formatCurrency(subtotal)}</strong>
+                <strong class="tabular-nums">${formatCurrency(subtotal)}</strong>
               </div>
 
               <div class="summary-line">
                 <span>Discount (₹):</span>
-                <input type="number" id="bill-discount" min="0" max="${subtotal}" value="${state.newBill.discount}" class="summary-input" />
+                <input type="number" id="bill-discount" min="0" max="${subtotal}" value="${state.newBill.discount}" class="summary-input tabular-nums" />
               </div>
 
-              <div class="summary-line highlight">
+              <div class="summary-line highlight net-total-highlight">
                 <span>Net Total:</span>
-                <strong class="total-amount">${formatCurrency(total)}</strong>
+                <strong class="total-amount tabular-nums">${formatCurrency(total)}</strong>
               </div>
 
               <div class="summary-line">
                 <span>Paid Amount (₹):</span>
-                <input type="number" id="bill-paid" min="0" max="${total}" value="${state.newBill.paidAmount !== undefined ? state.newBill.paidAmount : total}" class="summary-input" />
+                <input type="number" id="bill-paid" min="0" max="${total}" value="${state.newBill.paidAmount !== undefined ? state.newBill.paidAmount : total}" class="summary-input tabular-nums" />
               </div>
 
               <div class="summary-line">
@@ -989,15 +969,15 @@ function renderNewBillForm(container) {
                 </select>
               </div>
 
-              <div class="summary-line ${balance > 0 ? 'text-danger' : 'text-success'}">
+              <div class="summary-due-box ${balance > 0 ? 'has-due' : 'no-due'}">
                 <span>Balance Due:</span>
-                <strong>${formatCurrency(balance)}</strong>
+                <strong class="tabular-nums">${formatCurrency(balance)}</strong>
               </div>
             </div>
 
             <div class="mt-4">
               <button type="button" id="btn-submit-bill" class="btn btn-primary btn-lg btn-block" ${selectedTests.length === 0 ? 'disabled' : ''}>
-                ${uiIcon('credit-card', 18)} Create Bill &amp; Print Receipt
+                ${uiIcon('credit-card', 18)} Create bill &amp; print receipt
               </button>
             </div>
           </div>
@@ -1456,25 +1436,32 @@ function renderReportsModule(container) {
         <p>Result entry, automated reference interval flagging, and multi-template printing</p>
       </div>
       <div class="module-tabs">
-        <button class="tab-btn ${state.reportsSubTab === 'register' ? 'active' : ''}" id="tab-rep-register">${uiIcon('plus', 14)} New Registration</button>
         <button class="tab-btn ${state.reportsSubTab === 'pending' ? 'active' : ''}" id="tab-rep-pending">Pending Reports</button>
         <button class="tab-btn ${state.reportsSubTab === 'completed' ? 'active' : ''}" id="tab-rep-completed">Completed Reports</button>
         <button class="tab-btn ${state.reportsSubTab === 'all' ? 'active' : ''}" id="tab-rep-all">All Reports</button>
+        <button class="tab-btn hidden" id="tab-rep-register" style="display:none">New Registration</button>
       </div>
     </div>
     <div class="module-body">
       <div class="card">
         <div class="card-header">
-          <div class="filter-bar">
-            <button id="btn-quick-register-report" class="btn btn-primary btn-sm">${uiIcon('plus', 14)} Register Patient</button>
-            <input type="text" id="reports-search" placeholder="Search by patient, mobile, bill no..." class="table-search" value="${escapeHTML(state.reportsFilter.search)}" />
+          <div class="reports-toolbar">
+            <button id="btn-quick-register-report" class="btn btn-primary btn-register-patient">
+              ${uiIcon('plus', 16)} Register patient
+            </button>
+            <div class="toolbar-search-wrapper">
+              ${uiIcon('search', 16)}
+              <input type="text" id="reports-search" placeholder="Search by patient, mobile, bill no..." class="table-search" value="${escapeHTML(state.reportsFilter.search)}" />
+            </div>
             <select id="reports-filter-date" class="filter-select">
               <option value="Today" ${state.reportsFilter.dateRange === 'Today' ? 'selected' : ''}>Today</option>
               <option value="Yesterday" ${state.reportsFilter.dateRange === 'Yesterday' ? 'selected' : ''}>Yesterday</option>
               <option value="Week" ${state.reportsFilter.dateRange === 'Week' ? 'selected' : ''}>Last 7 Days</option>
               <option value="All" ${state.reportsFilter.dateRange === 'All' ? 'selected' : ''}>All Time</option>
             </select>
-            <button id="btn-refresh-reports" class="btn btn-outline btn-sm">${uiIcon('refresh', 14)} Refresh</button>
+            <button id="btn-refresh-reports" class="btn btn-outline btn-refresh">
+              ${uiIcon('refresh', 16)} Refresh
+            </button>
           </div>
         </div>
         <div class="card-body">
@@ -1583,28 +1570,28 @@ async function loadReportsTable() {
       const total = bill.net_amount ?? bill.total_amount ?? bill.total ?? 0;
       const paid = bill.paid_amount ?? 0;
       const bal = Math.max(0, total - paid);
-      const billStatus = bill.payment_status || (bal === 0 && total > 0 ? 'Paid' : (paid > 0 ? 'Partial' : 'Pending'));
+      const billStatus = (bal === 0 && total > 0) ? 'Paid' : (paid > 0 ? 'Partial' : 'Unpaid');
       return `
               <tr>
                 <td>
                   <strong>${escapeHTML(bill.bill_no || '—')}</strong>
-                  <div><small style="color: var(--primary, #006b76); font-weight: 600;">${r.patients?.patient_no || ''}</small></div>
+                  <div><small style="color: var(--primary-action, #004F49); font-weight: 600;">${r.patients?.patient_no || ''}</small></div>
                 </td>
-                <td>
+                <td class="tabular-nums">
                   ${formatDate(r.created_at)}
-                  <div><small style="color: #64748b;">${new Date(r.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</small></div>
                 </td>
                 <td>
-                  <strong>${escapeHTML(r.patients?.full_name || '—')}</strong>
-                  <div><small>${r.patients?.sex || ''}, ${r.patients?.age_value || ''}${r.patients?.age_unit || ''} · 📱 ${escapeHTML(r.patients?.mobile || 'No mobile')}</small></div>
+                  <div class="patient-cell-grouped">
+                    <strong>${escapeHTML(r.patients?.full_name || '—')}</strong>
+                    <div class="small-muted">${r.patients?.sex || ''}, ${r.patients?.age_value || ''}${r.patients?.age_unit || ''} · ${escapeHTML(r.patients?.mobile || 'No mobile')}</div>
+                  </div>
                 </td>
                 <td>${escapeHTML(bill.doctors?.name || 'Self / Walk-in')}</td>
                 <td><span class="test-codes-badge">${uniqueTestCodes.join(', ')}</span></td>
                 <td>
                   <div class="report-bill-summary">
-                    <strong>₹ ${total}</strong>
-                    <div class="small-muted">Paid: ₹ ${paid}${bal > 0 ? ` · <span class="text-danger font-bold">Due: ₹ ${bal}</span>` : ''}</div>
                     <span class="badge badge-${billStatus.toLowerCase()}">${billStatus}</span>
+                    <div class="tabular-nums small-muted">₹ ${total}${bal > 0 ? ` · <span class="text-danger font-bold">Due: ₹ ${bal}</span>` : ''}</div>
                   </div>
                 </td>
                 <td class="text-center">
@@ -1614,7 +1601,7 @@ async function loadReportsTable() {
                   ${r.status === 'Pending' ? `
                     <div class="table-actions">
                       <button class="btn btn-primary btn-sm btn-enter-results" data-id="${r.id}">
-                        ${uiIcon('edit', 14)} Enter Results
+                        ${uiIcon('edit', 14)} Enter results
                       </button>
                       ${bill.id ? `
                         <button class="btn btn-outline btn-sm btn-print-bill" data-bill-id="${bill.id}" title="Print Invoice / Bill">
@@ -1625,11 +1612,11 @@ async function loadReportsTable() {
                   ` : `
                     <div class="table-actions">
                       <button class="btn btn-primary btn-sm btn-print-report" data-id="${r.id}">
-                        ${uiIcon('printer', 14)} Print Report
+                        ${uiIcon('printer', 14)} Print report
                       </button>
                       ${bill.id ? `
                         <button class="btn btn-outline btn-sm btn-print-bill" data-bill-id="${bill.id}">
-                          ${uiIcon('credit-card', 14)} Print Bill
+                          ${uiIcon('credit-card', 14)} Bill
                         </button>
                       ` : ''}
                       <button class="btn btn-outline-danger btn-xs btn-reopen-report" data-id="${r.id}" title="Reopen for editing">
@@ -1707,16 +1694,22 @@ function renderResultEntryForm(container) {
     <div class="result-entry-container">
       <div class="result-entry-header card">
         <div class="patient-banner">
-          <div>
-            <h2>${escapeHTML(r.patients.title)} ${escapeHTML(r.patients.full_name)}</h2>
-            <p>Patient Reg No: <strong>${r.patients.patient_no}</strong> | Age/Sex: <strong>${r.patients.age_value} ${r.patients.age_unit} / ${r.patients.sex}</strong> | Mobile: <strong>${escapeHTML(r.patients.mobile || '—')}</strong></p>
+          <div class="patient-banner-top">
+            <button id="btn-back-to-reports" class="btn btn-outline btn-sm">← Back to reports</button>
+            <div class="patient-status-chip">
+              <span class="badge badge-${(r.status || 'pending').toLowerCase()}">${r.status || 'Pending'}</span>
+            </div>
           </div>
-          <div>
-            <p>Invoice / Bill: <strong>${r.bills.bill_no}</strong> | Reg Date: <strong>${formatDate(r.created_at)} ${new Date(r.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</strong></p>
-            <p>Referred By: <strong>${escapeHTML(r.bills.doctors?.name || 'Self / Walk-in')}</strong></p>
-          </div>
-          <div class="banner-actions">
-            <button id="btn-back-to-reports" class="btn btn-outline btn-sm">← Back to Reports</button>
+          <div class="patient-banner-info">
+            <h2>${escapeHTML(r.patients.title || '')} ${escapeHTML(r.patients.full_name)}</h2>
+            <div class="patient-meta-row">
+              <span class="patient-meta-pill">Patient Reg No: <strong class="tabular-nums">${r.patients.patient_no}</strong></span>
+              <span class="patient-meta-pill">Age / Sex: <strong class="tabular-nums">${r.patients.age_value} ${r.patients.age_unit} / ${r.patients.sex}</strong></span>
+              <span class="patient-meta-pill">Mobile: <strong class="tabular-nums">${escapeHTML(r.patients.mobile || '—')}</strong></span>
+              <span class="patient-meta-pill">Invoice / Bill: <strong class="tabular-nums">${r.bills?.bill_no || '—'}</strong></span>
+              <span class="patient-meta-pill">Reg Date: <strong class="tabular-nums">${formatDate(r.created_at)}</strong></span>
+              <span class="patient-meta-pill">Referred By: <strong>${escapeHTML(r.bills?.doctors?.name || 'Self / Walk-in')}</strong></span>
+            </div>
           </div>
         </div>
       </div>
@@ -1725,18 +1718,18 @@ function renderResultEntryForm(container) {
         ${Object.entries(grouped).map(([code, rows]) => {
     const testMeta = state.testsCatalog.find(t => t.code === code) || TESTS[code] || {};
     return `
-            <div class="card mb-4">
+            <div class="card mb-4 test-section-card">
               <div class="card-header bg-subtle">
-                <h3>${escapeHTML(testMeta.name || code)} <small>(${escapeHTML(testMeta.department || 'Clinical Lab')} · ${escapeHTML(testMeta.sample_type || testMeta.sample || 'Specimen')})</small></h3>
+                <h3>${escapeHTML(testMeta.name || code)} <small class="text-secondary">(${escapeHTML(testMeta.department || 'Clinical Lab')} · ${escapeHTML(testMeta.sample_type || testMeta.sample || 'Specimen')})</small></h3>
               </div>
               <div class="card-body">
                 <table class="data-table result-input-table">
                   <thead>
                     <tr>
-                      <th style="width: 35%">Parameter</th>
-                      <th style="width: 25%">Result Value</th>
+                      <th style="width: 34%">Parameter</th>
+                      <th style="width: 26%">Result</th>
                       <th style="width: 15%">Unit</th>
-                      <th style="width: 25%">Biological Reference Interval</th>
+                      <th style="width: 25%">Reference interval</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -1751,14 +1744,14 @@ function renderResultEntryForm(container) {
                             <div class="result-input-wrapper">
                               <input
                                 type="text"
-                                class="result-value-input"
+                                class="result-value-input tabular-nums"
                                 data-id="${row.id}"
                                 data-min="${row.min_val ?? ''}"
                                 data-max="${row.max_val ?? ''}"
                                 data-crit-min="${row.critical_min ?? ''}"
                                 data-crit-max="${row.critical_max ?? ''}"
                                 value="${escapeHTML(row.value || '')}"
-                                placeholder="Enter value"
+                                placeholder="Enter result"
                               />
                               <span class="flag-badge flag-${initialFlag.toLowerCase()}" id="flag-${row.id}">${initialFlag}</span>
                             </div>
@@ -1774,13 +1767,13 @@ function renderResultEntryForm(container) {
             </div>`;
   }).join('')}
 
-        <div class="card mb-4">
-          <div class="card-header">
+        <div class="card mb-4 clinical-notes-card">
+          <div class="card-header bg-subtle">
             <h3>Clinical Notes &amp; Interpretation</h3>
           </div>
           <div class="card-body">
-            <textarea id="report-clinical-notes" rows="4" class="form-control">${escapeHTML(defaultNotes)}</textarea>
-            <small class="muted">Standard clinical panel notes. Editable prior to final authorization.</small>
+            <textarea id="report-clinical-notes" rows="4" class="form-control clinical-notes-textarea" placeholder="Enter clinical interpretation, remarks or correlation notes...">${escapeHTML(defaultNotes)}</textarea>
+            <p class="field-helper-text">Standard clinical panel notes. Editable prior to final authorization.</p>
           </div>
         </div>
 
@@ -1788,48 +1781,48 @@ function renderResultEntryForm(container) {
         <div class="card mb-4 report-billing-card">
           <div class="card-header bg-subtle d-flex justify-between align-center">
             <h3>${uiIcon('credit-card', 16)} Diagnostic Billing &amp; Invoice Ledger</h3>
-            <span class="badge badge-${(r.bills?.payment_status || 'paid').toLowerCase()}">${r.bills?.payment_status || 'Paid'}</span>
+            <div class="d-flex align-center gap-2">
+              ${r.bills?.id ? `
+                <button type="button" class="btn btn-outline btn-sm" id="btn-print-bill-entry">
+                  ${uiIcon('printer', 14)} Print receipt
+                </button>
+              ` : ''}
+              <span class="badge badge-${(r.bills?.payment_status || 'paid').toLowerCase()}">${r.bills?.payment_status || 'Paid'}</span>
+            </div>
           </div>
           <div class="card-body">
             <div class="report-billing-grid">
               <div class="stat-item">
                 <span class="stat-label">Bill / Invoice No</span>
-                <span class="stat-value"><strong>${escapeHTML(r.bills?.bill_no || '—')}</strong></span>
+                <span class="stat-value tabular-nums"><strong>${escapeHTML(r.bills?.bill_no || '—')}</strong></span>
               </div>
               <div class="stat-item">
                 <span class="stat-label">Subtotal</span>
-                <span class="stat-value">₹ ${r.bills?.subtotal ?? r.bills?.total_amount ?? r.bills?.total ?? 0}</span>
+                <span class="stat-value tabular-nums">₹ ${r.bills?.subtotal ?? r.bills?.total_amount ?? r.bills?.total ?? 0}</span>
               </div>
               <div class="stat-item">
                 <span class="stat-label">Discount Applied</span>
-                <span class="stat-value">₹ ${r.bills?.discount ?? 0}</span>
+                <span class="stat-value tabular-nums">₹ ${r.bills?.discount ?? 0}</span>
               </div>
               <div class="stat-item">
                 <span class="stat-label">Net Payable</span>
-                <span class="stat-value font-bold text-primary">₹ ${r.bills?.net_amount ?? r.bills?.total_amount ?? r.bills?.total ?? 0}</span>
+                <span class="stat-value font-bold text-primary tabular-nums">₹ ${r.bills?.net_amount ?? r.bills?.total_amount ?? r.bills?.total ?? 0}</span>
               </div>
               <div class="stat-item">
                 <span class="stat-label">Amount Paid</span>
-                <span class="stat-value text-success font-bold">₹ ${r.bills?.paid_amount ?? 0}</span>
+                <span class="stat-value text-success font-bold tabular-nums">₹ ${r.bills?.paid_amount ?? 0}</span>
               </div>
               <div class="stat-item">
                 <span class="stat-label">Balance Due</span>
-                <span class="stat-value ${(r.bills?.balance_amount || 0) > 0 ? 'text-danger font-bold' : ''}">₹ ${r.bills?.balance_amount ?? 0}</span>
+                <span class="stat-value tabular-nums ${(r.bills?.balance_amount || 0) > 0 ? 'text-danger font-bold' : ''}">₹ ${r.bills?.balance_amount ?? 0}</span>
               </div>
             </div>
-            ${r.bills?.id ? `
-              <div class="mt-3">
-                <button type="button" class="btn btn-outline btn-sm" id="btn-print-bill-entry">
-                  ${uiIcon('printer', 14)} Print Bill / Thermal Receipt
-                </button>
-              </div>
-            ` : ''}
           </div>
         </div>
 
         <div class="form-actions sticky-actions">
-          <button type="button" id="btn-save-progress" class="btn btn-outline btn-lg">${uiIcon('save', 16)} Save Progress</button>
-          <button type="button" id="btn-complete-report" class="btn btn-primary btn-lg">${uiIcon('check-circle', 16)} Mark as Completed &amp; Print</button>
+          <button type="button" id="btn-save-progress" class="btn btn-outline btn-lg">${uiIcon('save', 16)} Save progress</button>
+          <button type="button" id="btn-complete-report" class="btn btn-primary btn-lg">${uiIcon('check-circle', 16)} Mark as completed &amp; print</button>
         </div>
       </form>
     </div>`;
@@ -2009,7 +2002,7 @@ async function openReceiptModal(billId) {
     const modalContainer = document.getElementById('modal-container');
     modalContainer.innerHTML = `
       <div class="modal-overlay">
-        <div class="modal-dialog modal-lg">
+        <div class="modal-dialog modal-xl">
           <div class="modal-header">
             <h3>Diagnostic Bill &amp; Payment Receipt</h3>
             <button class="modal-close" id="modal-close-btn">&times;</button>
@@ -2102,7 +2095,7 @@ function generateBillBarcode(code) {
     x += 1.8;
   }
   const totalWidth = Math.ceil(x + 4);
-  return `<svg class="ref-barcode-svg" viewBox="0 0 ${totalWidth} 29" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">
+  return `<svg class="ref-barcode-svg" viewBox="0 0 ${totalWidth} 29" width="${totalWidth}" height="29" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">
     ${bars.join('')}
     <text x="${(totalWidth / 2).toFixed(1)}" y="27" font-family="monospace" font-size="7.5" font-weight="700" letter-spacing="1" text-anchor="middle" fill="#1e293b">${escapeHTML(textStr)}</text>
   </svg>`;
@@ -2185,8 +2178,8 @@ function formatPatientTitle(patients) {
 
 function generateReceiptHTML(bill, lab, format = 'a4', fullPage = false) {
   const inWords = numberToWords(bill.paid_amount || bill.total);
-  const labName = lab.lab_name || 'Anand Laboratory';
-  const labAddr = lab.address || 'Silk Filature Quarters Road, Ward No. 14, Sidlaghatta – 562105, Chikkaballapur (Dist.)';
+  const labName = (lab.lab_name && lab.lab_name !== 'Anand Diagnostic Center') ? lab.lab_name : 'Anand Laboratory';
+  const labAddr = (lab.address && !lab.address.includes('Vijayanagar')) ? lab.address : 'Silk Filature Quarters Road, Ward No. 14, Sidlaghatta – 562105, Chikkaballapur (Dist.)';
   const labPhone = lab.phone || '6361303305';
   const labEmail = 'anandhealthcaresdl@gmail.com';
   const patientDisplayName = formatPatientTitle(bill.patients);
@@ -2481,10 +2474,10 @@ async function openReportPrintPreview(reportId) {
     };
 
     const settingsAdapter = {
-      labName: state.labSettings.lab_name,
-      address: state.labSettings.address,
-      phone: state.labSettings.phone,
-      email: state.labSettings.email,
+      labName: (state.labSettings.lab_name && state.labSettings.lab_name !== 'Anand Diagnostic Center') ? state.labSettings.lab_name : 'Anand Laboratory',
+      address: (state.labSettings.address && !state.labSettings.address.includes('Vijayanagar')) ? state.labSettings.address : 'Silk Filature Quarters Road, Ward No. 14, Sidlaghatta – 562105, Chikkaballapur (Dist.)',
+      phone: state.labSettings.phone || '6361303305',
+      email: 'anandhealthcaresdl@gmail.com',
       registration: state.labSettings.registration_no,
       pathologist: state.labSettings.pathologist_name,
       pathologistQualification: state.labSettings.pathologist_qualification,
@@ -2580,7 +2573,7 @@ function renderSettingsModule(container) {
         <h1>Laboratory Settings &amp; Compliance</h1>
         <p>Lab profile, doctors, referral sources, test catalog pricing, helpdesk and privacy compliance</p>
       </div>
-      <div class="module-tabs">
+      <div class="module-tabs settings-tabs-scroll">
         <button class="tab-btn ${state.settingsSubTab === 'profile' ? 'active' : ''}" id="tab-set-profile">Lab Details &amp; Letterhead</button>
         <button class="tab-btn ${state.settingsSubTab === 'doctors' ? 'active' : ''}" id="tab-set-doctors">Doctors Directory</button>
         <button class="tab-btn ${state.settingsSubTab === 'referrals' ? 'active' : ''}" id="tab-set-referrals">Referral Sources</button>
@@ -2613,30 +2606,44 @@ function renderSettingsModule(container) {
 function renderLabProfileSettings(container) {
   const lab = state.labSettings;
   container.innerHTML = `
-    <div class="card">
-      <div class="card-header">
-        <h3>Laboratory Profile &amp; Letterhead Customization</h3>
-      </div>
-      <div class="card-body">
-        <form id="lab-profile-form">
+    <form id="lab-profile-form">
+      <!-- 1. Identity -->
+      <div class="card mb-4">
+        <div class="card-header">
+          <h3>1. Laboratory Identity</h3>
+        </div>
+        <div class="card-body">
           <div class="form-row">
             <div class="form-group col-6">
               <label>Laboratory Name *</label>
               <input type="text" id="lab-name" value="${escapeHTML(lab.lab_name || '')}" required />
             </div>
             <div class="form-group col-6">
+              <label>Registration / License No.</label>
+              <input type="text" id="lab-reg" value="${escapeHTML(lab.registration_no || '')}" />
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group col-12">
               <label>Tagline / Motto</label>
               <input type="text" id="lab-tagline" value="${escapeHTML(lab.tagline || '')}" />
             </div>
           </div>
+        </div>
+      </div>
 
+      <!-- 2. Contact Details -->
+      <div class="card mb-4">
+        <div class="card-header">
+          <h3>2. Contact Details</h3>
+        </div>
+        <div class="card-body">
           <div class="form-row">
             <div class="form-group col-12">
               <label>Full Physical Address</label>
               <input type="text" id="lab-address" value="${escapeHTML(lab.address || '')}" />
             </div>
           </div>
-
           <div class="form-row">
             <div class="form-group col-4">
               <label>Phone Number</label>
@@ -2647,13 +2654,21 @@ function renderLabProfileSettings(container) {
               <input type="email" id="lab-email" value="${escapeHTML(lab.email || '')}" />
             </div>
             <div class="form-group col-4">
-              <label>Registration / License No.</label>
-              <input type="text" id="lab-reg" value="${escapeHTML(lab.registration_no || '')}" />
+              <label>Working Hours</label>
+              <input type="text" id="lab-hours" value="${escapeHTML(lab.working_hours || '')}" />
             </div>
           </div>
+        </div>
+      </div>
 
+      <!-- 3. Letterhead & Printing -->
+      <div class="card mb-4">
+        <div class="card-header">
+          <h3>3. Letterhead &amp; Printing</h3>
+        </div>
+        <div class="card-body">
           <div class="form-row">
-            <div class="form-group col-6">
+            <div class="form-group col-12">
               <label>Default Letterhead Theme</label>
               <select id="lab-template">
                 ${REPORT_TEMPLATES.map(t =>
@@ -2661,25 +2676,19 @@ function renderLabProfileSettings(container) {
   ).join('')}
               </select>
             </div>
-            <div class="form-group col-6">
-              <label>Working Hours</label>
-              <input type="text" id="lab-hours" value="${escapeHTML(lab.working_hours || '')}" />
-            </div>
           </div>
-
           <div class="form-row">
             <div class="form-group col-12">
               <label>Report Footer Disclaimer</label>
               <input type="text" id="lab-footer" value="${escapeHTML(lab.report_footer || '')}" />
             </div>
           </div>
-
           <div class="mt-3">
             <button type="submit" class="btn btn-primary">Save Laboratory Settings</button>
           </div>
-        </form>
+        </div>
       </div>
-    </div>`;
+    </form>`;
 
   document.getElementById('lab-profile-form').addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -3003,49 +3012,34 @@ function renderSupportPage(container) {
   container.innerHTML = `
     <div class="support-page-wrapper">
       <div class="card mb-4">
-        <div class="card-header bg-subtle d-flex justify-between align-center">
+        <div class="card-header d-flex justify-between align-center">
           <div>
             <h3>${uiIcon('phone', 18)} Clinical Helpdesk &amp; Technical Support</h3>
-            <p class="muted mt-1">Official 24/7 technical assistance and customer care for Anand Laboratory &amp; Dr. Anand Hospital staff</p>
+            <p class="text-secondary mt-1">Official assistance and care for ${escapeHTML(state.labSettings.lab_name || 'Anand Laboratory')} &amp; Dr. Anand Hospital staff</p>
           </div>
           <span class="badge badge-paid">Support Active</span>
         </div>
         <div class="card-body">
-          <div class="support-grid">
-            <div class="support-contact-box primary-contact">
-              <div class="contact-icon">${uiIcon('phone', 24)}</div>
-              <div class="contact-details">
-                <span class="contact-type">TOLL-FREE HELPDESK</span>
-                <span class="contact-value"><a href="tel:8123649448">8123649448</a></span>
-                <p class="contact-hint">24x7 Priority technical assistance for billing, printing, and LIS sync</p>
-              </div>
+          <div class="support-contact-rows">
+            <div class="support-contact-row">
+              <span class="sc-label">Toll-Free Helpdesk</span>
+              <span class="sc-val"><a href="tel:8123649448" class="tabular-nums font-bold">8123649448</a></span>
+              <span class="sc-desc small-muted">24x7 Priority technical assistance for billing, printing &amp; sync</span>
             </div>
-
-            <div class="support-contact-box">
-              <div class="contact-icon">${uiIcon('mail', 24)}</div>
-              <div class="contact-details">
-                <span class="contact-type">OFFICIAL EMAIL SUPPORT</span>
-                <span class="contact-value"><a href="mailto:hello@opti-x.in">hello@opti-x.in</a></span>
-                <p class="contact-hint">Guaranteed response within 2 hours for bug reports, catalog additions &amp; escalations</p>
-              </div>
+            <div class="support-contact-row">
+              <span class="sc-label">Official Email</span>
+              <span class="sc-val"><a href="mailto:hello@opti-x.in" class="font-bold">hello@opti-x.in</a></span>
+              <span class="sc-desc small-muted">Guaranteed response within 2 hours for catalog and technical escalations</span>
             </div>
-
-            <div class="support-contact-box">
-              <div class="contact-icon">${uiIcon('printer', 24)}</div>
-              <div class="contact-details">
-                <span class="contact-type">DIRECT LAB DISPATCH LINE</span>
-                <span class="contact-value"><a href="tel:6361303305">6361303305</a></span>
-                <p class="contact-hint">Anand Laboratory &amp; General Stores dispatch &amp; sample queries</p>
-              </div>
+            <div class="support-contact-row">
+              <span class="sc-label">Direct Lab Line</span>
+              <span class="sc-val"><a href="tel:${escapeHTML(state.labSettings.phone || '6361303305')}" class="tabular-nums font-bold">${escapeHTML(state.labSettings.phone || '6361303305')}</a></span>
+              <span class="sc-desc small-muted">${escapeHTML(state.labSettings.lab_name || 'Anand Laboratory')} dispatch &amp; sample desk</span>
             </div>
-
-            <div class="support-contact-box">
-              <div class="contact-icon">${uiIcon('shield-check', 24)}</div>
-              <div class="contact-details">
-                <span class="contact-type">PHYSICAL LABORATORY LOCATION</span>
-                <span class="contact-value-text">Silk Filature Quarters Road, Ward No. 14, Sidlaghatta – 562105, Chikkaballapur (Dist.), Karnataka</span>
-                <p class="contact-hint">Dr. Anand Hospital &amp; Anand Diagnostic Center</p>
-              </div>
+            <div class="support-contact-row">
+              <span class="sc-label">Physical Address</span>
+              <span class="sc-val">${escapeHTML(state.labSettings.address || 'Silk Filature Quarters Road, Ward No. 14, Sidlaghatta – 562105, Chikkaballapur (Dist.)')}</span>
+              <span class="sc-desc small-muted">Dr. Anand Hospital &amp; Anand Diagnostic Center</span>
             </div>
           </div>
         </div>
@@ -3057,10 +3051,11 @@ function renderSupportPage(container) {
             <h3>${uiIcon('clock', 16)} Laboratory Operating Hours</h3>
           </div>
           <div class="card-body">
-            <ul class="support-hours-list">
-              <li><strong>Monday – Saturday:</strong> <span>7:00 AM – 9:00 PM</span></li>
-              <li><strong>Sunday:</strong> <span>8:00 AM – 2:00 PM</span></li>
-              <li><strong>Emergency &amp; Critical Samples:</strong> <span class="badge badge-paid">24 / 7 on Call</span></li>
+            <ul class="support-key-val-list">
+              <li><span>Monday – Saturday:</span> <strong class="tabular-nums">7:00 AM – 9:00 PM</strong></li>
+              <li><span>Sunday:</span> <strong class="tabular-nums">8:00 AM – 2:00 PM</strong></li>
+              <li><span>Configured Schedule:</span> <strong class="tabular-nums">${escapeHTML(state.labSettings.working_hours || '7:00 AM – 9:00 PM (All 7 Days)')}</strong></li>
+              <li><span>Emergency &amp; Critical Samples:</span> <span class="badge badge-paid">24 / 7 on Call</span></li>
             </ul>
           </div>
         </div>
@@ -3070,10 +3065,10 @@ function renderSupportPage(container) {
             <h3>${uiIcon('database', 16)} Diagnostic Engine Status</h3>
           </div>
           <div class="card-body">
-            <ul class="system-status-list">
+            <ul class="support-key-val-list">
               <li><span>Cloud Database (PostgreSQL):</span> <strong class="text-success">${uiIcon('check-circle', 14)} Connected &amp; Synced</strong></li>
               <li><span>Local Credential Vault:</span> <strong class="text-success">${uiIcon('check-circle', 14)} SafeStorage AES-256 Enabled</strong></li>
-              <li><span>Report Print Engine:</span> <strong class="text-success">${uiIcon('check-circle', 14)} Hospital Letterhead Vector Ready</strong></li>
+              <li><span>Letterhead Vector Ready:</span> <strong class="text-success">${uiIcon('check-circle', 14)} Dr. Anand Hospital Print Ready</strong></li>
               <li><span>Software Release:</span> <strong>Opti-X Labs Enterprise v2.4.0 (Hospital LIS)</strong></li>
             </ul>
           </div>
