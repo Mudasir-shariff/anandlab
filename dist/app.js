@@ -53,6 +53,7 @@ const state = {
     referralLabId: '',
     referralHospitalId: '',
     selectedTestIds: [],
+    paymentStatus: 'Paid',
     discount: 0,
     paidAmount: 0,
     paymentMode: 'Cash',
@@ -847,15 +848,114 @@ function renderBillingModule(container) {
   }
 }
 
+function syncBillFormToState() {
+  const el = (id) => document.getElementById(id);
+  const val = (id) => { const e = el(id); return e ? e.value : undefined; };
+  const title = val('patient-title');
+  if (title !== undefined) state.newBill.patient.title = title;
+  const fullName = val('patient-fullname');
+  if (fullName !== undefined) state.newBill.patient.fullName = fullName;
+  const sexRadio = document.querySelector('input[name="patient-sex"]:checked');
+  if (sexRadio) state.newBill.patient.sex = sexRadio.value;
+  const ageVal = val('patient-age-val');
+  if (ageVal !== undefined) state.newBill.patient.ageValue = ageVal;
+  const ageUnit = val('patient-age-unit');
+  if (ageUnit !== undefined) state.newBill.patient.ageUnit = ageUnit;
+  const height = val('patient-height');
+  if (height !== undefined) state.newBill.patient.height = height;
+  const weight = val('patient-weight');
+  if (weight !== undefined) state.newBill.patient.weight = weight;
+  const area = val('patient-area');
+  if (area !== undefined) state.newBill.patient.area = area;
+  const city = val('patient-city');
+  if (city !== undefined) state.newBill.patient.city = city;
+  const pincode = val('patient-pincode');
+  if (pincode !== undefined) state.newBill.patient.pincode = pincode;
+  const doctor = val('bill-doctor');
+  if (doctor !== undefined) state.newBill.doctorId = doctor || null;
+  const refLab = val('bill-referral-lab');
+  if (refLab !== undefined) state.newBill.referralLabId = refLab || null;
+  const refHosp = val('bill-referral-hosp');
+  if (refHosp !== undefined) state.newBill.referralHospitalId = refHosp || null;
+}
+
+function updateBillCartUI(container) {
+  const activeTests = state.testsCatalog.filter(t => t.active);
+  const selectedTests = activeTests.filter(t => state.newBill.selectedTestIds.includes(t.id));
+  const subtotal = selectedTests.reduce((sum, t) => sum + Number(t.price), 0);
+
+  // Update test pills active/selected state
+  container.querySelectorAll('.test-pill').forEach(pill => {
+    const id = pill.dataset.testId;
+    const isSelected = state.newBill.selectedTestIds.includes(id);
+    pill.classList.toggle('selected', isSelected);
+    const actionEl = pill.querySelector('.test-pill-action');
+    if (actionEl) {
+      actionEl.textContent = isSelected ? '✓ Added' : '+ Add';
+    }
+  });
+
+  // Update Cart section
+  const cartSection = container.querySelector('.cart-section');
+  if (cartSection) {
+    cartSection.innerHTML = `
+      <h4>Selected Tests (${selectedTests.length})</h4>
+      ${selectedTests.length === 0 ? `
+        <div class="empty-cart-notice">No tests selected. Choose tests from the list above.</div>
+      ` : `
+        <table class="data-table cart-table">
+          <thead>
+            <tr>
+              <th>Test Panel</th>
+              <th>Specimen</th>
+              <th class="text-right">Price</th>
+              <th class="text-center">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${selectedTests.map(t => `
+              <tr>
+                <td><strong>${escapeHTML(t.name)}</strong> (${escapeHTML(t.code)})</td>
+                <td><small>${escapeHTML(t.sample_type)}</small></td>
+                <td class="text-right tabular-nums">${formatCurrency(t.price)}</td>
+                <td class="text-center">
+                  <button type="button" class="btn-remove-test" data-test-id="${t.id}" title="Remove test">&times;</button>
+                </td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      `}
+    `;
+
+    cartSection.querySelectorAll('.btn-remove-test').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = btn.dataset.testId;
+        state.newBill.selectedTestIds = state.newBill.selectedTestIds.filter(tid => tid !== id);
+        syncBillFormToState();
+        updateBillCartUI(container);
+      });
+    });
+  }
+
+  // Update Total Amount
+  const totalAmountEl = container.querySelector('.billing-summary-box .total-amount');
+  if (totalAmountEl) {
+    totalAmountEl.textContent = formatCurrency(subtotal);
+  }
+
+  // Update submit button disabled status
+  const submitBtn = container.querySelector('#btn-submit-bill');
+  if (submitBtn) {
+    submitBtn.disabled = selectedTests.length === 0;
+  }
+}
+
 function renderNewBillForm(container) {
   const activeTests = state.testsCatalog.filter(t => t.active);
   const selectedTests = activeTests.filter(t => state.newBill.selectedTestIds.includes(t.id));
 
   const subtotal = selectedTests.reduce((sum, t) => sum + Number(t.price), 0);
-  const discount = Math.max(0, Math.min(subtotal, Number(state.newBill.discount || 0)));
-  const total = Math.max(0, subtotal - discount);
-  const paid = Math.max(0, Math.min(total, Number(state.newBill.paidAmount ?? total)));
-  const balance = total - paid;
 
   container.innerHTML = `
     <div class="billing-grid">
@@ -907,17 +1007,6 @@ function renderNewBillForm(container) {
                     <option value="D" ${state.newBill.patient.ageUnit === 'D' ? 'selected' : ''}>Days</option>
                   </select>
                 </div>
-              </div>
-            </div>
-
-            <div class="form-row">
-              <div class="form-group col-6">
-                <label>Primary Mobile *</label>
-                <input type="tel" id="patient-mobile" placeholder="10-digit mobile" maxlength="10" value="${escapeHTML(state.newBill.patient.mobile)}" />
-              </div>
-              <div class="form-group col-6">
-                <label>Alternate Mobile</label>
-                <input type="tel" id="patient-alt-mobile" placeholder="Optional phone" value="${escapeHTML(state.newBill.patient.altMobile)}" />
               </div>
             </div>
 
@@ -1065,38 +1154,23 @@ function renderNewBillForm(container) {
 
             <!-- Financial Summary & Checkout -->
             <div class="billing-summary-box mt-4">
-              <div class="summary-line">
-                <span>Subtotal:</span>
-                <strong class="tabular-nums">${formatCurrency(subtotal)}</strong>
-              </div>
-
-              <div class="summary-line">
-                <span>Discount (₹):</span>
-                <input type="number" id="bill-discount" min="0" max="${subtotal}" value="${state.newBill.discount}" class="summary-input tabular-nums" />
-              </div>
-
               <div class="summary-line highlight net-total-highlight">
-                <span>Net Total:</span>
-                <strong class="total-amount tabular-nums">${formatCurrency(total)}</strong>
+                <span>Total Amount:</span>
+                <strong class="total-amount tabular-nums">${formatCurrency(subtotal)}</strong>
               </div>
 
-              <div class="summary-line">
-                <span>Paid Amount (₹):</span>
-                <input type="number" id="bill-paid" min="0" max="${total}" value="${state.newBill.paidAmount !== undefined ? state.newBill.paidAmount : total}" class="summary-input tabular-nums" />
-              </div>
-
-              <div class="summary-line">
-                <span>Payment Mode:</span>
-                <select id="bill-payment-mode" class="summary-input">
-                  ${['Cash', 'UPI', 'Card', 'Net Banking', 'Other'].map(m =>
-    `<option value="${m}" ${state.newBill.paymentMode === m ? 'selected' : ''}>${m}</option>`
-  ).join('')}
-                </select>
-              </div>
-
-              <div class="summary-due-box ${balance > 0 ? 'has-due' : 'no-due'}">
-                <span>Balance Due:</span>
-                <strong class="tabular-nums">${formatCurrency(balance)}</strong>
+              <div class="summary-line" style="margin-top:12px;">
+                <span>Payment Status:</span>
+                <div class="radio-toggle-group payment-status-toggle" role="radiogroup" aria-label="Payment status">
+                  <label class="radio-label ${state.newBill.paymentStatus !== 'Unpaid' ? 'active' : ''}" style="padding:6px 18px;">
+                    <input type="radio" name="bill-pay-status" value="Paid" ${state.newBill.paymentStatus !== 'Unpaid' ? 'checked' : ''} />
+                    <span>✓ Paid</span>
+                  </label>
+                  <label class="radio-label ${state.newBill.paymentStatus === 'Unpaid' ? 'active' : ''}" style="padding:6px 18px;">
+                    <input type="radio" name="bill-pay-status" value="Unpaid" ${state.newBill.paymentStatus === 'Unpaid' ? 'checked' : ''} />
+                    <span>✗ Unpaid</span>
+                  </label>
+                </div>
               </div>
             </div>
 
@@ -1115,7 +1189,42 @@ function renderNewBillForm(container) {
 }
 
 function attachNewBillListeners(container) {
-  // Test Selection Pills
+  // Two-way synchronization on all patient registration inputs
+  const bindInput = (id, prop) => {
+    const el = container.querySelector('#' + id);
+    if (el) {
+      const sync = () => { state.newBill.patient[prop] = el.value; };
+      el.addEventListener('input', sync);
+      el.addEventListener('change', sync);
+    }
+  };
+  bindInput('patient-title', 'title');
+  bindInput('patient-fullname', 'fullName');
+  bindInput('patient-age-val', 'ageValue');
+  bindInput('patient-age-unit', 'ageUnit');
+  bindInput('patient-height', 'height');
+  bindInput('patient-weight', 'weight');
+  bindInput('patient-area', 'area');
+  bindInput('patient-city', 'city');
+  bindInput('patient-pincode', 'pincode');
+
+  const docEl = container.querySelector('#bill-doctor');
+  if (docEl) {
+    const syncDoc = () => { state.newBill.doctorId = docEl.value || null; };
+    docEl.addEventListener('change', syncDoc);
+  }
+  const refLabEl = container.querySelector('#bill-referral-lab');
+  if (refLabEl) {
+    const syncRefLab = () => { state.newBill.referralLabId = refLabEl.value || null; };
+    refLabEl.addEventListener('change', syncRefLab);
+  }
+  const refHospEl = container.querySelector('#bill-referral-hosp');
+  if (refHospEl) {
+    const syncRefHosp = () => { state.newBill.referralHospitalId = refHospEl.value || null; };
+    refHospEl.addEventListener('change', syncRefHosp);
+  }
+
+  // Test Selection Pills (updates only cart and summary without wiping patient inputs)
   container.querySelectorAll('.test-pill').forEach(pill => {
     pill.addEventListener('click', () => {
       const id = pill.dataset.testId;
@@ -1125,7 +1234,8 @@ function attachNewBillListeners(container) {
       } else {
         state.newBill.selectedTestIds.push(id);
       }
-      renderNewBillForm(container);
+      syncBillFormToState();
+      updateBillCartUI(container);
     });
   });
 
@@ -1133,8 +1243,9 @@ function attachNewBillListeners(container) {
   container.querySelectorAll('.btn-remove-test').forEach(btn => {
     btn.addEventListener('click', () => {
       const id = btn.dataset.testId;
+      syncBillFormToState();
       state.newBill.selectedTestIds = state.newBill.selectedTestIds.filter(tid => tid !== id);
-      renderNewBillForm(container);
+      updateBillCartUI(container);
     });
   });
 
@@ -1173,37 +1284,29 @@ function attachNewBillListeners(container) {
     });
   });
 
-  // Discount & Paid Inputs
-  const discountInput = container.querySelector('#bill-discount');
-  if (discountInput) {
-    discountInput.addEventListener('input', (e) => {
-      let val = Number(e.target.value || 0);
-      if (val < 0) val = 0;
-      state.newBill.discount = roundCurrency(val);
-      renderNewBillForm(container);
-    });
-  }
-
-  const paidInput = container.querySelector('#bill-paid');
-  if (paidInput) {
-    paidInput.addEventListener('input', (e) => {
-      let val = Number(e.target.value || 0);
-      if (val < 0) val = 0;
-      state.newBill.paidAmount = roundCurrency(val);
-    });
-  }
-
-  const modeSelect = container.querySelector('#bill-payment-mode');
-  if (modeSelect) {
-    modeSelect.addEventListener('change', (e) => {
-      state.newBill.paymentMode = e.target.value;
-    });
-  }
+  // Payment Status Toggle (Paid / Unpaid)
+  container.querySelectorAll('input[name="bill-pay-status"]').forEach(radio => {
+    const label = radio.closest('.radio-label');
+    const updatePayStatus = () => {
+      radio.checked = true;
+      state.newBill.paymentStatus = radio.value;
+      container.querySelectorAll('.payment-status-toggle .radio-label').forEach(l => {
+        const inp = l.querySelector('input[name="bill-pay-status"]');
+        l.classList.toggle('active', Boolean(inp && inp.checked));
+      });
+    };
+    radio.addEventListener('change', updatePayStatus);
+    if (label) {
+      label.addEventListener('click', (e) => {
+        if (e.target !== radio) updatePayStatus();
+      });
+    }
+  });
 
   // Doctor & Referral Quick Add Modals
-  container.querySelector('#btn-add-doctor')?.addEventListener('click', () => openAddDoctorModal());
-  container.querySelector('#btn-add-ref-lab')?.addEventListener('click', () => openAddReferralLabModal());
-  container.querySelector('#btn-add-ref-hosp')?.addEventListener('click', () => openAddReferralHospitalModal());
+  container.querySelector('#btn-add-doctor')?.addEventListener('click', () => { syncBillFormToState(); openAddDoctorModal(); });
+  container.querySelector('#btn-add-ref-lab')?.addEventListener('click', () => { syncBillFormToState(); openAddReferralLabModal(); });
+  container.querySelector('#btn-add-ref-hosp')?.addEventListener('click', () => { syncBillFormToState(); openAddReferralHospitalModal(); });
 
   // Patient Lookup Input
   const lookupInput = container.querySelector('#patient-lookup-input');
@@ -1281,8 +1384,8 @@ async function handleCreateBill() {
   const sex = document.querySelector('input[name="patient-sex"]:checked')?.value || 'Male';
   const ageValue = parseInt(document.getElementById('patient-age-val').value, 10);
   const ageUnit = document.getElementById('patient-age-unit').value;
-  const mobile = document.getElementById('patient-mobile').value.trim();
-  const altMobile = document.getElementById('patient-alt-mobile')?.value.trim() || '';
+  const mobile = '';
+  const altMobile = '';
   const height = document.getElementById('patient-height')?.value.trim() || null;
   const weight = document.getElementById('patient-weight')?.value.trim() || null;
   const area = document.getElementById('patient-area')?.value.trim() || '';
@@ -1325,15 +1428,6 @@ async function handleCreateBill() {
     submitBtn.innerHTML = `${uiIcon('credit-card', 18)} Create Bill &amp; Print Receipt`;
     return;
   }
-  if (mobile) {
-    const cleanMobile = mobile.replace(/[\s-]/g, '');
-    if (!/^(?:\+91|0)?[6-9]\d{9}$/.test(cleanMobile)) {
-      showToast('Please enter a valid 10-digit Indian mobile number.', 'error');
-      submitBtn.disabled = false;
-      submitBtn.innerHTML = `${uiIcon('credit-card', 18)} Create Bill &amp; Print Receipt`;
-      return;
-    }
-  }
   if (state.newBill.selectedTestIds.length === 0) {
     showToast('Please select at least one test.', 'error');
     submitBtn.disabled = false;
@@ -1341,37 +1435,12 @@ async function handleCreateBill() {
     return;
   }
 
-  // Financial validation & rounding
+  // Financial calculation — simple Paid/Unpaid
   const selectedTests = state.testsCatalog.filter(t => state.newBill.selectedTestIds.includes(t.id));
   const subtotal = selectedTests.reduce((sum, t) => sum + Number(t.price || 0), 0);
-  const discount = roundCurrency(state.newBill.discount || 0);
-  const paidAmount = roundCurrency(state.newBill.paidAmount || 0);
-
-  if (discount < 0) {
-    showToast('Discount cannot be a negative value.', 'error');
-    submitBtn.disabled = false;
-    submitBtn.innerHTML = `${uiIcon('credit-card', 18)} Create Bill &amp; Print Receipt`;
-    return;
-  }
-  if (subtotal > 0 && discount > subtotal) {
-    showToast(`Discount cannot exceed the subtotal (₹ ${subtotal.toFixed(2)}).`, 'error');
-    submitBtn.disabled = false;
-    submitBtn.innerHTML = `${uiIcon('credit-card', 18)} Create Bill &amp; Print Receipt`;
-    return;
-  }
-  const netPayable = roundCurrency(Math.max(0, subtotal - discount));
-  if (paidAmount < 0) {
-    showToast('Paid amount cannot be negative.', 'error');
-    submitBtn.disabled = false;
-    submitBtn.innerHTML = `${uiIcon('credit-card', 18)} Create Bill &amp; Print Receipt`;
-    return;
-  }
-  if (netPayable >= 0 && paidAmount > netPayable) {
-    showToast(`Paid amount cannot exceed the net total payable (₹ ${netPayable.toFixed(2)}).`, 'error');
-    submitBtn.disabled = false;
-    submitBtn.innerHTML = `${uiIcon('credit-card', 18)} Create Bill &amp; Print Receipt`;
-    return;
-  }
+  const discount = 0;
+  const isPaid = state.newBill.paymentStatus !== 'Unpaid';
+  const paidAmount = isPaid ? subtotal : 0;
 
   const doctorId = document.getElementById('bill-doctor').value || null;
   const refLabId = document.getElementById('bill-referral-lab').value || null;
@@ -1401,9 +1470,9 @@ async function handleCreateBill() {
       p_referral_lab_id: refLabId,
       p_referral_hospital_id: refHospId,
       p_test_ids: state.newBill.selectedTestIds,
-      p_discount: state.newBill.discount,
-      p_paid_amount: state.newBill.paidAmount,
-      p_payment_mode: state.newBill.paymentMode,
+      p_discount: discount,
+      p_paid_amount: paidAmount,
+      p_payment_mode: isPaid ? 'Cash' : 'None',
       p_payment_notes: ''
     });
 
@@ -1411,14 +1480,12 @@ async function handleCreateBill() {
 
     showToast(`Bill ${result.bill_no} created successfully!`, 'success');
 
-    // Fetch full bill details for receipt printing
-    await openReceiptModal(result.bill_id);
-
-    // Reset Form
+    // Reset Form immediately so billing UI is instantly ready for the next patient
     state.newBill.selectedPatientId = null;
     state.newBill.selectedTestIds = [];
     state.newBill.discount = 0;
     state.newBill.paidAmount = 0;
+    state.newBill.paymentStatus = 'Paid';
     state.newBill.patient = {
       title: 'Mr',
       fullName: '',
@@ -1434,6 +1501,11 @@ async function handleCreateBill() {
       city: 'Sidlaghatta',
       pincode: ''
     };
+    const billingBody = document.getElementById('billing-body');
+    if (billingBody) renderNewBillForm(billingBody);
+
+    // Fetch full bill details and display receipt modal without blocking
+    openReceiptModal(result.bill_id);
   } catch (err) {
     console.error('Failed to create bill:', err);
     showToast('Billing error: ' + (err.message || 'Database transaction failed.'), 'error');
@@ -2343,6 +2415,17 @@ async function handleReopenReport(reportId) {
 // MODULE 3: PRINTING & PDF EXPORT
 // -------------------------------------------------------------
 async function openReceiptModal(billId) {
+  const modalContainer = document.getElementById('modal-container');
+  if (modalContainer) {
+    modalContainer.innerHTML = `
+      <div class="modal-overlay">
+        <div class="modal-dialog" style="max-width:360px; text-align:center; padding:36px 24px;">
+          <div class="spinner" style="margin:0 auto 16px auto; width:36px; height:36px; border:3px solid #e2e8f0; border-top-color:var(--color-primary, #6366f1); border-radius:50%; animation:spin 0.8s linear infinite;"></div>
+          <h3 style="margin-bottom:6px; font-size:17px;">Generating Receipt...</h3>
+          <p class="muted" style="font-size:13px; margin:0;">Preparing printable invoice</p>
+        </div>
+      </div>`;
+  }
   try {
     const { data: bill, error } = await state.supabase
       .from('bills')
@@ -2974,19 +3057,19 @@ function generateReceiptHTML(bill, lab, format = 'a4', fullPage = false) {
                   // -------------------------------------------------------------
                   // MODULE 4: SETTINGS (Minimal)
                   // -------------------------------------------------------------
-                  function renderSettingsModule(container) {
-                    container.innerHTML = `
+function renderSettingsModule(container) {
+  container.innerHTML = `
     <div class="module-header">
       <div class="module-title">
-        <h1>Laboratory Settings &amp; Compliance</h1>
-        <p>Lab profile, doctors, referral sources, test catalog pricing, helpdesk and privacy compliance</p>
+        <h1>Laboratory Settings &amp; Configuration</h1>
+        <p>Lab profile, test catalog pricing, password security, doctors and referral sources</p>
       </div>
       <div class="module-tabs settings-tabs-scroll">
         <button class="tab-btn ${state.settingsSubTab === 'profile' ? 'active' : ''}" id="tab-set-profile">Lab Details &amp; Letterhead</button>
+        <button class="tab-btn ${state.settingsSubTab === 'catalog' ? 'active' : ''}" id="tab-set-catalog">Test Catalog &amp; Pricing</button>
+        <button class="tab-btn ${state.settingsSubTab === 'security' ? 'active' : ''}" id="tab-set-security">Change Password &amp; Security</button>
         <button class="tab-btn ${state.settingsSubTab === 'doctors' ? 'active' : ''}" id="tab-set-doctors">Doctors Directory</button>
         <button class="tab-btn ${state.settingsSubTab === 'referrals' ? 'active' : ''}" id="tab-set-referrals">Referral Sources</button>
-        <button class="tab-btn ${state.settingsSubTab === 'catalog' ? 'active' : ''}" id="tab-set-catalog">Test Catalog &amp; Pricing</button>
-        <button class="tab-btn ${state.settingsSubTab === 'security' ? 'active' : ''}" id="tab-set-security">Account Security</button>
         <button class="tab-btn ${state.settingsSubTab === 'support' ? 'active' : ''}" id="tab-set-support">Support &amp; Helpdesk</button>
         <button class="tab-btn ${state.settingsSubTab === 'privacy' ? 'active' : ''}" id="tab-set-privacy">Privacy &amp; Compliance</button>
         <button class="tab-btn ${state.settingsSubTab === 'referral' ? 'active' : ''}" id="tab-set-referral">🎁 Refer &amp; Free Service</button>
@@ -2994,24 +3077,24 @@ function generateReceiptHTML(bill, lab, format = 'a4', fullPage = false) {
     </div>
     <div class="module-body" id="settings-body"></div>`;
 
-  document.getElementById('tab-set-profile').addEventListener('click', () => {state.settingsSubTab = 'profile'; renderSettingsModule(container); });
-  document.getElementById('tab-set-doctors').addEventListener('click', () => {state.settingsSubTab = 'doctors'; renderSettingsModule(container); });
-  document.getElementById('tab-set-referrals').addEventListener('click', () => {state.settingsSubTab = 'referrals'; renderSettingsModule(container); });
-  document.getElementById('tab-set-catalog').addEventListener('click', () => {state.settingsSubTab = 'catalog'; renderSettingsModule(container); });
-  document.getElementById('tab-set-security').addEventListener('click', () => {state.settingsSubTab = 'security'; renderSettingsModule(container); });
-  document.getElementById('tab-set-support').addEventListener('click', () => {state.settingsSubTab = 'support'; renderSettingsModule(container); });
-  document.getElementById('tab-set-privacy').addEventListener('click', () => {state.settingsSubTab = 'privacy'; renderSettingsModule(container); });
-  document.getElementById('tab-set-referral').addEventListener('click', () => {state.settingsSubTab = 'referral'; renderSettingsModule(container); });
+  document.getElementById('tab-set-profile').addEventListener('click', () => { state.settingsSubTab = 'profile'; renderSettingsModule(container); });
+  document.getElementById('tab-set-catalog').addEventListener('click', () => { state.settingsSubTab = 'catalog'; renderSettingsModule(container); });
+  document.getElementById('tab-set-security').addEventListener('click', () => { state.settingsSubTab = 'security'; renderSettingsModule(container); });
+  document.getElementById('tab-set-doctors').addEventListener('click', () => { state.settingsSubTab = 'doctors'; renderSettingsModule(container); });
+  document.getElementById('tab-set-referrals').addEventListener('click', () => { state.settingsSubTab = 'referrals'; renderSettingsModule(container); });
+  document.getElementById('tab-set-support').addEventListener('click', () => { state.settingsSubTab = 'support'; renderSettingsModule(container); });
+  document.getElementById('tab-set-privacy').addEventListener('click', () => { state.settingsSubTab = 'privacy'; renderSettingsModule(container); });
+  document.getElementById('tab-set-referral').addEventListener('click', () => { state.settingsSubTab = 'referral'; renderSettingsModule(container); });
 
-                  const body = document.getElementById('settings-body');
-                  if (state.settingsSubTab === 'profile') renderLabProfileSettings(body);
-                  else if (state.settingsSubTab === 'doctors') renderDoctorsSettings(body);
-                  else if (state.settingsSubTab === 'referrals') renderReferralsSettings(body);
-                  else if (state.settingsSubTab === 'catalog') renderCatalogSettings(body);
-                  else if (state.settingsSubTab === 'security') renderSecuritySettings(body);
-                  else if (state.settingsSubTab === 'support') renderSupportPage(body);
-                  else if (state.settingsSubTab === 'privacy') renderPrivacyPolicyPage(body);
-                  else if (state.settingsSubTab === 'referral') renderReferralPromotionPage(body);
+  const body = document.getElementById('settings-body');
+  if (state.settingsSubTab === 'profile') renderLabProfileSettings(body);
+  else if (state.settingsSubTab === 'catalog') renderCatalogSettings(body);
+  else if (state.settingsSubTab === 'security') renderSecuritySettings(body);
+  else if (state.settingsSubTab === 'doctors') renderDoctorsSettings(body);
+  else if (state.settingsSubTab === 'referrals') renderReferralsSettings(body);
+  else if (state.settingsSubTab === 'support') renderSupportPage(body);
+  else if (state.settingsSubTab === 'privacy') renderPrivacyPolicyPage(body);
+  else if (state.settingsSubTab === 'referral') renderReferralPromotionPage(body);
 }
 
                   function renderLabProfileSettings(container) {
@@ -3326,101 +3409,188 @@ function generateReceiptHTML(bill, lab, format = 'a4', fullPage = false) {
   });
 }
 
-                  function renderCatalogSettings(container) {
-                    container.innerHTML = `
+function renderCatalogSettings(container) {
+  container.innerHTML = `
     <div class="card">
-      <div class="card-header">
-        <h3>Diagnostic Test Catalog &amp; Prices</h3>
+      <div class="card-header d-flex justify-between align-center" style="gap: 16px; flex-wrap: wrap;">
+        <div>
+          <h3>Diagnostic Test Catalog &amp; Prices</h3>
+          <p class="muted mt-1" style="font-size: 13px;">Update test pricing anytime. Prices update instantly across new patient registrations.</p>
+        </div>
+        <input type="text" id="catalog-search-filter" class="table-search" placeholder="Search tests by name or code..." style="max-width: 280px;" />
       </div>
       <div class="card-body">
-        <table class="data-table">
-          <thead>
-            <tr>
-              <th>Code</th>
-              <th>Test Panel Name</th>
-              <th>Department</th>
-              <th>Sample Type</th>
-              <th style="width: 140px;">Price (₹)</th>
-              <th class="text-center">Status</th>
-              <th class="text-center">Save</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${state.testsCatalog.map(t => `
-              <tr data-test-id="${t.id}">
-                <td><strong>${escapeHTML(t.code)}</strong></td>
-                <td>${escapeHTML(t.name)}</td>
-                <td>${escapeHTML(t.department)}</td>
-                <td><small>${escapeHTML(t.sample_type)}</small></td>
-                <td>
-                  <input type="number" class="form-control price-edit-input" data-id="${t.id}" value="${t.price}" min="0" />
-                </td>
-                <td class="text-center">
-                  <span class="badge ${t.active ? 'badge-paid' : 'badge-unpaid'}">${t.active ? 'Active' : 'Inactive'}</span>
-                </td>
-                <td class="text-center">
-                  <button class="btn btn-primary-outline btn-xs btn-save-test-price" data-id="${t.id}">Update</button>
-                </td>
+        <div class="table-responsive" style="max-height: 560px; overflow-y: auto;">
+          <table class="data-table" id="catalog-pricing-table">
+            <thead>
+              <tr>
+                <th style="width: 100px;">Code</th>
+                <th>Test Panel Name</th>
+                <th>Department</th>
+                <th>Sample Type</th>
+                <th style="width: 150px;">Price (₹)</th>
+                <th class="text-center" style="width: 100px;">Status</th>
+                <th class="text-center" style="width: 110px;">Action</th>
               </tr>
-            `).join('')}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              ${state.testsCatalog.map(t => `
+                <tr data-test-id="${t.id}">
+                  <td><strong>${escapeHTML(t.code)}</strong></td>
+                  <td>${escapeHTML(t.name)}</td>
+                  <td>${escapeHTML(t.department)}</td>
+                  <td><small>${escapeHTML(t.sample_type)}</small></td>
+                  <td>
+                    <div style="display:flex; align-items:center; gap:4px;">
+                      <span style="font-weight:600; color:#64748b;">₹</span>
+                      <input type="number" class="form-control price-edit-input tabular-nums" data-id="${t.id}" value="${t.price}" min="0" step="1" style="width: 100px;" />
+                    </div>
+                  </td>
+                  <td class="text-center">
+                    <span class="badge ${t.active ? 'badge-paid' : 'badge-unpaid'}">${t.active ? 'Active' : 'Inactive'}</span>
+                  </td>
+                  <td class="text-center">
+                    <button type="button" class="btn btn-primary-outline btn-xs btn-save-test-price" data-id="${t.id}">Update</button>
+                  </td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>`;
 
+  const saveTestPrice = async (btn, input) => {
+    const id = btn.dataset.id;
+    const newPrice = Number(input.value || 0);
+    if (isNaN(newPrice) || newPrice < 0) {
+      showToast('Please enter a valid price.', 'error');
+      return;
+    }
+    const origText = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = 'Saving...';
+    try {
+      const { error } = await state.supabase.from('tests').update({ price: newPrice }).eq('id', id);
+      if (error) throw error;
+      const found = state.testsCatalog.find(t => t.id === id);
+      if (found) found.price = newPrice;
+      btn.textContent = 'Saved ✓';
+      btn.style.color = '#10b981';
+      btn.style.borderColor = '#10b981';
+      showToast('Test price updated to ₹' + newPrice, 'success');
+      setTimeout(() => {
+        btn.textContent = origText;
+        btn.disabled = false;
+        btn.style.color = '';
+        btn.style.borderColor = '';
+      }, 1600);
+    } catch (err) {
+      btn.disabled = false;
+      btn.textContent = origText;
+      showToast('Error updating price: ' + err.message, 'error');
+    }
+  };
+
   container.querySelectorAll('.btn-save-test-price').forEach(btn => {
-                    btn.addEventListener('click', async () => {
-                      const id = btn.dataset.id;
-                      const input = container.querySelector(`.price-edit-input[data-id="${id}"]`);
-                      const newPrice = Number(input.value || 0);
-                      try {
-                        const { error } = await state.supabase.from('tests').update({ price: newPrice }).eq('id', id);
-                        if (error) throw error;
-                        showToast('Test price updated', 'success');
-                        await loadReferenceData();
-                      } catch (err) {
-                        showToast('Error updating price: ' + err.message, 'error');
-                      }
-                    });
+    btn.addEventListener('click', () => {
+      const id = btn.dataset.id;
+      const input = container.querySelector(`.price-edit-input[data-id="${id}"]`);
+      if (input) saveTestPrice(btn, input);
+    });
   });
+
+  container.querySelectorAll('.price-edit-input').forEach(input => {
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        const id = input.dataset.id;
+        const btn = container.querySelector(`.btn-save-test-price[data-id="${id}"]`);
+        if (btn) saveTestPrice(btn, input);
+      }
+    });
+  });
+
+  const searchFilter = container.querySelector('#catalog-search-filter');
+  if (searchFilter) {
+    searchFilter.addEventListener('input', (e) => {
+      const q = e.target.value.toLowerCase().trim();
+      container.querySelectorAll('#catalog-pricing-table tbody tr[data-test-id]').forEach(row => {
+        const text = row.textContent.toLowerCase();
+        row.style.display = text.includes(q) ? '' : 'none';
+      });
+    });
+  }
 }
 
-                  function renderSecuritySettings(container) {
-                    container.innerHTML = `
-    <div class="card" style="max-width: 500px;">
+function renderSecuritySettings(container) {
+  const userEmail = state.user?.email || 'staff@labflow.local';
+  const username = userEmail.split('@')[0];
+  container.innerHTML = `
+    <div class="card" style="max-width: 520px;">
       <div class="card-header">
         <h3>Change Staff Password</h3>
+        <p class="muted mt-1" style="font-size: 13px;">Change login password for current staff account: <strong>${escapeHTML(username)}</strong></p>
       </div>
       <div class="card-body">
         <form id="change-pwd-form">
           <div class="form-group mb-3">
-            <label>New Password</label>
-            <input type="password" id="new-password" placeholder="••••••••" required minlength="8" />
+            <label>Staff Username / Account</label>
+            <input type="text" value="${escapeHTML(userEmail)}" readonly disabled style="background:#f1f5f9; cursor:not-allowed;" />
           </div>
           <div class="form-group mb-3">
-            <label>Confirm New Password</label>
-            <input type="password" id="confirm-password" placeholder="••••••••" required minlength="8" />
+            <label for="new-password">New Password *</label>
+            <input type="password" id="new-password" placeholder="Enter new password (min 6 characters)" required minlength="6" autocomplete="new-password" />
           </div>
-          <button type="submit" class="btn btn-primary">Update Password</button>
+          <div class="form-group mb-3">
+            <label for="confirm-password">Confirm New Password *</label>
+            <input type="password" id="confirm-password" placeholder="Re-enter new password" required minlength="6" autocomplete="new-password" />
+          </div>
+          <div class="form-group mb-4">
+            <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-weight:normal; user-select:none;">
+              <input type="checkbox" id="toggle-pwd-visibility" style="width:auto; cursor:pointer;" />
+              <span>Show password characters</span>
+            </label>
+          </div>
+          <button type="submit" id="btn-update-pwd" class="btn btn-primary">Update Password</button>
         </form>
       </div>
     </div>`;
 
+  const toggleBox = document.getElementById('toggle-pwd-visibility');
+  if (toggleBox) {
+    toggleBox.addEventListener('change', () => {
+      const type = toggleBox.checked ? 'text' : 'password';
+      document.getElementById('new-password').type = type;
+      document.getElementById('confirm-password').type = type;
+    });
+  }
+
   document.getElementById('change-pwd-form').addEventListener('submit', async (e) => {
-                    e.preventDefault();
-                  const p1 = document.getElementById('new-password').value;
-                  const p2 = document.getElementById('confirm-password').value;
-                  if (p1 !== p2) {
-                    showToast('Passwords do not match.', 'error');
-                  return;
+    e.preventDefault();
+    const p1 = document.getElementById('new-password').value;
+    const p2 = document.getElementById('confirm-password').value;
+    if (p1 !== p2) {
+      showToast('Passwords do not match.', 'error');
+      return;
     }
-                  try {
-      const {error} = await state.supabase.auth.updateUser({password: p1 });
-                  if (error) throw error;
-                  showToast('Password updated successfully', 'success');
-                  document.getElementById('change-pwd-form').reset();
+    if (p1.length < 6) {
+      showToast('Password must be at least 6 characters.', 'error');
+      return;
+    }
+    const btn = document.getElementById('btn-update-pwd');
+    btn.disabled = true;
+    btn.textContent = 'Updating password...';
+    try {
+      const { error } = await state.supabase.auth.updateUser({ password: p1 });
+      if (error) throw error;
+      showToast('Password updated successfully! Use your new password on next login.', 'success');
+      document.getElementById('change-pwd-form').reset();
     } catch (err) {
-                    showToast('Password change failed: ' + err.message, 'error');
+      showToast('Password change failed: ' + err.message, 'error');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Update Password';
     }
   });
 }
@@ -3887,74 +4057,62 @@ function renderReferralPromotionPage(container) {
   });
 }
 
-                  function openCollectPaymentModal(billId, maxBalance) {
+function openCollectPaymentModal(billId, maxBalance) {
   const modalContainer = document.getElementById('modal-container');
-                  modalContainer.innerHTML = `
-                  <div class="modal-overlay">
-                    <div class="modal-dialog">
-                      <div class="modal-header">
-                        <h3>Collect Balance Payment</h3>
-                        <button class="modal-close" id="modal-close-btn">&times;</button>
-                      </div>
-                      <form id="collect-pay-form">
-                        <div class="modal-body">
-                          <div class="form-group mb-3">
-                            <label>Payment Amount (₹) *</label>
-                            <input type="number" id="pay-amount" min="1" max="${maxBalance}" value="${maxBalance}" required />
-                          </div>
-                          <div class="form-group mb-3">
-                            <label>Payment Mode</label>
-                            <select id="pay-mode">
-                              ${['Cash', 'UPI', 'Card', 'Net Banking', 'Other'].map(m => `<option value="${m}">${m}</option>`).join('')}
-                            </select>
-                          </div>
-                          <div class="form-group">
-                            <label>Payment Notes</label>
-                            <input type="text" id="pay-notes" placeholder="Optional transaction ID or note" />
-                          </div>
-                        </div>
-                        <div class="modal-footer">
-                          <button type="button" class="btn btn-outline" id="modal-cancel-btn">Cancel</button>
-                          <button type="submit" class="btn btn-primary">Record Payment</button>
-                        </div>
-                      </form>
-                    </div>
-                  </div>`;
+  modalContainer.innerHTML = `
+    <div class="modal-overlay">
+      <div class="modal-dialog" style="max-width: 440px;">
+        <div class="modal-header">
+          <h3>Mark Bill as Paid</h3>
+          <button class="modal-close" id="modal-close-btn">&times;</button>
+        </div>
+        <form id="collect-pay-form">
+          <div class="modal-body">
+            <p style="margin-bottom: 16px; font-size: 15px;">
+              Mark this bill as fully <strong>Paid</strong>?
+            </p>
+            <div style="background: var(--bg-secondary, #f8fafc); padding: 14px 18px; border-radius: 8px; border: 1px solid var(--border-color, #e2e8f0); margin-bottom: 16px;">
+              <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
+                <span class="muted">Outstanding Balance:</span>
+                <strong class="tabular-nums text-danger" style="font-size:16px;">₹${maxBalance.toFixed(2)}</strong>
+              </div>
+              <div style="display:flex; justify-content:space-between;">
+                <span class="muted">Status After:</span>
+                <span class="badge badge-paid">Paid</span>
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-outline" id="modal-cancel-btn">Cancel</button>
+            <button type="submit" id="btn-confirm-collect-pay" class="btn btn-primary">Confirm &amp; Mark Paid</button>
+          </div>
+        </form>
+      </div>
+    </div>`;
 
   document.getElementById('modal-close-btn').addEventListener('click', () => modalContainer.innerHTML = '');
   document.getElementById('modal-cancel-btn').addEventListener('click', () => modalContainer.innerHTML = '');
 
   document.getElementById('collect-pay-form').addEventListener('submit', async (e) => {
     e.preventDefault();
-    const rawVal = Number(document.getElementById('pay-amount').value);
-    const amount = roundCurrency(rawVal);
-    const mode = document.getElementById('pay-mode').value;
-    const notes = document.getElementById('pay-notes').value.trim();
-
-    if (isNaN(amount) || amount <= 0) {
-      showToast('Payment amount must be greater than zero.', 'error');
-      return;
-    }
-    if (amount > maxBalance) {
-      showToast(`Payment amount cannot exceed current balance of ₹ ${maxBalance.toFixed(2)}.`, 'error');
-      return;
-    }
-
-                  try {
-      const {data, error} = await state.supabase.rpc('collect_bill_payment', {
-                    p_bill_id: billId,
-                  p_amount: amount,
-                  p_mode: mode,
-                  p_notes: notes
+    const btn = document.getElementById('btn-confirm-collect-pay');
+    if (btn) { btn.disabled = true; btn.textContent = 'Updating...'; }
+    try {
+      const { data, error } = await state.supabase.rpc('collect_bill_payment', {
+        p_bill_id: billId,
+        p_amount: maxBalance,
+        p_mode: 'Cash',
+        p_notes: ''
       });
 
-                  if (error) throw error;
-                  showToast('Payment recorded successfully', 'success');
-                  modalContainer.innerHTML = '';
-                  loadBillsTable();
-                  openReceiptModal(billId);
+      if (error) throw error;
+      showToast('Bill marked as Paid successfully', 'success');
+      modalContainer.innerHTML = '';
+      loadBillsTable();
+      openReceiptModal(billId);
     } catch (err) {
-                    showToast('Payment error: ' + err.message, 'error');
+      showToast('Payment error: ' + err.message, 'error');
+      if (btn) { btn.disabled = false; btn.textContent = 'Confirm & Mark Paid'; }
     }
   });
 }
