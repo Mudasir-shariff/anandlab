@@ -360,11 +360,24 @@ function paginate(order, profile, template, definitions, hasRibbon, warning) {
   return pages;
 }
 
+function isValidResult(val) {
+  if (typeof val === 'number') return Number.isFinite(val);
+  if (typeof val === 'string') {
+    const s = val.trim();
+    if (!s) return false;
+    const lower = s.toLowerCase();
+    if (['nan', 'infinity', '-infinity', 'null', 'undefined', 'false', 'true', 'none'].includes(lower)) return false;
+    if (/^0x[0-9a-f]+$/i.test(s)) return false;
+    return true;
+  }
+  return false;
+}
+
 function resultRow(row, code, sex) {
   if (row.notice) return `<tr class="report-definition-notice"><td colspan="4">${escape(row.notice)}</td></tr>`;
   const parameter = row.parameter || { name: row.key, unit: 'Not recorded', reference: 'Not recorded' };
   const numeric = numericValue(row.value), available = numeric !== null;
-  const recordedText = row.unknown && typeof row.value === 'string' && row.value.trim() ? row.value : null;
+  const isOk = isValidResult(row.value);
   const flag = !row.unknown && available && Number.isFinite(parameter.min) && numeric < parameter.min ? 'L' : !row.unknown && available && Number.isFinite(parameter.max) && numeric > parameter.max ? 'H' : '';
   // Use sex-specific reference interval string when available (display only; min/max thresholds are unchanged),
   // unless an archived or custom reference was explicitly specified for this parameter.
@@ -373,7 +386,7 @@ function resultRow(row, code, sex) {
   const reference = row.unknown ? 'Not captured' : sexRef || parameter.reference || (Number.isFinite(parameter.min) && Number.isFinite(parameter.max) ? `${parameter.min} – ${parameter.max}` : 'Not captured');
   const method = PARAMETER_METHODS[row.key] || '';
   const subheader = (code === 'CBC' && row.key === 'neutrophils') ? '<tr class="report-subheading-row"><td colspan="4">DIFFERENTIAL COUNT</td></tr>' : '';
-  return `${subheader}<tr class="report-result-row ${flag ? 'report-abnormal' : ''}" ${method ? `data-method="${escape(method)}" ` : ''}data-test="${escape(code)}" data-parameter="${escape(row.key)}"><td>${text(parameter.name || row.key)}${row.unknown ? '<small class="report-definition-label">Definition not captured</small>' : ''}</td><td class="report-result-value">${available ? escape(row.value) : recordedText ? escape(recordedText) : '—'}${flag ? `<span class="report-result-flag" aria-label="${flag === 'H' ? 'Above reference range' : 'Below reference range'}">${flag}</span>` : ''}</td><td>${row.unknown ? 'Not captured' : text(parameter.unit)}</td><td>${escape(reference)}</td></tr>`;
+  return `${subheader}<tr class="report-result-row ${flag ? 'report-abnormal' : ''}" ${method ? `data-method="${escape(method)}" ` : ''}data-test="${escape(code)}" data-parameter="${escape(row.key)}"><td>${text(parameter.name || row.key)}${row.unknown ? '<small class="report-definition-label">Definition not captured</small>' : ''}</td><td class="report-result-value">${isOk ? escape(String(row.value).trim()) : '—'}${flag ? `<span class="report-result-flag" aria-label="${flag === 'H' ? 'Above reference range' : 'Below reference range'}">${flag}</span>` : ''}</td><td>${row.unknown ? 'Not captured' : text(parameter.unit)}</td><td>${escape(reference)}</td></tr>`;
 }
 
 function letterhead(profile) {

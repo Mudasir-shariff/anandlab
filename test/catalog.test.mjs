@@ -16,7 +16,7 @@ const parametersFor = order => [...new Set(order.tests.flatMap(code => TESTS[cod
 test('catalog contains the 38 requested tests and matches exact Anand Diagnostic pricing', () => {
   assert.equal(codes.length, 38);
   assert.deepEqual(Object.keys(TESTS), codes);
-  assert.equal(TESTS.CBC.price, 250);
+  assert.equal(TESTS.CBC.price, 300);
   assert.equal(TESTS.BLOOD_GROUP.price, 70);
   assert.equal(TESTS.WIDAL.price, 200);
   assert.equal(TESTS.CRP.price, 300);

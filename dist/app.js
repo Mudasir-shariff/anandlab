@@ -6,6 +6,14 @@
 import { TESTS, PARAMETERS, reportNotes } from './catalog.js';
 import { renderReport, REPORT_TEMPLATES, wrapReportHtml, REPORT_CSS } from './report.js';
 
+let deferredInstallPrompt = null;
+if (typeof window !== 'undefined') {
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredInstallPrompt = e;
+  });
+}
+
 // Application State
 const state = {
   supabase: null,
@@ -311,6 +319,13 @@ async function init() {
       });
     }
 
+    // Register PWA Service Worker for mobile/desktop installability
+    if (typeof navigator !== 'undefined' && 'serviceWorker' in navigator && !window.labflowAPI?.isElectron) {
+      navigator.serviceWorker.register('./sw.js').catch(err => {
+        console.warn('PWA Service Worker registration skipped/failed:', err);
+      });
+    }
+
     state.config = await window.labflowAPI.getSupabaseConfig();
 
     if (!state.config || !state.config.supabaseUrl || !state.config.supabaseAnonKey) {
@@ -558,10 +573,28 @@ async function handleLogin(e) {
   submitBtn.textContent = 'Verifying credentials...';
 
   try {
-    const { data, error } = await state.supabase.auth.signInWithPassword({
+    let { data, error } = await state.supabase.auth.signInWithPassword({
       email,
       password
     });
+
+    if (error || !data?.user || !data?.session) {
+      // Try alternate password format (e.g. 63613 27123 with or without spaces)
+      const altPassword = password.includes(' ')
+        ? password.replace(/\s+/g, '')
+        : (password.length === 10 ? `${password.slice(0, 5)} ${password.slice(5)}` : null);
+
+      if (altPassword) {
+        const retry = await state.supabase.auth.signInWithPassword({
+          email,
+          password: altPassword
+        });
+        if (!retry.error && retry.data?.user && retry.data?.session) {
+          data = retry.data;
+          error = null;
+        }
+      }
+    }
 
     if (error || !data?.user || !data?.session) {
       state.failedLoginAttempts++;
@@ -577,10 +610,12 @@ async function handleLogin(e) {
     state.user = data.user;
 
     // Encrypt and persist session token via safeStorage
-    await window.labflowAPI.saveSession(JSON.stringify({
-      access_token: data.session.access_token,
-      refresh_token: data.session.refresh_token
-    }));
+    if (window.labflowAPI?.saveSession) {
+      await window.labflowAPI.saveSession(JSON.stringify({
+        access_token: data.session.access_token,
+        refresh_token: data.session.refresh_token
+      }));
+    }
 
     await loadReferenceData();
     renderApp();
@@ -694,6 +729,11 @@ function renderApp() {
             <span class="nav-icon">${uiIcon('users', 18)}</span>
             <span class="nav-label">Referrals</span>
           </button>
+
+          <button class="nav-item" id="btn-download-app" title="Download & Install App">
+            <span class="nav-icon">${uiIcon('download', 18)}</span>
+            <span class="nav-label">Download App</span>
+          </button>
         </nav>
 
         <div class="sidebar-optic-wireframe" aria-hidden="true">
@@ -731,11 +771,15 @@ function renderApp() {
     </div>`;
 
   // Attach Sidebar Listeners
-  document.querySelectorAll('.sidebar-nav .nav-item').forEach(btn => {
+  document.querySelectorAll('.sidebar-nav .nav-item[data-nav]').forEach(btn => {
     btn.addEventListener('click', () => {
       state.currentPage = btn.dataset.nav;
       renderApp();
     });
+  });
+
+  document.getElementById('btn-download-app')?.addEventListener('click', () => {
+    openDownloadAppModal();
   });
 
   document.getElementById('sidebar-support-btn')?.addEventListener('click', () => {
@@ -1098,13 +1142,36 @@ function attachNewBillListeners(container) {
   const searchFilter = container.querySelector('#test-search-filter');
   if (searchFilter) {
     searchFilter.addEventListener('input', (e) => {
-      const q = e.target.value.toLowerCase();
+      const q = e.target.value.toLowerCase().trim();
       container.querySelectorAll('.test-pill').forEach(pill => {
-        const text = pill.textContent.toLowerCase();
-        pill.style.display = text.includes(q) ? 'inline-flex' : 'none';
+        let text = pill.textContent.toLowerCase();
+        if (text.includes('platelet') || text.includes('plate')) {
+          text += ' plates plate count platelet';
+        }
+        pill.style.display = (text.includes(q) || (q.startsWith('plate') && text.includes('plat'))) ? 'inline-flex' : 'none';
       });
     });
   }
+
+  // Gender Radio Buttons
+  container.querySelectorAll('.radio-toggle-group .radio-label').forEach(label => {
+    const radio = label.querySelector('input[name="patient-sex"]');
+    if (!radio) return;
+    const updateSex = () => {
+      radio.checked = true;
+      state.newBill.patient.sex = radio.value;
+      container.querySelectorAll('.radio-toggle-group .radio-label').forEach(l => {
+        const inp = l.querySelector('input[name="patient-sex"]');
+        l.classList.toggle('active', Boolean(inp && inp.checked));
+      });
+    };
+    radio.addEventListener('change', updateSex);
+    label.addEventListener('click', (e) => {
+      if (e.target !== radio) {
+        updateSex();
+      }
+    });
+  });
 
   // Discount & Paid Inputs
   const discountInput = container.querySelector('#bill-discount');
@@ -2091,6 +2158,16 @@ function evaluateLiveFlag(input) {
 async function handleSaveReport(markCompleted = false) {
   if (!state.activeReport) return;
 
+  const btnSave = document.getElementById('btn-save-progress');
+  const btnComplete = document.getElementById('btn-complete-report');
+  const targetBtn = markCompleted ? btnComplete : btnSave;
+  const originalSaveText = btnSave?.innerHTML;
+  const originalCompleteText = btnComplete?.innerHTML;
+
+  if (btnSave) btnSave.disabled = true;
+  if (btnComplete) btnComplete.disabled = true;
+  if (targetBtn) targetBtn.textContent = markCompleted ? 'Finalizing report...' : 'Saving progress...';
+
   const notesEl = document.getElementById('report-clinical-notes');
   const notes = (notesEl?.value || '').trim();
   const inputs = document.querySelectorAll('.result-value-input');
@@ -2134,17 +2211,21 @@ async function handleSaveReport(markCompleted = false) {
       }
     }
 
-    // 2. Batch update report_results
-    for (const u of updates) {
-      if (!u.id) continue;
-      const { error: resErr } = await state.supabase
-        .from('report_results')
-        .update({ value: u.value, flag: u.flag || '' })
-        .eq('id', u.id);
-      if (resErr) {
-        console.error('Failed to update result row:', u.id, resErr);
-        throw new Error(resErr.message || 'Failed to update result values');
-      }
+    // 2. Parallel batch update report_results for fast and reliable saving
+    const validUpdates = updates.filter(u => Boolean(u.id));
+    const results = await Promise.all(
+      validUpdates.map(u =>
+        state.supabase
+          .from('report_results')
+          .update({ value: u.value, flag: u.flag || '' })
+          .eq('id', u.id)
+      )
+    );
+
+    const firstErr = results.find(r => r.error)?.error;
+    if (firstErr) {
+      console.error('Failed to update result row:', firstErr);
+      throw new Error(firstErr.message || 'Failed to update result values');
     }
 
     // 3. Update report status and notes
@@ -2163,10 +2244,20 @@ async function handleSaveReport(markCompleted = false) {
       }
     }
 
-    const { error: repErr } = await state.supabase
+    let { error: repErr } = await state.supabase
       .from('reports')
       .update(updatePayload)
       .eq('id', state.activeReport.id);
+
+    // If completed_by violates foreign key, retry cleanly without completed_by
+    if (repErr && updatePayload.completed_by) {
+      delete updatePayload.completed_by;
+      const retry = await state.supabase
+        .from('reports')
+        .update(updatePayload)
+        .eq('id', state.activeReport.id);
+      repErr = retry.error;
+    }
 
     if (repErr) throw repErr;
 
@@ -2196,10 +2287,26 @@ async function handleSaveReport(markCompleted = false) {
       openReportPrintPreview(repId);
     } else {
       showToast('Progress saved successfully', 'success');
+      if (btnSave) {
+        btnSave.disabled = false;
+        btnSave.innerHTML = originalSaveText || `${uiIcon('save', 16)} Save progress`;
+      }
+      if (btnComplete) {
+        btnComplete.disabled = false;
+        btnComplete.innerHTML = originalCompleteText || `${uiIcon('check-circle', 16)} Mark as completed &amp; print`;
+      }
     }
   } catch (err) {
     console.error('Failed to save report:', err);
     showToast('Failed to save report: ' + (err.message || 'Database transaction failed'), 'error');
+    if (btnSave) {
+      btnSave.disabled = false;
+      btnSave.innerHTML = originalSaveText || `${uiIcon('save', 16)} Save progress`;
+    }
+    if (btnComplete) {
+      btnComplete.disabled = false;
+      btnComplete.innerHTML = originalCompleteText || `${uiIcon('check-circle', 16)} Mark as completed &amp; print`;
+    }
   }
 }
 
@@ -2720,6 +2827,9 @@ function generateReceiptHTML(bill, lab, format = 'a4', fullPage = false) {
                 reportTemplate: state.labSettings.letterhead_template || 'classic'
     };
 
+                const allTestCodes = orderAdapter.tests;
+                const allResults = orderAdapter.results;
+
                 const modalContainer = document.getElementById('modal-container');
                 modalContainer.innerHTML = `
                 <div class="modal-overlay">
@@ -2736,6 +2846,17 @@ function generateReceiptHTML(bill, lab, format = 'a4', fullPage = false) {
                       </div>
                       <button class="modal-close" id="modal-close-btn">&times;</button>
                     </div>
+                    ${allTestCodes.length > 1 ? `
+                    <div class="report-test-selector" style="padding:8px 20px;background:#f8f9fa;border-bottom:1px solid #e2e8f0;display:flex;flex-wrap:wrap;gap:8px;align-items:center;">
+                      <span style="font-weight:600;font-size:13px;color:#475569;margin-right:4px;">Print tests:</span>
+                      ${allTestCodes.map(code => {
+                        const tName = (typeof TESTS !== 'undefined' && TESTS[code]) ? TESTS[code].name : code;
+                        return `<label style="display:inline-flex;align-items:center;gap:4px;font-size:13px;cursor:pointer;padding:3px 8px;border-radius:4px;background:#e2e8f0;">
+                          <input type="checkbox" class="report-test-check" value="${code}" checked /> ${escapeHTML(tName)}
+                        </label>`;
+                      }).join('')}
+                      <button class="btn btn-outline" id="btn-select-all-tests" style="font-size:11px;padding:2px 8px;margin-left:auto;">All</button>
+                    </div>` : ''}
                     <div class="modal-body">
                       <div id="report-rendered-view" class="report-preview-frame"></div>
                     </div>
@@ -2755,13 +2876,42 @@ function generateReceiptHTML(bill, lab, format = 'a4', fullPage = false) {
 
                 function renderActiveHTML() {
                   const template = tplSelect.value;
-                  const html = renderReport(orderAdapter, settingsAdapter, {template});
+                  // Get selected tests from checkboxes (or all if no checkboxes)
+                  const checkedBoxes = document.querySelectorAll('.report-test-check');
+                  let selectedCodes = allTestCodes;
+                  if (checkedBoxes.length > 0) {
+                    selectedCodes = Array.from(checkedBoxes).filter(cb => cb.checked).map(cb => cb.value);
+                    if (selectedCodes.length === 0) selectedCodes = allTestCodes; // fallback to all
+                  }
+                  // Build filtered adapter
+                  const filteredAdapter = {
+                    ...orderAdapter,
+                    tests: selectedCodes,
+                    results: Object.fromEntries(
+                      Object.entries(allResults).filter(([key]) => {
+                        return selectedCodes.some(code => {
+                          const testDef = (typeof TESTS !== 'undefined' && TESTS[code]);
+                          return testDef && testDef.parameters && testDef.parameters.includes(key);
+                        });
+                      })
+                    )
+                  };
+                  const html = renderReport(filteredAdapter, settingsAdapter, {template});
                   viewContainer.innerHTML = html;
-                  return wrapReportHtml(`Report ${orderAdapter.id}`, html);
+                  return wrapReportHtml(`Report ${filteredAdapter.id}`, html);
                 }
 
                   renderActiveHTML();
                   tplSelect.addEventListener('change', renderActiveHTML);
+
+    // Test selection checkbox listeners
+    document.querySelectorAll('.report-test-check').forEach(cb => {
+      cb.addEventListener('change', renderActiveHTML);
+    });
+    document.getElementById('btn-select-all-tests')?.addEventListener('click', () => {
+      document.querySelectorAll('.report-test-check').forEach(cb => { cb.checked = true; });
+      renderActiveHTML();
+    });
 
     document.getElementById('modal-close-btn').addEventListener('click', () => modalContainer.innerHTML = '');
     document.getElementById('btn-close-rep-modal').addEventListener('click', () => modalContainer.innerHTML = '');
@@ -3795,7 +3945,117 @@ function renderReferralPromotionPage(container) {
   });
 }
 
-                  // -------------------------------------------------------------
-                  // Launch on DOM Ready
-                  // -------------------------------------------------------------
-                  window.addEventListener('DOMContentLoaded', init);
+function openDownloadAppModal() {
+  const modalContainer = document.getElementById('modal-container');
+  const hasPrompt = Boolean(deferredInstallPrompt);
+
+  modalContainer.innerHTML = `
+    <div class="modal-overlay">
+      <div class="modal-dialog modal-lg">
+        <div class="modal-header">
+          <h3>${uiIcon('download', 18)} Download &amp; Install Labflow Diagnostics</h3>
+          <button class="modal-close" id="modal-close-btn">&times;</button>
+        </div>
+        <div class="modal-body">
+          <div class="download-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px;">
+            <!-- Android Card -->
+            <div class="card" style="border: 2px solid #006b76; padding: 18px; border-radius: 8px; background: #ffffff;">
+              <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px;">
+                <div style="font-size: 28px;">📱</div>
+                <div>
+                  <h4 style="margin: 0; color: #004d55; font-size: 16px;">Android Phone / Tablet</h4>
+                  <small style="color: #64748b;">Instant PWA App (Works Offline)</small>
+                </div>
+              </div>
+              <p style="font-size: 13px; line-height: 1.5; color: #334155; margin-bottom: 14px;">
+                Install Labflow directly onto your Android device home screen. Opens full-screen with fast access, offline caching, and instant billing &amp; reports.
+              </p>
+              ${hasPrompt ? `
+                <button id="btn-install-pwa-android" class="btn btn-primary btn-block mb-3" style="font-size: 14px; padding: 10px;">
+                  📲 Install to Android Now
+                </button>
+              ` : `
+                <div style="background: #e6f4f5; border-left: 3px solid #006b76; padding: 10px; border-radius: 4px; font-size: 12px; line-height: 1.5; color: #004d55; margin-bottom: 12px;">
+                  <strong>How to install on Android:</strong>
+                  <ol style="margin: 6px 0 0 16px; padding: 0;">
+                    <li>Open this site in <strong>Google Chrome</strong></li>
+                    <li>Tap the <strong>⋮ (three dots)</strong> menu at the top right</li>
+                    <li>Tap <strong>"Install app"</strong> or <strong>"Add to Home screen"</strong></li>
+                    <li>Tap <strong>Install</strong> to add Labflow to your Android home screen!</li>
+                  </ol>
+                </div>
+              `}
+              <div style="font-size: 11px; color: #64748b;">
+                ✓ No Play Store download needed · Fullscreen native-like experience.
+              </div>
+            </div>
+
+            <!-- Windows PC Card -->
+            <div class="card" style="border: 2px solid #07557a; padding: 18px; border-radius: 8px; background: #ffffff;">
+              <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px;">
+                <div style="font-size: 28px;">💻</div>
+                <div>
+                  <h4 style="margin: 0; color: #072a38; font-size: 16px;">Windows Desktop App</h4>
+                  <small style="color: #64748b;">Windows 10 / 11 64-bit</small>
+                </div>
+              </div>
+              <p style="font-size: 13px; line-height: 1.5; color: #334155; margin-bottom: 14px;">
+                Run Labflow on your lab counter PC. Supports direct thermal receipt printing, letterhead laser printing, barcode generation, and safe local credentials storage.
+              </p>
+              ${hasPrompt ? `
+                <button id="btn-install-pwa-windows" class="btn btn-outline btn-block mb-3" style="font-size: 14px; padding: 10px;">
+                  💻 Install as Windows Desktop App
+                </button>
+              ` : `
+                <div style="background: #eef4f8; border-left: 3px solid #07557a; padding: 10px; border-radius: 4px; font-size: 12px; line-height: 1.5; color: #1e3a4b; margin-bottom: 12px;">
+                  <strong>To install via Chrome / Edge:</strong>
+                  <div style="margin-top: 4px;">Click the <strong>Install</strong> icon in the address bar (top right) or menu → <strong>Apps</strong> → <strong>Install this site as an app</strong>.</div>
+                </div>
+              `}
+              <a href="https://github.com/Mudasir-shariff/anandlab/releases" target="_blank" rel="noopener noreferrer" class="btn btn-primary btn-block text-center" style="font-size: 13px; text-decoration: none; padding: 10px; display: block;">
+                ${uiIcon('download', 14)} Download Windows Setup (.exe)
+              </a>
+              <div style="font-size: 11px; color: #64748b; margin-top: 10px;">
+                ✓ Direct thermal &amp; A4 printer support · Standalone Electron executable.
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-outline" id="btn-close-download-modal">Close</button>
+        </div>
+      </div>
+    </div>`;
+
+  document.getElementById('modal-close-btn').addEventListener('click', () => modalContainer.innerHTML = '');
+  document.getElementById('btn-close-download-modal').addEventListener('click', () => modalContainer.innerHTML = '');
+
+  document.getElementById('btn-install-pwa-android')?.addEventListener('click', async () => {
+    if (deferredInstallPrompt) {
+      deferredInstallPrompt.prompt();
+      const { outcome } = await deferredInstallPrompt.userChoice;
+      if (outcome === 'accepted') {
+        showToast('Labflow installed successfully!', 'success');
+        deferredInstallPrompt = null;
+        modalContainer.innerHTML = '';
+      }
+    }
+  });
+
+  document.getElementById('btn-install-pwa-windows')?.addEventListener('click', async () => {
+    if (deferredInstallPrompt) {
+      deferredInstallPrompt.prompt();
+      const { outcome } = await deferredInstallPrompt.userChoice;
+      if (outcome === 'accepted') {
+        showToast('Labflow installed as desktop app!', 'success');
+        deferredInstallPrompt = null;
+        modalContainer.innerHTML = '';
+      }
+    }
+  });
+}
+
+// -------------------------------------------------------------
+// Launch on DOM Ready
+// -------------------------------------------------------------
+window.addEventListener('DOMContentLoaded', init);

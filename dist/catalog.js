@@ -154,11 +154,11 @@ export const PARAMETERS = {
 };
 
 export const TESTS = {
-  CBC: { name: 'Complete Blood Count (CBC)', price: 250, sample: 'EDTA Whole Blood', department: 'Hematology', parameters: ['hb', 'wbc', 'neutrophils', 'lymphocytes', 'eosinophils', 'monocytes', 'basophils', 'platelets', 'rbc', 'hct', 'mcv', 'mch', 'mchc', 'rdw_cv', 'rdw_sd'] },
+  CBC: { name: 'Complete Blood Count (CBC)', price: 300, sample: 'EDTA Whole Blood', department: 'Hematology', parameters: ['hb', 'wbc', 'neutrophils', 'lymphocytes', 'eosinophils', 'monocytes', 'basophils', 'platelets', 'rbc', 'hct', 'mcv', 'mch', 'mchc', 'rdw_cv', 'rdw_sd'] },
   BLOOD_GROUP: { name: 'Blood Grouping & Rh Type', price: 70, sample: 'EDTA Whole Blood', department: 'Hematology', parameters: ['abo_group', 'rh_factor'] },
   WIDAL: { name: 'Widal Test (Agglutination)', price: 200, sample: 'Serum', department: 'Serology', parameters: ['widal_to', 'widal_th', 'widal_ah', 'widal_bh', 'widal_result'] },
   CRP: { name: 'CRP (C-Reactive Protein)', price: 300, sample: 'Serum', department: 'Biochemistry', parameters: ['crp'] },
-  PLATELET: { name: 'Platelet Count', price: 150, sample: 'EDTA Whole Blood', department: 'Hematology', parameters: ['platelets'] },
+  PLATELET: { name: 'Platelet Count (Plates Count)', price: 150, sample: 'EDTA Whole Blood', department: 'Hematology', parameters: ['platelets'] },
   AEC: { name: 'AEC Count (Absolute Eosinophil)', price: 300, sample: 'EDTA Whole Blood', department: 'Hematology', parameters: ['aec_count'] },
   ESR: { name: 'ESR (Erythrocyte Sedimentation Rate)', price: 100, sample: 'Sodium Citrate / EDTA Blood', department: 'Hematology', parameters: ['esr'] },
   MALARIA: { name: 'Malaria Parasite (Smear & Card)', price: 250, sample: 'EDTA Whole Blood', department: 'Parasitology', parameters: ['mp_smear', 'mp_pf', 'mp_pv'] },
@@ -252,9 +252,9 @@ export function makeDemoOrders() {
   const iso = minutesAgo => new Date(now - minutesAgo * 60000).toISOString();
   const complete = tests => Object.fromEntries(tests.flatMap(code => TESTS[code].parameters).map(key => [key, demoSeedResults[key] || 1]));
   const seeds = [
-    { id: 'LF-1028', patientId: 'PT-2041', name: 'Ananya Sharma', age: 32, sex: 'Female', phone: '', email: '', category: 'Walk-in', referrer: 'Dr. Meera Iyer', tests: ['CBC', 'THYROID_PROFILE'], priority: 'Routine', status: 'Collected', minutesAgo: 24, paid: 700, results: {} },
-    { id: 'LF-1027', patientId: 'PT-2040', name: 'Rohan Mehta', age: 45, sex: 'Male', phone: '', email: '', category: 'Corporate', referrer: 'Dr. Arjun Rao', tests: ['CBC', 'LFT', 'CREATININE'], priority: 'Urgent', status: 'Processing', minutesAgo: 52, paid: 850, results: { hb: 13.8, wbc: 12800 } },
-    { id: 'LF-1026', patientId: 'PT-2039', name: 'Kavya Nair', age: 28, sex: 'Female', phone: '', email: '', category: 'Walk-in', referrer: 'Self', tests: ['CBC', 'HBA1C'], priority: 'Routine', status: 'Review', minutesAgo: 78, paid: 750, results: { ...complete(['CBC', 'HBA1C']), hb: 10.8, hba1c: 6.2 } },
+    { id: 'LF-1028', patientId: 'PT-2041', name: 'Ananya Sharma', age: 32, sex: 'Female', phone: '', email: '', category: 'Walk-in', referrer: 'Dr. Meera Iyer', tests: ['CBC', 'THYROID_PROFILE'], priority: 'Routine', status: 'Collected', minutesAgo: 24, paid: 750, results: {} },
+    { id: 'LF-1027', patientId: 'PT-2040', name: 'Rohan Mehta', age: 45, sex: 'Male', phone: '', email: '', category: 'Corporate', referrer: 'Dr. Arjun Rao', tests: ['CBC', 'LFT', 'CREATININE'], priority: 'Urgent', status: 'Processing', minutesAgo: 52, paid: 900, results: { hb: 13.8, wbc: 12800 } },
+    { id: 'LF-1026', patientId: 'PT-2039', name: 'Kavya Nair', age: 28, sex: 'Female', phone: '', email: '', category: 'Walk-in', referrer: 'Self', tests: ['CBC', 'HBA1C'], priority: 'Routine', status: 'Review', minutesAgo: 78, paid: 800, results: { ...complete(['CBC', 'HBA1C']), hb: 10.8, hba1c: 6.2 } },
     { id: 'LF-1025', patientId: 'PT-2038', name: 'Vikram Desai', age: 56, sex: 'Male', phone: '', email: '', category: 'Referral', referrer: 'Dr. Meera Iyer', tests: ['LIPID_PROFILE', 'CREATININE'], priority: 'Routine', status: 'Approved', minutesAgo: 115, paid: 650, results: complete(['LIPID_PROFILE', 'CREATININE']) },
     { id: 'LF-1024', patientId: 'PT-2037', name: 'Ishita Kapoor', age: 39, sex: 'Female', phone: '', email: '', category: 'Walk-in', referrer: 'Self', tests: ['LFT'], priority: 'Routine', status: 'Registered', minutesAgo: 8, paid: 0, results: {} }
   ];
