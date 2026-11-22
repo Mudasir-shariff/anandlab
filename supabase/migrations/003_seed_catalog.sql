@@ -53,7 +53,7 @@ DECLARE
 BEGIN
     -- 1. CBC
     INSERT INTO public.tests (code, name, department, sample_type, price, active)
-    VALUES ('CBC', 'Complete Blood Count (CBC)', 'Hematology', 'EDTA Whole Blood', 250.00, true)
+    VALUES ('CBC', 'Complete Blood Count (CBC)', 'Hematology', 'EDTA Whole Blood', 300.00, true)
     ON CONFLICT (code) DO UPDATE SET name = EXCLUDED.name, price = EXCLUDED.price, department = EXCLUDED.department, sample_type = EXCLUDED.sample_type
     RETURNING id INTO v_test_id;
 
@@ -112,7 +112,7 @@ BEGIN
 
     -- 5. PLATELET
     INSERT INTO public.tests (code, name, department, sample_type, price, active)
-    VALUES ('PLATELET', 'Platelet Count', 'Hematology', 'EDTA Whole Blood', 150.00, true)
+    VALUES ('PLATELET', 'Platelet Count (Plates Count)', 'Hematology', 'EDTA Whole Blood', 150.00, true)
     ON CONFLICT (code) DO UPDATE SET name = EXCLUDED.name, price = EXCLUDED.price, department = EXCLUDED.department, sample_type = EXCLUDED.sample_type
     RETURNING id INTO v_test_id;
 
@@ -252,7 +252,7 @@ BEGIN
 
     DELETE FROM public.test_parameters WHERE test_id = v_test_id;
     INSERT INTO public.test_parameters (test_id, code, name, unit, reference_range, reference_range_m, reference_range_f, min_val, max_val, critical_min, critical_max, sort_order) VALUES
-        (v_test_id, 'glucose_fasting', 'Fasting Blood Sugar (FBS)', 'mg/dL', '70 – 99', NULL, NULL, 70, 99, 40, 500, 1);
+        (v_test_id, 'glucose_fasting', 'Fasting Blood Sugar (FBS)', 'mg/dL', '70 – 99 mg/dL (Normal: 70–99, Impaired: 100–125, Diabetic: ≥126)', NULL, NULL, 70, 99, 40, 500, 1);
 
     -- 18. PPBS
     INSERT INTO public.tests (code, name, department, sample_type, price, active)
@@ -262,7 +262,7 @@ BEGIN
 
     DELETE FROM public.test_parameters WHERE test_id = v_test_id;
     INSERT INTO public.test_parameters (test_id, code, name, unit, reference_range, reference_range_m, reference_range_f, min_val, max_val, critical_min, critical_max, sort_order) VALUES
-        (v_test_id, 'glucose_postprandial', 'Post Prandial Blood Sugar (PPBS)', 'mg/dL', '< 140', NULL, NULL, 70, 139, 40, 500, 1);
+        (v_test_id, 'glucose_postprandial', 'Post Prandial Blood Sugar (PPBS)', 'mg/dL', '< 140 mg/dL (Normal: <140, Impaired: 140–199, Diabetic: ≥200)', NULL, NULL, 70, 139, 40, 500, 1);
 
     -- 19. RA_FACTOR
     INSERT INTO public.tests (code, name, department, sample_type, price, active)
@@ -272,7 +272,7 @@ BEGIN
 
     DELETE FROM public.test_parameters WHERE test_id = v_test_id;
     INSERT INTO public.test_parameters (test_id, code, name, unit, reference_range, reference_range_m, reference_range_f, min_val, max_val, critical_min, critical_max, sort_order) VALUES
-        (v_test_id, 'ra_factor', 'Rheumatoid Factor (RA / RF)', 'IU/mL', '< 20.0', NULL, NULL, 0, 20, NULL, NULL, 1);
+        (v_test_id, 'ra_factor', 'Rheumatoid Factor (RA / RF)', 'IU/mL', '< 20.0 IU/mL (Negative)', NULL, NULL, 0, 20, NULL, NULL, 1);
 
     -- 20. ASLO
     INSERT INTO public.tests (code, name, department, sample_type, price, active)
@@ -282,7 +282,7 @@ BEGIN
 
     DELETE FROM public.test_parameters WHERE test_id = v_test_id;
     INSERT INTO public.test_parameters (test_id, code, name, unit, reference_range, reference_range_m, reference_range_f, min_val, max_val, critical_min, critical_max, sort_order) VALUES
-        (v_test_id, 'aslo_titer', 'ASLO / ASO Titer', 'IU/mL', '< 200', NULL, NULL, 0, 200, NULL, NULL, 1);
+        (v_test_id, 'aslo_titer', 'ASLO / ASO Titer', 'IU/mL', '< 200 IU/mL (Negative)', NULL, NULL, 0, 200, NULL, NULL, 1);
 
     -- 21. HBA1C
     INSERT INTO public.tests (code, name, department, sample_type, price, active)
@@ -292,8 +292,8 @@ BEGIN
 
     DELETE FROM public.test_parameters WHERE test_id = v_test_id;
     INSERT INTO public.test_parameters (test_id, code, name, unit, reference_range, reference_range_m, reference_range_f, min_val, max_val, critical_min, critical_max, sort_order) VALUES
-        (v_test_id, 'hba1c', 'Glycated Hemoglobin (HbA1c)', '%', '< 5.7 Normal, 5.7-6.4 Prediabetes', NULL, NULL, 4, 5.6, NULL, NULL, 1),
-        (v_test_id, 'eag', 'Estimated Average Glucose (eAG)', 'mg/dL', '70 – 120', NULL, NULL, 70, 120, NULL, NULL, 2);
+        (v_test_id, 'hba1c', 'Glycated Hemoglobin (HbA1c)', '%', '< 5.7% (Normal: <5.7%, Prediabetes: 5.7–6.4%, Diabetes: ≥6.5%)', NULL, NULL, 4, 5.6, NULL, NULL, 1),
+        (v_test_id, 'eag', 'Estimated Average Glucose (eAG)', 'mg/dL', '70 – 120 mg/dL', NULL, NULL, 70, 120, NULL, NULL, 2);
 
     -- 22. LFT
     INSERT INTO public.tests (code, name, department, sample_type, price, active)
@@ -303,15 +303,15 @@ BEGIN
 
     DELETE FROM public.test_parameters WHERE test_id = v_test_id;
     INSERT INTO public.test_parameters (test_id, code, name, unit, reference_range, reference_range_m, reference_range_f, min_val, max_val, critical_min, critical_max, sort_order) VALUES
-        (v_test_id, 'bilirubin_total', 'Bilirubin, Total', 'mg/dL', '0.2 – 1.2', NULL, NULL, 0.2, 1.2, NULL, 15, 1),
-        (v_test_id, 'bilirubin_direct', 'Bilirubin, Direct', 'mg/dL', '0.0 – 0.3', NULL, NULL, 0, 0.3, NULL, NULL, 2),
-        (v_test_id, 'bilirubin_indirect', 'Bilirubin, Indirect', 'mg/dL', '0.1 – 0.8', NULL, NULL, 0.1, 0.8, NULL, NULL, 3),
-        (v_test_id, 'alt', 'SGPT / ALT', 'U/L', '7 – 56', NULL, NULL, 7, 56, NULL, 1000, 4),
-        (v_test_id, 'ast', 'SGOT / AST', 'U/L', '10 – 40', NULL, NULL, 10, 40, NULL, 1000, 5),
-        (v_test_id, 'alp', 'Alkaline Phosphatase (ALP)', 'U/L', '44 – 147', NULL, NULL, 44, 147, NULL, NULL, 6),
-        (v_test_id, 'total_protein', 'Total Protein', 'g/dL', '6.0 – 8.3', NULL, NULL, 6, 8.3, NULL, NULL, 7),
-        (v_test_id, 'albumin', 'Albumin', 'g/dL', '3.5 – 5.0', NULL, NULL, 3.5, 5, 1.5, NULL, 8),
-        (v_test_id, 'globulin', 'Globulin', 'g/dL', '2.0 – 3.5', NULL, NULL, 2, 3.5, NULL, NULL, 9),
+        (v_test_id, 'bilirubin_total', 'Bilirubin, Total', 'mg/dL', '0.2 – 1.2 mg/dL', NULL, NULL, 0.2, 1.2, NULL, 15, 1),
+        (v_test_id, 'bilirubin_direct', 'Bilirubin, Direct', 'mg/dL', '0.0 – 0.3 mg/dL', NULL, NULL, 0, 0.3, NULL, NULL, 2),
+        (v_test_id, 'bilirubin_indirect', 'Bilirubin, Indirect', 'mg/dL', '0.1 – 0.8 mg/dL', NULL, NULL, 0.1, 0.8, NULL, NULL, 3),
+        (v_test_id, 'alt', 'SGPT / ALT', 'U/L', '7 – 56 U/L', NULL, NULL, 7, 56, NULL, 1000, 4),
+        (v_test_id, 'ast', 'SGOT / AST', 'U/L', '10 – 40 U/L', NULL, NULL, 10, 40, NULL, 1000, 5),
+        (v_test_id, 'alp', 'Alkaline Phosphatase (ALP)', 'U/L', '44 – 147 U/L', NULL, NULL, 44, 147, NULL, NULL, 6),
+        (v_test_id, 'total_protein', 'Total Protein', 'g/dL', '6.0 – 8.3 g/dL', NULL, NULL, 6, 8.3, NULL, NULL, 7),
+        (v_test_id, 'albumin', 'Albumin', 'g/dL', '3.5 – 5.0 g/dL', NULL, NULL, 3.5, 5, 1.5, NULL, 8),
+        (v_test_id, 'globulin', 'Globulin', 'g/dL', '2.0 – 3.5 g/dL', NULL, NULL, 2, 3.5, NULL, NULL, 9),
         (v_test_id, 'ag_ratio', 'A:G Ratio', '', '1.2 – 2.2', NULL, NULL, 1.2, 2.2, NULL, NULL, 10);
 
     -- 23. URIC_ACID
@@ -322,7 +322,7 @@ BEGIN
 
     DELETE FROM public.test_parameters WHERE test_id = v_test_id;
     INSERT INTO public.test_parameters (test_id, code, name, unit, reference_range, reference_range_m, reference_range_f, min_val, max_val, critical_min, critical_max, sort_order) VALUES
-        (v_test_id, 'uric_acid', 'Uric Acid', 'mg/dL', '3.5 – 7.2 (M), 2.6 – 6.0 (F)', NULL, NULL, 2.5, 7, NULL, NULL, 1);
+        (v_test_id, 'uric_acid', 'Uric Acid', 'mg/dL', '2.5 – 7.2 mg/dL', '3.5 – 7.2 mg/dL', '2.6 – 6.0 mg/dL', 2.5, 7.2, NULL, NULL, 1);
 
     -- 24. THYROID_PROFILE
     INSERT INTO public.tests (code, name, department, sample_type, price, active)
@@ -332,9 +332,9 @@ BEGIN
 
     DELETE FROM public.test_parameters WHERE test_id = v_test_id;
     INSERT INTO public.test_parameters (test_id, code, name, unit, reference_range, reference_range_m, reference_range_f, min_val, max_val, critical_min, critical_max, sort_order) VALUES
-        (v_test_id, 't3_total', 'Triiodothyronine (Total T3)', 'ng/dL', '80 – 200', NULL, NULL, 80, 200, NULL, NULL, 1),
-        (v_test_id, 't4_total', 'Thyroxine (Total T4)', 'µg/dL', '5.1 – 14.1', NULL, NULL, 5.1, 14.1, NULL, NULL, 2),
-        (v_test_id, 'tsh', 'Thyroid Stimulating Hormone (TSH)', 'µIU/mL', '0.40 – 4.50', NULL, NULL, 0.4, 4.5, 0.01, 100, 3);
+        (v_test_id, 't3_total', 'Triiodothyronine (Total T3)', 'ng/dL', '80 – 200 ng/dL', NULL, NULL, 80, 200, NULL, NULL, 1),
+        (v_test_id, 't4_total', 'Thyroxine (Total T4)', 'µg/dL', '5.1 – 14.1 µg/dL', NULL, NULL, 5.1, 14.1, NULL, NULL, 2),
+        (v_test_id, 'tsh', 'Thyroid Stimulating Hormone (TSH)', 'µIU/mL', '0.40 – 4.50 µIU/mL', NULL, NULL, 0.4, 4.5, 0.01, 100, 3);
 
     -- 25. LIPID_PROFILE
     INSERT INTO public.tests (code, name, department, sample_type, price, active)
@@ -344,11 +344,11 @@ BEGIN
 
     DELETE FROM public.test_parameters WHERE test_id = v_test_id;
     INSERT INTO public.test_parameters (test_id, code, name, unit, reference_range, reference_range_m, reference_range_f, min_val, max_val, critical_min, critical_max, sort_order) VALUES
-        (v_test_id, 'cholesterol_total', 'Total Cholesterol', 'mg/dL', 'Desirable: < 200', NULL, NULL, 0, 200, NULL, NULL, 1),
-        (v_test_id, 'triglycerides', 'Triglycerides', 'mg/dL', 'Normal: < 150', NULL, NULL, 0, 150, NULL, NULL, 2),
-        (v_test_id, 'hdl', 'HDL Cholesterol', 'mg/dL', '> 40 (M), > 50 (F)', NULL, NULL, 40, 100, NULL, NULL, 3),
-        (v_test_id, 'ldl', 'LDL Cholesterol', 'mg/dL', 'Optimal: < 100', NULL, NULL, 0, 100, NULL, NULL, 4),
-        (v_test_id, 'vldl', 'VLDL Cholesterol', 'mg/dL', '5 – 40', NULL, NULL, 5, 40, NULL, NULL, 5),
+        (v_test_id, 'cholesterol_total', 'Total Cholesterol', 'mg/dL', '< 200 mg/dL (Desirable: <200, Borderline: 200–239, High: ≥240)', NULL, NULL, 0, 200, NULL, NULL, 1),
+        (v_test_id, 'triglycerides', 'Triglycerides', 'mg/dL', '< 150 mg/dL (Normal: <150, Borderline: 150–199, High: 200–499)', NULL, NULL, 0, 150, NULL, NULL, 2),
+        (v_test_id, 'hdl', 'HDL Cholesterol', 'mg/dL', '> 40 (M), > 50 (F) mg/dL', '> 40 mg/dL', '> 50 mg/dL', 40, 100, NULL, NULL, 3),
+        (v_test_id, 'ldl', 'LDL Cholesterol', 'mg/dL', '< 100 mg/dL (Optimal: <100, Borderline: 130–159, High: ≥160)', NULL, NULL, 0, 100, NULL, NULL, 4),
+        (v_test_id, 'vldl', 'VLDL Cholesterol', 'mg/dL', '5 – 40 mg/dL', NULL, NULL, 5, 40, NULL, NULL, 5),
         (v_test_id, 'chol_hdl_ratio', 'Total Chol / HDL Ratio', '', '3.3 – 4.4', NULL, NULL, 3.3, 4.4, NULL, NULL, 6);
 
     -- 26. UREA
@@ -359,7 +359,7 @@ BEGIN
 
     DELETE FROM public.test_parameters WHERE test_id = v_test_id;
     INSERT INTO public.test_parameters (test_id, code, name, unit, reference_range, reference_range_m, reference_range_f, min_val, max_val, critical_min, critical_max, sort_order) VALUES
-        (v_test_id, 'urea', 'Blood Urea', 'mg/dL', '15 – 40', NULL, NULL, 15, 40, NULL, 200, 1);
+        (v_test_id, 'urea', 'Blood Urea', 'mg/dL', '15 – 40 mg/dL', NULL, NULL, 15, 40, NULL, 200, 1);
 
     -- 27. ELECTROLYTES
     INSERT INTO public.tests (code, name, department, sample_type, price, active)
@@ -369,9 +369,9 @@ BEGIN
 
     DELETE FROM public.test_parameters WHERE test_id = v_test_id;
     INSERT INTO public.test_parameters (test_id, code, name, unit, reference_range, reference_range_m, reference_range_f, min_val, max_val, critical_min, critical_max, sort_order) VALUES
-        (v_test_id, 'sodium', 'Sodium (Na+)', 'mmol/L', '136 – 145', NULL, NULL, 136, 145, 120, 160, 1),
-        (v_test_id, 'potassium', 'Potassium (K+)', 'mmol/L', '3.5 – 5.1', NULL, NULL, 3.5, 5.1, 2.5, 6.5, 2),
-        (v_test_id, 'chloride', 'Chloride (Cl-)', 'mmol/L', '98 – 107', NULL, NULL, 98, 107, 80, 120, 3);
+        (v_test_id, 'sodium', 'Sodium (Na+)', 'mmol/L', '136 – 145 mmol/L', NULL, NULL, 136, 145, 120, 160, 1),
+        (v_test_id, 'potassium', 'Potassium (K+)', 'mmol/L', '3.5 – 5.1 mmol/L', NULL, NULL, 3.5, 5.1, 2.5, 6.5, 2),
+        (v_test_id, 'chloride', 'Chloride (Cl-)', 'mmol/L', '98 – 107 mmol/L', NULL, NULL, 98, 107, 80, 120, 3);
 
     -- 28. CREATININE
     INSERT INTO public.tests (code, name, department, sample_type, price, active)
@@ -381,7 +381,7 @@ BEGIN
 
     DELETE FROM public.test_parameters WHERE test_id = v_test_id;
     INSERT INTO public.test_parameters (test_id, code, name, unit, reference_range, reference_range_m, reference_range_f, min_val, max_val, critical_min, critical_max, sort_order) VALUES
-        (v_test_id, 'creatinine', 'Serum Creatinine', 'mg/dL', '0.7 – 1.3 (M), 0.6 – 1.1 (F)', NULL, NULL, 0.6, 1.3, NULL, 10, 1);
+        (v_test_id, 'creatinine', 'Serum Creatinine', 'mg/dL', '0.6 – 1.3 mg/dL', '0.7 – 1.3 mg/dL', '0.6 – 1.1 mg/dL', 0.6, 1.3, NULL, 10, 1);
 
     -- 29. FSH
     INSERT INTO public.tests (code, name, department, sample_type, price, active)

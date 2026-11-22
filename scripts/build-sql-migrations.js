@@ -102,11 +102,13 @@ console.log('Saved 003_seed_catalog.sql successfully.');
 // Combine into all_in_one_setup.sql
 const file001 = path.join(migrationsDir, '001_initial_schema.sql');
 const file002 = path.join(migrationsDir, '002_functions_and_rpc.sql');
+const file004 = path.join(migrationsDir, '004_anand_lab_catalog_v2.sql');
 const fileAll = path.join(migrationsDir, 'all_in_one_setup.sql');
 
 const content001 = fs.readFileSync(file001, 'utf8');
 const content002 = fs.readFileSync(file002, 'utf8');
-const contentAll = `${content001}\n\n${content002}\n\n${sql}`;
+const content004 = fs.existsSync(file004) ? fs.readFileSync(file004, 'utf8') : '';
+const contentAll = `${content001}\n\n${content002}\n\n${sql}\n\n${content004}`.trim() + '\n';
 
 fs.writeFileSync(fileAll, contentAll, 'utf8');
-console.log('Saved all_in_one_setup.sql with complete 38 tests.');
+console.log('Saved all_in_one_setup.sql with complete 38 tests and catalog v2.');
