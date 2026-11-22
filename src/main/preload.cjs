@@ -1,6 +1,7 @@
 const { contextBridge, ipcRenderer } = require('electron');
 
 contextBridge.exposeInMainWorld('labflowAPI', {
+  isElectron: true,
   getSupabaseConfig: () => ipcRenderer.invoke('get-supabase-config'),
   saveSupabaseConfig: (cfg) => ipcRenderer.invoke('save-supabase-config', cfg),
   saveSession: (sessionStr) => ipcRenderer.invoke('auth:save-session', sessionStr),

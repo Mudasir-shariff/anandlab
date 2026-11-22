@@ -103,6 +103,33 @@ const scenarios = [
     }
   },
   {
+    name: 'anand-fbs-single-page',
+    title: 'Anand Laboratory - Fasting Blood Sugar (FBS)',
+    template: 'classic',
+    order: {
+      id: 'BL-10011',
+      patientId: 'PAT-94576',
+      name: 'Mr Sumeet',
+      age: 23,
+      sex: 'Male',
+      category: 'Walk-in',
+      referrer: 'Dr. Rajesh Sharma',
+      tests: ['FBS'],
+      status: 'Approved',
+      createdAt: '2026-11-22T03:42:00.000Z',
+      collectedAt: '2026-11-22T03:42:00.000Z',
+      receivedAt: '2026-11-22T03:42:00.000Z',
+      approvedAt: '2026-11-22T03:43:00.000Z',
+      approvedBy: 'usr-admin',
+      approvedByName: 'Lab Technician',
+      amount: 70,
+      paid: 70,
+      paymentMethod: 'Cash',
+      results: { glucose_fasting: 118.0 },
+      notes: 'Blood glucose level indicates impaired fasting glucose.'
+    }
+  },
+  {
     name: 'sahara-all-15-panels-multipage',
     title: 'Sahara Layout - 15-Panel Multipage Comprehensive Health Check',
     template: 'sahara',

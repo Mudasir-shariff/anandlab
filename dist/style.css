@@ -3856,9 +3856,26 @@ tbody tr:hover {
 /* ========================================================
    Print Rules
    ======================================================== */
+#labflow-print-mount {
+  display: none !important;
+}
+
 @media print {
   body {
     background: #ffffff;
+  }
+
+  body.labflow-printing-mount > *:not(#labflow-print-mount) {
+    display: none !important;
+  }
+
+  body.labflow-printing-mount #labflow-print-mount {
+    display: block !important;
+    position: static !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #ffffff !important;
   }
 
   #app,

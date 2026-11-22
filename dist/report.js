@@ -170,12 +170,12 @@ function generateSvgQrCode(orderId, patientId) {
       if (grid[r][c]) rects.push(`<rect x="${c}" y="${r}" width="1" height="1" fill="#004d55"/>`);
     }
   }
-  return `<svg class="ref-qr-svg" viewBox="-1 -1 27 27" xmlns="http://www.w3.org/2000/svg">
+  return `<svg class="ref-qr-svg" width="40" height="40" viewBox="-1 -1 27 27" xmlns="http://www.w3.org/2000/svg" style="width:40px;height:40px;display:block;">
     <rect x="-1" y="-1" width="27" height="27" fill="#ffffff" rx="1"/>
     ${rects.join('')}
   </svg>`;
 }
-const caduceusCrossIcon = `<svg class="ref-cross-svg" viewBox="0 0 60 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+const caduceusCrossIcon = `<svg class="ref-cross-svg" width="44" height="44" viewBox="0 0 60 60" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:44px;height:44px;display:block;">
   <!-- Teal medical cross -->
   <path d="M18 2C18 0.9 18.9 0 20 0H40C41.1 0 42 0.9 42 2V18H58C59.1 18 60 18.9 60 20V40C60 41.1 59.1 42 58 42H42V58C42 59.1 41.1 60 40 60H20C18.9 60 18 59.1 18 58V42H2C0.9 42 0 41.1 0 40V20C0 18.9 0.9 18 2 18H18V2Z" fill="#006b76"/>
   <!-- Staff center line -->
@@ -190,7 +190,7 @@ const caduceusCrossIcon = `<svg class="ref-cross-svg" viewBox="0 0 60 60" fill="
   <path d="M36 20C36 17 32 17 30 19C28 21 30 25 33 26C36 27 37 30 35 33C33 35 30 35 30 38C30 41 33 43 35 45" stroke="white" stroke-width="1.7" fill="none" stroke-linecap="round"/>
 </svg>`;
 
-const microscopeBadgeIcon = `<svg class="ref-microscope-svg" viewBox="0 0 56 56" fill="none" xmlns="http://www.w3.org/2000/svg">
+const microscopeBadgeIcon = `<svg class="ref-microscope-svg" width="34" height="34" viewBox="0 0 56 56" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:34px;height:34px;display:block;">
   <!-- Eyepiece -->
   <rect x="22" y="4" width="12" height="7" rx="2" fill="white"/>
   <!-- Body tube -->
@@ -209,13 +209,13 @@ const microscopeBadgeIcon = `<svg class="ref-microscope-svg" viewBox="0 0 56 56"
   <line x1="11" y1="41" x2="45" y2="41" stroke="white" stroke-width="1.5" opacity="0.4"/>
 </svg>`;
 
-const hospitalWaves = `<svg class="ref-waves-svg" viewBox="0 0 100 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+const hospitalWaves = `<svg class="ref-waves-svg" width="70" height="9" viewBox="0 0 100 12" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:70px;height:9px;display:block;">
   <path d="M0 6C25 0 25 12 50 6C75 0 75 12 100 6" stroke="#006b76" stroke-width="2" stroke-linecap="round"/>
   <path d="M0 10C25 4 25 16 50 10C75 4 75 16 100 10" stroke="#2dd4bf" stroke-width="1.2" stroke-linecap="round" opacity="0.7"/>
 </svg>`;
 
-const watermarkSvg = `<div class="report-watermark" aria-hidden="true">
-  <svg class="watermark-microscope" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+const watermarkSvg = `<div class="report-watermark" aria-hidden="true" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);pointer-events:none;z-index:0;opacity:0.12;display:flex;flex-direction:column;align-items:center;justify-content:center;width:240px;height:240px;margin:0;padding:0;">
+  <svg class="watermark-microscope" width="200" height="200" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:200px;height:200px;display:block;">
     <circle cx="100" cy="100" r="92" stroke="#006b76" stroke-width="3" opacity="0.3"/>
     <circle cx="100" cy="100" r="82" stroke="#006b76" stroke-width="1.5" stroke-dasharray="4 4" opacity="0.2"/>
     <path d="M85 55L105 75M78 62L98 82" stroke="#006b76" stroke-width="5" stroke-linecap="round" opacity="0.3"/>
@@ -225,11 +225,11 @@ const watermarkSvg = `<div class="report-watermark" aria-hidden="true">
     <rect x="46" y="150" width="76" height="12" rx="4" fill="#006b76" opacity="0.3"/>
     <line x1="84" y1="142" x2="84" y2="150" stroke="#006b76" stroke-width="6" opacity="0.3"/>
   </svg>
-  <div class="watermark-label">Anand Laboratory</div>
-  <svg class="watermark-wave" viewBox="0 0 160 14" fill="none"><path d="M0 7C40 0 40 14 80 7C120 0 120 14 160 7" stroke="#006b76" stroke-width="2.5" opacity="0.25"/></svg>
+  <div class="watermark-label" style="font-family:'Georgia',serif;font-size:22px;font-weight:700;letter-spacing:-0.3px;color:#006b76;margin-top:8px;">Anand Laboratory</div>
+  <svg class="watermark-wave" width="160" height="14" viewBox="0 0 160 14" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:160px;height:14px;display:block;margin-top:4px;"><path d="M0 7C40 0 40 14 80 7C120 0 120 14 160 7" stroke="#006b76" stroke-width="2.5" opacity="0.25"/></svg>
 </div>`;
 
-const molecularLatticeSvg = `<svg class="molecular-lattice" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+const molecularLatticeSvg = `<svg class="molecular-lattice" width="90" height="90" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:90px;height:90px;display:block;">
   <path d="M30 10L50 22V46L30 58L10 46V22L30 10Z" stroke="#006b76" stroke-width="1" opacity="0.12"/>
   <path d="M70 10L90 22V46L70 58L50 46V22L70 10Z" stroke="#006b76" stroke-width="1" opacity="0.12"/>
   <path d="M50 46L70 58V82L50 94L30 82V58L50 46Z" stroke="#006b76" stroke-width="1" opacity="0.12"/>
@@ -380,31 +380,29 @@ function letterhead(profile) {
   const labName = (profile.labName && profile.labName !== 'Anand Diagnostic Center') ? profile.labName : 'Anand Laboratory';
   const address = (profile.address && !profile.address.includes('Vijayanagar')) ? profile.address : 'Silk Filature Quarters Road, Ward No. 14, Sidlaghatta – 562105, Chikkaballapur (Dist.)';
   // Two-tone: first word dark navy, remaining words in teal (e.g. "Anand" dark, "Laboratory" teal).
-  // The full escaped name is placed as a visually-hidden text node so report-snapshot assertions still work;
-  // the decorative overlay uses aria-hidden spans.
   const escapedFull = text(labName);
   const parts = labName.trim().split(/\s+/);
   const p1 = escape(parts[0]);
   const p2 = parts.length > 1 ? escape(parts.slice(1).join(' ')) : '';
-  const twoToneOverlay = p2
-    ? `<span class="ref-name-twocolor" aria-hidden="true"><span class="ref-name-word1">${p1}</span> <span class="ref-name-word2">${p2}</span></span>`
-    : '';
+  const twoToneHtml = p2
+    ? `<span class="ref-name-word1" style="color:#07202e;font-weight:800;">${p1}</span> <span class="ref-name-word2" style="color:#006b76;font-weight:700;">${p2}</span>`
+    : `<span style="color:#006b76;font-weight:700;">${escapedFull}</span>`;
   return `<header class="report-brand" id="ref-letterhead-header">
     <div class="ref-brand-left">
-      <div class="ref-caduceus-icon">${caduceusCrossIcon}</div>
+      <div class="ref-caduceus-icon" style="width:44px;height:44px;">${caduceusCrossIcon}</div>
       <div class="ref-hospital-text">
         <div class="ref-hospital-title">DR. ANAND</div>
         <div class="ref-hospital-sub">HOSPITAL</div>
-        <div class="ref-hospital-wave-box">${hospitalWaves}</div>
+        <div class="ref-hospital-wave-box" style="width:70px;height:9px;">${hospitalWaves}</div>
       </div>
     </div>
-    <div class="ref-brand-sep"></div>
+    <div class="ref-brand-sep" style="width:1.5px;height:48px;background:#006b76;margin:0 16px;flex-shrink:0;"></div>
     <div class="ref-brand-center">
-      <h2 class="ref-lab-name">${escapedFull}${twoToneOverlay}</h2>
+      <h2 class="ref-lab-name" data-lab-name="${escapedFull}">${twoToneHtml}<!-- ${escapedFull} --></h2>
       <p class="ref-lab-address">${escape(address)}</p>
     </div>
     <div class="ref-header-swoosh-corner">
-      <div class="ref-microscope-emblem">${microscopeBadgeIcon}</div>
+      <div class="ref-microscope-emblem" style="width:50px;height:50px;">${microscopeBadgeIcon}</div>
     </div>
   </header>`;
 }
@@ -486,5 +484,5 @@ export function renderReport(order = {}, settings = {}, options = {}) {
   if (definitions.hasUnknown) warnings.push('Some recorded test definitions are unavailable. Verify this report with the laboratory.');
   const warning = warnings.join(' ');
   const pages = paginate(order, profile, template, definitions, Boolean(mode), warning);
-  return `<div class="report report-document report-theme-${template}" data-report-template="${template}">${pages.map((page, index) => `<article class="report-page" aria-label="Report page ${index + 1} of ${pages.length}">${watermarkSvg}<div class="molecular-lattice-tr" aria-hidden="true">${molecularLatticeSvg}</div><div class="molecular-lattice-bl" aria-hidden="true">${molecularLatticeSvg}</div>${mode ? `<div class="report-status-ribbon ${draft ? 'report-status-draft' : ''}">${escape(mode)}</div>` : ''}${letterhead(profile)}${patientDetails(order)}${warning ? `<p class="report-data-warning">${escape(warning)}</p>` : ''}<div class="report-document-title"><span>LABORATORY REPORT</span><b>${draft ? 'DRAFT' : 'RESULTS'}</b></div><main class="report-results-content">${page.sections.length ? page.sections.map(section => `<section class="report-test-section"><div class="report-test-heading"><span>${text(section.test.department)}</span><h3>${text(section.test.name)}${section.continued ? ' <small>(continued)</small>' : ''}</h3><div>Specimen: ${text(section.test.sample)}</div></div><table class="report-results-table"><colgroup><col style="width:43%"><col style="width:16%"><col style="width:17%"><col style="width:24%"></colgroup><thead><tr><th>TEST DESCRIPTION</th><th>RESULT</th><th>UNITS</th><th>BIOLOGICAL REFERENCE</th></tr></thead><tbody>${section.rows.map(row => resultRow(row, section.code, order.sex)).join('')}</tbody></table></section>`).join('') : page.noteOnly ? '' : '<p class="report-no-results">No test results are available for this order.</p>'}</main>${page.notes !== null ? `<section class="report-clinical-notes"><h4>Interpretation :${page.notesContinued ? ' (continued)' : ''}</h4><p>${escape(page.notes)}</p><small>H = above reference interval · L = below reference interval. Interpret results with clinical findings. Reference intervals require laboratory validation.</small></section>` : ''}<div class="report-end-marker">****End Of The Report****</div>${page.signatures ? signatures(order, profile) : '<p class="report-continued-note">Report continued on the next page.</p>'}<footer class="report-page-footer"><div class="report-footer-rule"></div><div class="report-footer-row"><span>${text(order.id)}</span><strong>Page ${index + 1} of ${pages.length}</strong><span>${index === pages.length - 1 ? 'End of report' : 'Continued'}</span></div>${profile.reportFooter ? `<p>${escape(profile.reportFooter)}</p>` : '<p>Results relate only to the sample tested. Please correlate with clinical findings.</p>'}${profile.workingHours ? `<p>Working hours: ${escape(profile.workingHours)}</p>` : ''}</footer>${bottomBanner()}</article>`).join('')}</div>`;
+  return `<div class="report report-document report-theme-${template}" data-report-template="${template}">${pages.map((page, index) => `<article class="report-page" aria-label="Report page ${index + 1} of ${pages.length}">${watermarkSvg}<div class="molecular-lattice-tr" aria-hidden="true" style="position:absolute;top:80px;right:10px;width:90px;height:90px;pointer-events:none;z-index:0;opacity:0.6;">${molecularLatticeSvg}</div><div class="molecular-lattice-bl" aria-hidden="true" style="position:absolute;bottom:65px;left:10px;width:90px;height:90px;pointer-events:none;z-index:0;opacity:0.6;">${molecularLatticeSvg}</div>${mode ? `<div class="report-status-ribbon ${draft ? 'report-status-draft' : ''}">${escape(mode)}</div>` : ''}${letterhead(profile)}${patientDetails(order)}${warning ? `<p class="report-data-warning">${escape(warning)}</p>` : ''}<div class="report-document-title"><span>LABORATORY REPORT</span><b>${draft ? 'DRAFT' : 'RESULTS'}</b></div><main class="report-results-content">${page.sections.length ? page.sections.map(section => `<section class="report-test-section"><div class="report-test-heading"><span>${text(section.test.department)}</span><h3>${text(section.test.name)}${section.continued ? ' <small>(continued)</small>' : ''}</h3><div>Specimen: ${text(section.test.sample)}</div></div><table class="report-results-table"><colgroup><col style="width:43%"><col style="width:16%"><col style="width:17%"><col style="width:24%"></colgroup><thead><tr><th>TEST DESCRIPTION</th><th>RESULT</th><th>UNITS</th><th>BIOLOGICAL REFERENCE</th></tr></thead><tbody>${section.rows.map(row => resultRow(row, section.code, order.sex)).join('')}</tbody></table></section>`).join('') : page.noteOnly ? '' : '<p class="report-no-results">No test results are available for this order.</p>'}</main>${page.notes !== null ? `<section class="report-clinical-notes"><h4>Interpretation :${page.notesContinued ? ' (continued)' : ''}</h4><p>${escape(page.notes)}</p><small>H = above reference interval · L = below reference interval. Interpret results with clinical findings. Reference intervals require laboratory validation.</small></section>` : ''}<div class="report-end-marker">****End Of The Report****</div>${page.signatures ? signatures(order, profile) : '<p class="report-continued-note">Report continued on the next page.</p>'}<footer class="report-page-footer"><div class="report-footer-rule"></div><div class="report-footer-row"><span>${text(order.id)}</span><strong>Page ${index + 1} of ${pages.length}</strong><span>${index === pages.length - 1 ? 'End of report' : 'Continued'}</span></div>${profile.reportFooter ? `<p>${escape(profile.reportFooter)}</p>` : '<p>Results relate only to the sample tested. Please correlate with clinical findings.</p>'}${profile.workingHours ? `<p>Working hours: ${escape(profile.workingHours)}</p>` : ''}</footer>${bottomBanner()}</article>`).join('')}</div>`;
 }

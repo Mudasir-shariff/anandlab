@@ -5,7 +5,7 @@
 /* Minimal hospital letterhead: quiet typography and a teal section rule. */
 .report-document.report-theme-minimal{--report-accent:#218b8b;--report-accent-rgb:33,139,139;--report-soft:#eff7f6}.report-theme-minimal .report-brand{background:white;color:#3b5664;border-bottom:0;padding-bottom:8px;min-height:103px;gap:12px;flex-direction:row-reverse}.report-theme-minimal .report-brand-main{order:2}.report-theme-minimal .report-brand-symbol{order:1;color:#328d9b;height:55px;width:50px}.report-theme-minimal .report-brand-contact{order:0;flex-basis:158px;font-size:8px;color:#7d8b94}.report-theme-minimal .report-brand-kicker{color:#2c8b8b}.report-theme-minimal .report-brand h2{font-size:20px;color:#237b7d;letter-spacing:.3px}.report-theme-minimal .report-brand-address{color:#617681;font-size:8px!important}.report-theme-minimal .report-document-title{background:#3ca2a0;color:white;justify-content:center;font-size:9px;font-weight:400;letter-spacing:1.7px;border:2px solid #d9e9e7;padding:5px;margin-top:13px}.report-theme-minimal .report-document-title b{color:#e2f5f2;margin-left:12px;font-size:7px}.report-theme-minimal .report-patient-block{border-bottom:0;padding-bottom:4px}.report-theme-minimal .report-patient-block dl>div{grid-template-columns:65px minmax(0,1fr)}.report-theme-minimal .report-sample-details{border-left:0;padding-left:0}.report-theme-minimal .report-test-heading>span{display:none}.report-theme-minimal .report-test-heading h3{color:#25898a;letter-spacing:.7px;font-size:13px}.report-theme-minimal .report-test-heading>div{font-size:7px;margin-top:5px}.report-theme-minimal table.report-results-table{border:0}.report-theme-minimal .report-results-table th{font-size:8px;letter-spacing:.25px;background:transparent;border:0;color:#6a7e87;padding:6px 7px 9px;font-weight:500}.report-theme-minimal .report-results-table td{border:0;padding:5px 7px;font-size:9px}.report-theme-minimal .report-results-table .report-abnormal td{background:transparent;color:#b96d43}.report-theme-minimal .report-results-table .report-abnormal .report-result-value{color:#a65431}.report-theme-minimal .report-result-flag{background:transparent;border:0;margin-left:3px;min-width:9px}.report-theme-minimal .report-clinical-notes{background:white;border-top:1px solid #dce8e7;padding-left:0;padding-right:0}.report-theme-minimal .report-footer-rule{height:1px;background:#a5ccca}.report-theme-minimal .report-reviewer-line{border-color:#a2c8c7}
 @media screen and (max-width:760px){.report.report-document{overflow-x:auto;padding-bottom:4px;-webkit-overflow-scrolling:touch}.report-document .report-page{max-width:none;width:680px;min-height:956px;padding-left:25px;padding-right:25px}.report-document .report-brand,.report-document .report-status-ribbon{margin-left:-25px;margin-right:-25px}.report-document .report-brand{padding-left:25px;padding-right:25px}.report-document .report-footer-rule{margin-left:-25px;margin-right:-25px}.report-document .report-brand h2{font-size:22px}.report-theme-sahara .report-brand h2{font-size:22px}.report-theme-minimal .report-brand h2{font-size:20px}}
-@media print{@page{size:A4;margin:10mm}.report.report-document{width:100%;max-width:none;overflow:visible;padding:0;background:white}.report-document .report-page{width:100%;max-width:none;min-height:274mm;padding:0 6mm 3mm;margin:0;border:0;box-shadow:none;overflow:visible;break-after:page;page-break-after:always}.report-document .report-page:last-child{break-after:auto;page-break-after:auto;margin-bottom:0}.report-document .report-brand,.report-document .report-status-ribbon{margin-left:-6mm;margin-right:-6mm}.report-document .report-brand{padding-left:6mm;padding-right:6mm}.report-document .report-footer-rule{margin-left:-6mm;margin-right:-6mm}.report-document .report-results-table tr{break-inside:avoid;page-break-inside:avoid}.report-document .report-test-section,.report-document .report-reviewers,.report-document .report-clinical-notes{break-inside:avoid;page-break-inside:avoid}.report-document *{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
+@media print{@page{size:A4 portrait;margin:8mm 6mm}.report.report-document{width:100%;max-width:none;overflow:visible;padding:0;background:white}.report-document .report-page{width:100%;max-width:none;min-height:265mm;padding:0 6mm 3mm;margin:0;border:0;box-shadow:none;overflow:visible;break-after:page;page-break-after:always}.report-document .report-page:last-child{break-after:auto;page-break-after:auto;margin-bottom:0}.report-document .report-brand,.report-document .report-status-ribbon{margin-left:-6mm;margin-right:-6mm}.report-document .report-brand{padding-left:6mm;padding-right:6mm}.report-document .report-footer-rule{margin-left:-6mm;margin-right:-6mm}.report-document .report-results-table tr{break-inside:avoid;page-break-inside:avoid}.report-document .report-test-section,.report-document .report-reviewers,.report-document .report-clinical-notes{break-inside:avoid;page-break-inside:avoid}.report-document *{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
 /* Readable paper typography and measured page content: no preview content is clipped. */
 .report-document .report-page{overflow:visible}
 .report-document .report-page>*{flex-shrink:0}
@@ -81,7 +81,7 @@
 }
 @media print{
  .report.report-document{overflow:visible!important}
- .report-document .report-page{min-height:273mm;height:auto;overflow:visible!important;display:flex;flex-direction:column}
+ .report-document .report-page{min-height:265mm;height:auto;overflow:visible!important;display:flex;flex-direction:column}
  .report-document .report-page>*{flex-shrink:0}
  .report-document .report-brand{min-height:28mm}
  .report-theme-sahara .report-brand{min-height:31mm}
@@ -199,27 +199,6 @@
 .ref-name-word2 {
   color: #006b76 !important;
   font-weight: 700 !important;
-}
-
-/* The h2 contains the full text for test/snapshot compatibility (invisible),
-   plus an aria-hidden overlay with the two-tone spans */
-.ref-lab-name {
-  position: relative !important;
-  color: transparent !important;  /* hide the raw text node */
-}
-
-.ref-lab-name .ref-name-twocolor {
-  position: absolute !important;
-  left: 0 !important;
-  top: 0 !important;
-  color: inherit !important;
-  display: block !important;
-  width: 100% !important;
-}
-
-/* Fallback for single-word lab names (no overlay) */
-.ref-lab-name:not(:has(.ref-name-twocolor)) {
-  color: #005b68 !important;
 }
 
 .ref-lab-address {
