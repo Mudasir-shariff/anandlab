@@ -163,7 +163,7 @@ test('Labflow Desktop UI: Login, Billing, Reports, Printing and Settings validat
   // Load app.js
   const appSrc = readFileSync(new URL('../dist/app.js', import.meta.url), 'utf8')
     .replace(/^import[^\n]+\n/gm, '')
-    .replace(/^/, 'const {TESTS,PARAMETERS,reportNotes}=window.catalog;\nconst {renderReport,REPORT_TEMPLATES,wrapReportHtml,REPORT_CSS}=window.reportModule;\n');
+    .replace(/^/, 'const {TESTS,PARAMETERS,reportNotes,filterNotesForSelectedTests}=window.catalog;\nconst {renderReport,REPORT_TEMPLATES,wrapReportHtml,REPORT_CSS}=window.reportModule;\n');
 
   w.catalog = catalog;
   w.reportModule = reportModule;

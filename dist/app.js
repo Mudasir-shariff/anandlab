@@ -3,7 +3,7 @@
  * Backed by Supabase PostgreSQL
  */
 
-import { TESTS, PARAMETERS, reportNotes } from './catalog.js';
+import { TESTS, PARAMETERS, reportNotes, filterNotesForSelectedTests } from './catalog.js';
 import { renderReport, REPORT_TEMPLATES, wrapReportHtml, REPORT_CSS } from './report.js';
 
 let deferredInstallPrompt = null;
@@ -2904,7 +2904,7 @@ function generateReceiptHTML(bill, lab, format = 'a4', fullPage = false) {
                 receivedAt: report.created_at,
                 approvedAt: report.completed_at,
                 status: report.status === 'Completed' ? 'Approved' : 'Draft',
-                notes: report.clinical_notes,
+                notes: report.clinical_notes || ([...new Set(report.report_results?.map(r => r.test_code) || [])].map(k => reportNotes[k]).filter(Boolean).join('\n\n')),
       tests: [...new Set(report.report_results?.map(r => r.test_code) || [])],
       results: Object.fromEntries(report.report_results?.map(r => [r.parameter_code, r.value]) || [])
     };
@@ -2980,10 +2980,16 @@ function generateReceiptHTML(bill, lab, format = 'a4', fullPage = false) {
                     selectedCodes = Array.from(checkedBoxes).filter(cb => cb.checked).map(cb => cb.value);
                     if (selectedCodes.length === 0) selectedCodes = allTestCodes; // fallback to all
                   }
+                  // Dynamically filter clinical interpretation / notes to match selected tests
+                  const dynamicFilter = typeof filterNotesForSelectedTests === 'function'
+                    ? filterNotesForSelectedTests
+                    : (typeof window !== 'undefined' && window.catalog?.filterNotesForSelectedTests) || ((n, s) => s.map(k => reportNotes[k]).filter(Boolean).join('\n\n'));
+                  const dynamicNotes = dynamicFilter(orderAdapter.notes, selectedCodes, allTestCodes);
                   // Build filtered adapter
                   const filteredAdapter = {
                     ...orderAdapter,
                     tests: selectedCodes,
+                    notes: dynamicNotes,
                     results: Object.fromEntries(
                       Object.entries(allResults).filter(([key]) => {
                         return selectedCodes.some(code => {

@@ -270,3 +270,85 @@ export function makeDemoOrders() {
     demo: true
   }));
 }
+
+/**
+ * Dynamically filter clinical notes and interpretations based on selected test codes.
+ * When 2 or more tests are ordered and one or more are canceled/deselected for printing,
+ * this removes the clinical interpretation of the canceled test(s).
+ */
+export function filterNotesForSelectedTests(fullNotes, selectedCodes, allTestCodes = []) {
+  if (!selectedCodes || selectedCodes.length === 0) return '';
+
+  const allCodes = (allTestCodes && allTestCodes.length > 0)
+    ? allTestCodes
+    : (Array.isArray(selectedCodes) ? selectedCodes : []);
+
+  const deselectedCodes = allCodes.filter(c => !selectedCodes.includes(c));
+
+  // If all tests are selected, keep full notes (or standard notes if empty)
+  if (deselectedCodes.length === 0) {
+    return fullNotes || selectedCodes.map(k => reportNotes[k]).filter(Boolean).join('\n\n');
+  }
+
+  // If fullNotes is empty or only whitespace, return standard notes for selectedCodes
+  if (!fullNotes || !fullNotes.trim()) {
+    return selectedCodes.map(k => reportNotes[k]).filter(Boolean).join('\n\n');
+  }
+
+  // Normalize line endings to LF
+  const normalized = fullNotes.replace(/\r\n/g, '\n');
+
+  // Split into chunks: prefer double newlines, but if single lines are used, handle them
+  let chunks = normalized.split(/\n\s*\n/).map(c => c.trim()).filter(Boolean);
+  if (chunks.length === 1 && normalized.includes('\n')) {
+    chunks = normalized.split('\n').map(c => c.trim()).filter(Boolean);
+  }
+
+  const isDeselectedParagraph = (para) => {
+    const lowerPara = para.toLowerCase();
+    for (const code of deselectedCodes) {
+      const lowerCode = code.toLowerCase();
+      const defaultNote = reportNotes[code];
+      const testDef = (typeof TESTS !== 'undefined' && TESTS[code]);
+      const testName = testDef?.name?.toLowerCase();
+
+      // 1. Matches standard catalog default note for this deselected test
+      if (defaultNote) {
+        const lowerDef = defaultNote.toLowerCase().trim();
+        if (lowerPara.includes(lowerDef) || (lowerPara.length > 20 && lowerDef.includes(lowerPara))) {
+          return true;
+        }
+      }
+
+      // 2. Starts with test code or code prefix e.g. "CBC:", "1. CBC:", "- CBC -"
+      const cleanedStart = lowerPara.replace(/^[\d\.\-\*\•\s]+/, '');
+      if (cleanedStart.startsWith(lowerCode + ':') || 
+          cleanedStart.startsWith(lowerCode + ' -') || 
+          cleanedStart.startsWith(lowerCode + ' —') ||
+          cleanedStart.startsWith(lowerCode + ' ') ||
+          cleanedStart === lowerCode) {
+        return true;
+      }
+
+      // 3. Starts with test name e.g. "Complete Blood Count:", "Fasting Blood Sugar -"
+      if (testName) {
+        if (cleanedStart.startsWith(testName + ':') || 
+            cleanedStart.startsWith(testName + ' -') || 
+            cleanedStart.startsWith(testName + ' —') ||
+            cleanedStart.startsWith(testName + ' ')) {
+          return true;
+        }
+      }
+    }
+    return false;
+  };
+
+  const filtered = chunks.filter(para => !isDeselectedParagraph(para));
+
+  if (filtered.length > 0) {
+    return filtered.join('\n\n');
+  }
+
+  // Fallback if all paragraphs were stripped
+  return selectedCodes.map(k => reportNotes[k]).filter(Boolean).join('\n\n');
+}

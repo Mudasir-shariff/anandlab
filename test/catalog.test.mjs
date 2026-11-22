@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { TESTS, PARAMETERS, makeDemoOrders, reportNotes } from '../dist/catalog.js';
+import { TESTS, PARAMETERS, makeDemoOrders, reportNotes, filterNotesForSelectedTests } from '../dist/catalog.js';
 
 const codes = [
   'CBC', 'BLOOD_GROUP', 'WIDAL', 'CRP', 'PLATELET', 'AEC', 'ESR', 'MALARIA',
@@ -74,3 +74,32 @@ test('fresh review and approved demo orders stay complete after catalog expansio
     for (const key of parametersFor(order)) assert(order.results[key] !== undefined, `${order.id}: missing ${key}`);
   }
 });
+
+test('dynamic interpretation: canceling a test from print excludes its clinical interpretation', () => {
+  const allTests = ['CBC', 'FBS', 'LFT'];
+  const fullNotes = allTests.map(k => reportNotes[k]).join('\n\n');
+
+  // Cancel CBC, only print FBS and LFT
+  const res1 = filterNotesForSelectedTests(fullNotes, ['FBS', 'LFT'], allTests);
+  assert(!res1.includes(reportNotes.CBC), 'Canceled CBC interpretation must be excluded');
+  assert(res1.includes(reportNotes.FBS), 'Selected FBS interpretation must be retained');
+  assert(res1.includes(reportNotes.LFT), 'Selected LFT interpretation must be retained');
+
+  // Cancel FBS and LFT, only print CBC
+  const res2 = filterNotesForSelectedTests(fullNotes, ['CBC'], allTests);
+  assert(res2.includes(reportNotes.CBC), 'Selected CBC interpretation must be retained');
+  assert(!res2.includes(reportNotes.FBS), 'Canceled FBS interpretation must be excluded');
+  assert(!res2.includes(reportNotes.LFT), 'Canceled LFT interpretation must be excluded');
+
+  // All tests selected keeps all notes
+  const resAll = filterNotesForSelectedTests(fullNotes, allTests, allTests);
+  assert.equal(resAll, fullNotes);
+
+  // Custom labeled notes: canceling test removes labeled note
+  const customNotes = 'CBC: Hemoglobin low.\n\nFBS: Glucose normal.\n\nReview clinically in 1 week.';
+  const resCustom = filterNotesForSelectedTests(customNotes, ['FBS'], ['CBC', 'FBS']);
+  assert(!resCustom.includes('CBC:'), 'Canceled CBC note must be excluded');
+  assert(resCustom.includes('FBS: Glucose normal.'), 'Selected FBS note must be retained');
+  assert(resCustom.includes('Review clinically in 1 week.'), 'General clinical remark must be preserved');
+});
+
