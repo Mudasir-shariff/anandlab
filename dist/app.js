@@ -1558,10 +1558,18 @@ async function loadBillsTable() {
           </tr>
         </thead>
         <tbody>
-          ${filtered.map(b => `
+          ${filtered.map(b => {
+            const formattedBillDate = formatDate(b.created_at);
+            const [bdPart, btPart] = formattedBillDate.includes(',') ? formattedBillDate.split(',') : [formattedBillDate, ''];
+            return `
             <tr>
               <td><strong>${escapeHTML(b.bill_no)}</strong></td>
-              <td>${formatDate(b.created_at)}</td>
+              <td class="tabular-nums">
+                <div class="date-cell-grouped">
+                  <span>${escapeHTML(bdPart.trim())}</span>
+                  ${btPart ? `<small class="small-muted">${escapeHTML(btPart.trim())}</small>` : ''}
+                </div>
+              </td>
               <td>
                 <strong>${escapeHTML(b.patients?.title || '')} ${escapeHTML(b.patients?.full_name || '—')}</strong>
                 <div><small>${b.patients?.patient_no} · ${b.patients?.sex}, ${b.patients?.age_value}${b.patients?.age_unit}</small></div>
@@ -1582,7 +1590,8 @@ async function loadBillsTable() {
                 </div>
               </td>
             </tr>
-          `).join('')}
+          `;
+          }).join('')}
         </tbody>
       </table>`;
 
@@ -1790,9 +1799,9 @@ async function loadReportsTable() {
             <th>Registered Date</th>
             <th>Patient Details</th>
             <th>Doctor</th>
-            <th>Tests Ordered</th>
             <th>Billing Status</th>
             <th class="text-center">Status</th>
+            <th>Tests Ordered</th>
             <th class="text-center">Action</th>
           </tr>
         </thead>
@@ -1804,6 +1813,8 @@ async function loadReportsTable() {
       const paid = bill.paid_amount ?? 0;
       const bal = Math.max(0, total - paid);
       const billStatus = (bal === 0 && total > 0) ? 'Paid' : (paid > 0 ? 'Partial' : 'Unpaid');
+      const formattedDate = formatDate(r.created_at);
+      const [dPart, tPart] = formattedDate.includes(',') ? formattedDate.split(',') : [formattedDate, ''];
       return `
               <tr>
                 <td>
@@ -1811,7 +1822,10 @@ async function loadReportsTable() {
                   <div><small style="color: var(--primary-action, #004F49); font-weight: 600;">${r.patients?.patient_no || ''}</small></div>
                 </td>
                 <td class="tabular-nums">
-                  ${formatDate(r.created_at)}
+                  <div class="date-cell-grouped">
+                    <span>${escapeHTML(dPart.trim())}</span>
+                    ${tPart ? `<small class="small-muted">${escapeHTML(tPart.trim())}</small>` : ''}
+                  </div>
                 </td>
                 <td>
                   <div class="patient-cell-grouped">
@@ -1820,7 +1834,6 @@ async function loadReportsTable() {
                   </div>
                 </td>
                 <td>${escapeHTML(bill.doctors?.name || 'Self / Walk-in')}</td>
-                <td><span class="test-codes-badge">${uniqueTestCodes.join(', ')}</span></td>
                 <td>
                   <div class="report-bill-summary">
                     <span class="badge badge-${billStatus.toLowerCase()}">${billStatus}</span>
@@ -1830,6 +1843,7 @@ async function loadReportsTable() {
                 <td class="text-center">
                   <span class="badge badge-${r.status.toLowerCase()}">${r.status}</span>
                 </td>
+                <td><span class="test-codes-badge">${uniqueTestCodes.join(', ')}</span></td>
                 <td class="text-center">
                   ${r.status === 'Pending' ? `
                     <div class="table-actions">
