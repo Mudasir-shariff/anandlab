@@ -965,7 +965,7 @@ function renderNewBillForm(container) {
           <div class="card-header">
             <h3>1. Patient Registration</h3>
             <div class="patient-search-box">
-              <input type="text" id="patient-lookup-input" placeholder="Search existing patient by mobile or name..." autocomplete="off" />
+              <input type="text" id="patient-lookup-input" placeholder="Search existing patient by name or ID..." autocomplete="off" />
               <div id="patient-lookup-results" class="lookup-dropdown hidden"></div>
             </div>
           </div>
@@ -1331,7 +1331,7 @@ function attachNewBillListeners(container) {
           lookupDropdown.innerHTML = patients.map(p => `
             <div class="lookup-item" data-id="${p.id}">
               <strong>${escapeHTML(p.full_name)}</strong> (${p.patient_no}) - ${p.sex}, ${p.age_value}${p.age_unit}
-              <div><small>${uiIcon('phone', 12)} ${escapeHTML(p.mobile || 'No mobile')} | ${escapeHTML(p.area || p.city || '')}</small></div>
+              <div><small>${p.mobile ? `${uiIcon('phone', 12)} ${escapeHTML(p.mobile)} | ` : ''}${escapeHTML(p.area || p.city || 'Registered Patient')}</small></div>
             </div>
           `).join('');
           lookupDropdown.classList.remove('hidden');
@@ -1522,7 +1522,7 @@ async function renderBillsList(container) {
     <div class="card">
       <div class="card-header">
         <div class="filter-bar">
-          <input type="text" id="bills-search" placeholder="Search by Bill ID, Patient Name or Phone..." value="${escapeHTML(state.billsFilter.search)}" class="table-search" />
+          <input type="text" id="bills-search" placeholder="Search by Bill ID or Patient Name..." value="${escapeHTML(state.billsFilter.search)}" class="table-search" />
           <select id="bills-filter-status" class="filter-select">
             <option value="All" ${state.billsFilter.status === 'All' ? 'selected' : ''}>All Payment Statuses</option>
             <option value="Paid" ${state.billsFilter.status === 'Paid' ? 'selected' : ''}>Paid</option>
@@ -1749,7 +1749,7 @@ function renderReportsModule(container) {
             </button>
             <div class="toolbar-search-wrapper">
               ${uiIcon('search', 16)}
-              <input type="text" id="reports-search" placeholder="Search by patient, mobile, bill no..." class="table-search" value="${escapeHTML(state.reportsFilter.search)}" />
+              <input type="text" id="reports-search" placeholder="Search by patient name, bill no..." class="table-search" value="${escapeHTML(state.reportsFilter.search)}" />
             </div>
             <select id="reports-filter-date" class="filter-select">
               <option value="Today" ${state.reportsFilter.dateRange === 'Today' ? 'selected' : ''}>Today</option>
@@ -1902,7 +1902,7 @@ async function loadReportsTable() {
                 <td>
                   <div class="patient-cell-grouped">
                     <strong>${escapeHTML(r.patients?.full_name || '—')}</strong>
-                    <div class="small-muted">${r.patients?.sex || ''}, ${r.patients?.age_value || ''}${r.patients?.age_unit || ''} · ${escapeHTML(r.patients?.mobile || 'No mobile')}</div>
+                    <div class="small-muted">${r.patients?.sex || ''}, ${r.patients?.age_value || ''}${r.patients?.age_unit || ''}${r.patients?.mobile ? ` · ${escapeHTML(r.patients.mobile)}` : ''}</div>
                   </div>
                 </td>
                 <td>${escapeHTML(bill.doctors?.name || 'Self / Walk-in')}</td>
@@ -2024,7 +2024,7 @@ function renderResultEntryForm(container) {
             <div class="patient-meta-row">
               <span class="patient-meta-pill">Patient Reg No: <strong class="tabular-nums">${r.patients.patient_no}</strong></span>
               <span class="patient-meta-pill">Age / Sex: <strong class="tabular-nums">${r.patients.age_value} ${r.patients.age_unit} / ${r.patients.sex}</strong></span>
-              <span class="patient-meta-pill">Mobile: <strong class="tabular-nums">${escapeHTML(r.patients.mobile || '—')}</strong></span>
+              ${r.patients.mobile ? `<span class="patient-meta-pill">Mobile: <strong class="tabular-nums">${escapeHTML(r.patients.mobile)}</strong></span>` : ''}
               <span class="patient-meta-pill">Invoice / Bill: <strong class="tabular-nums">${r.bills?.bill_no || '—'}</strong></span>
               <span class="patient-meta-pill">Reg Date: <strong class="tabular-nums">${formatDate(r.created_at)}</strong></span>
               <span class="patient-meta-pill">Referred By: <strong>${escapeHTML(r.bills?.doctors?.name || 'Self / Walk-in')}</strong></span>
@@ -3934,8 +3934,8 @@ function renderReferralPromotionPage(container) {
                             <input type="text" id="new-doc-qual" placeholder="MBBS, MD" />
                           </div>
                           <div class="form-group">
-                            <label>Phone Number</label>
-                            <input type="tel" id="new-doc-phone" placeholder="+91 ..." />
+                            <label>Phone Number <small class="text-secondary">(Optional)</small></label>
+                            <input type="tel" id="new-doc-phone" placeholder="Optional phone number" />
                           </div>
                         </div>
                         <div class="modal-footer">
