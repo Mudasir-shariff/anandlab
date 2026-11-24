@@ -39,18 +39,17 @@ const reportCss = await readFile(resolve(ROOT, 'dist/report.css'), 'utf8');
 
 function wrapHtml(title, reportHtml) {
   return `<!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>${title}</title>
 <style>
 ${reportCss}
-@page { size: A4 portrait; margin: 0; }
-body { margin: 0; padding: 20px; background: #eaeff2; }
+@page { size: A4; margin: 10mm; }
+body { margin: 0; padding: 0; background: #ffffff; }
 @media print {
-  @page { size: A4 portrait; margin: 0; }
-  body { margin: 0; padding: 0; background: white; }
+  @page { size: A4; margin: 10mm; }
+  body { margin: 0; padding: 0; background: #ffffff; }
 }
 </style>
 </head>
