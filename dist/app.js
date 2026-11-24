@@ -2873,11 +2873,13 @@ function generateReceiptHTML(bill, lab, format = 'a4', fullPage = false) {
 <html>
   <head>
     <meta charset="utf-8">
-    <title>Bill - ${escapeHTML(bill.bill_no)}</title>
+    <title></title>
     <style>
       ${REPORT_CSS}
-      @page { size: A4; margin: 10mm; }
-      body { margin: 0; padding: 0; background: #ffffff; }
+      @page { size: A4 portrait; margin: 0; }
+      html, body { margin: 0 !important; padding: 0 !important; width: 210mm !important; height: 297mm !important; background: #ffffff !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+      .report.report-document { width: 210mm !important; max-width: 210mm !important; margin: 0 !important; padding: 0 !important; }
+      .report-document .report-page { width: 210mm !important; max-width: 210mm !important; height: 297mm !important; min-height: 297mm !important; max-height: 297mm !important; margin: 0 !important; padding: 0 !important; border: 0 !important; box-shadow: none !important; display: flex !important; flex-direction: column !important; justify-content: space-between !important; overflow: hidden !important; box-sizing: border-box !important; }
     </style>
   </head>
   <body>

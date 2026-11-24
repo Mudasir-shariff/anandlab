@@ -3918,7 +3918,8 @@ tbody tr:hover {
     box-shadow: none !important;
     border: none !important;
     margin: 0 auto !important;
-    width: 190mm !important;
+    width: 210mm !important;
+    max-width: 210mm !important;
     background: #ffffff !important;
   }
 
@@ -3975,8 +3976,8 @@ tbody tr:hover {
   }
 
   @page {
-    size: A4;
-    margin: 10mm;
+    size: A4 portrait;
+    margin: 0;
   }
 }
 
