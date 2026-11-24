@@ -279,41 +279,49 @@ async function init() {
     function printHtmlSmoothly(html) {
       return new Promise((resolve) => {
         try {
-          let mount = document.getElementById('labflow-print-mount');
-          if (!mount) {
-            mount = document.createElement('div');
-            mount.id = 'labflow-print-mount';
-            document.body.appendChild(mount);
+          const oldIframe = document.getElementById('labflow-print-iframe');
+          if (oldIframe) {
+            try { oldIframe.remove(); } catch (_) {}
           }
-          let content = html;
-          if (html.includes('<body') && html.includes('</body>')) {
-            const match = html.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
-            if (match) content = match[1];
-          }
-          mount.innerHTML = content;
-          document.body.classList.add('labflow-printing-mount');
+
+          const iframe = document.createElement('iframe');
+          iframe.id = 'labflow-print-iframe';
+          iframe.style.position = 'fixed';
+          iframe.style.right = '0';
+          iframe.style.bottom = '0';
+          iframe.style.width = '0';
+          iframe.style.height = '0';
+          iframe.style.border = '0';
+          iframe.style.visibility = 'hidden';
+          iframe.setAttribute('aria-hidden', 'true');
+          document.body.appendChild(iframe);
+
+          const doc = iframe.contentWindow.document;
+          doc.open();
+          doc.write(html);
+          doc.close();
 
           let resolved = false;
           const finish = (ok, err) => {
             if (resolved) return;
             resolved = true;
-            document.body.classList.remove('labflow-printing-mount');
-            if (mount) mount.innerHTML = '';
-            window.removeEventListener('afterprint', onAfterPrint);
+            setTimeout(() => {
+              try { iframe.remove(); } catch (_) {}
+            }, 500);
             resolve({ success: ok, failureReason: err });
           };
 
-          const onAfterPrint = () => finish(true);
-          window.addEventListener('afterprint', onAfterPrint, { once: true });
+          iframe.contentWindow.addEventListener('afterprint', () => finish(true), { once: true });
 
           setTimeout(() => {
             try {
-              window.print();
-              setTimeout(() => finish(true), 300);
+              iframe.contentWindow.focus();
+              iframe.contentWindow.print();
+              setTimeout(() => finish(true), 2500);
             } catch (printErr) {
               finish(false, printErr.message);
             }
-          }, 80);
+          }, 150);
         } catch (err) {
           resolve({ success: false, failureReason: err.message });
         }
@@ -3024,28 +3032,21 @@ function generateReceiptHTML(bill, lab, format = 'a4', fullPage = false) {
     });
 
     document.getElementById('btn-print-report-now').addEventListener('click', async () => {
-      renderActiveHTML();
-      if (!window.labflowAPI?.isElectron) {
-        window.print();
+      const fullHtml = renderActiveHTML();
+      const res = await window.labflowAPI.printReport({ html: fullHtml });
+      if (res.success) {
         showToast('Print dialog opened', 'success');
       } else {
-        const fullHtml = renderActiveHTML();
-        const res = await window.labflowAPI.printReport({ html: fullHtml });
-        if (res.success) {
-          showToast('Report printed successfully', 'success');
-        } else {
-          showToast('Print failed: ' + (res.failureReason || 'Error'), 'error');
-        }
+        showToast('Print failed: ' + (res.failureReason || 'Error'), 'error');
       }
     });
 
     document.getElementById('btn-export-pdf').addEventListener('click', async () => {
-      renderActiveHTML();
+      const fullHtml = renderActiveHTML();
       if (!window.labflowAPI?.isElectron) {
         showToast('In destination, choose "Save as PDF" to save this report', 'info');
-        window.print();
+        await window.labflowAPI.printReport({ html: fullHtml });
       } else {
-        const fullHtml = renderActiveHTML();
         const filename = `Report-${orderAdapter.id}-${orderAdapter.name.replace(/\s+/g, '_')}.pdf`;
         const res = await window.labflowAPI.printToPDF({ html: fullHtml, defaultFilename: filename });
         if (res.success) {
