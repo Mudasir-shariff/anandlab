@@ -1,7 +1,8 @@
 import { TESTS, PARAMETERS } from './catalog.js';
 import { REPORT_CSS } from './report-css.js';
+import { HOSPITAL_LOGO_SRC, LAB_LOGO_SRC } from './report-logos.js';
 
-export { REPORT_CSS };
+export { REPORT_CSS, HOSPITAL_LOGO_SRC, LAB_LOGO_SRC };
 
 export function wrapReportHtml(title, reportHtml) {
   return `<!DOCTYPE html>
@@ -12,8 +13,12 @@ export function wrapReportHtml(title, reportHtml) {
 <title>${escape(title)}</title>
 <style>
 ${REPORT_CSS}
+@page { size: A4 portrait; margin: 0; }
 body { margin: 0; padding: 20px; background: #eaeff2; }
-@media print { body { padding: 0; background: white; } }
+@media print {
+  @page { size: A4 portrait; margin: 0; }
+  body { margin: 0; padding: 0; background: white; }
+}
 </style>
 </head>
 <body>
@@ -392,6 +397,7 @@ function resultRow(row, code, sex) {
 function letterhead(profile) {
   const labName = (profile.labName && profile.labName !== 'Anand Diagnostic Center') ? profile.labName : 'Anand Laboratory';
   const address = (profile.address && !profile.address.includes('Vijayanagar')) ? profile.address : 'Silk Filature Quarters Road, Ward No. 14, Sidlaghatta – 562105, Chikkaballapur (Dist.)';
+  const phone = '6361303305';
   // Two-tone: first word dark navy, remaining words in teal (e.g. "Anand" dark, "Laboratory" teal).
   const escapedFull = text(labName);
   const parts = labName.trim().split(/\s+/);
@@ -402,20 +408,27 @@ function letterhead(profile) {
     : `<span style="color:#006b76;font-weight:700;">${escapedFull}</span>`;
   return `<header class="report-brand" id="ref-letterhead-header">
     <div class="ref-brand-left">
-      <div class="ref-caduceus-icon" style="width:44px;height:44px;">${caduceusCrossIcon}</div>
-      <div class="ref-hospital-text">
-        <div class="ref-hospital-title">DR. ANAND</div>
-        <div class="ref-hospital-sub">HOSPITAL</div>
-        <div class="ref-hospital-wave-box" style="width:70px;height:9px;">${hospitalWaves}</div>
+      <div class="ref-hospital-emblem">
+        <img class="ref-hospital-img" alt="Dr. Anand Hospital" src="${HOSPITAL_LOGO_SRC}" />
       </div>
     </div>
-    <div class="ref-brand-sep" style="width:1.5px;height:48px;background:#006b76;margin:0 16px;flex-shrink:0;"></div>
+    <div class="ref-brand-sep" style="width:1.5px;height:52px;background:#006b76;margin:0 14px;flex-shrink:0;"></div>
     <div class="ref-brand-center">
       <h2 class="ref-lab-name" data-lab-name="${escapedFull}">${twoToneHtml}<!-- ${escapedFull} --></h2>
       <p class="ref-lab-address">${escape(address)}</p>
+      <div class="ref-header-contact-row">
+        <span class="ref-contact-phone">
+          <svg viewBox="0 0 24 24" width="11" height="11" fill="currentColor"><path d="M6.62 10.79a15.05 15.05 0 006.59 6.59l2.2-2.2a1 1 0 011.02-.24 11.41 11.41 0 003.58.57 1 1 0 011 1V20a1 1 0 01-1 1A17 17 0 013 4a1 1 0 011-1h3.5a1 1 0 011 1 11.41 11.41 0 00.57 3.58 1 1 0 01-.24 1.02l-2.2 2.2z"/></svg>
+          Ph: <strong>${phone}</strong>
+        </span>
+        <span class="ref-contact-sep">|</span>
+        <span class="ref-contact-timing">Open 24/7 · Emergency &amp; Routine Diagnostics</span>
+      </div>
     </div>
     <div class="ref-header-swoosh-corner">
-      <div class="ref-microscope-emblem" style="width:50px;height:50px;">${microscopeBadgeIcon}</div>
+      <div class="ref-microscope-emblem">
+        <img class="ref-microscope-img" alt="Anand Laboratory" src="${LAB_LOGO_SRC}" />
+      </div>
     </div>
   </header>`;
 }

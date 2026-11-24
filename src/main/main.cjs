@@ -271,7 +271,7 @@ function setupIPC() {
         pageSize: 'A4',
         landscape: false,
         printBackground: true,
-        margins: { marginType: 'printableArea' },
+        margins: { marginType: 'none' },
         deviceName: printerName || undefined
       };
 

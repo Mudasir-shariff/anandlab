@@ -46,8 +46,12 @@ function wrapHtml(title, reportHtml) {
 <title>${title}</title>
 <style>
 ${reportCss}
+@page { size: A4 portrait; margin: 0; }
 body { margin: 0; padding: 20px; background: #eaeff2; }
-@media print { body { padding: 0; background: white; } }
+@media print {
+  @page { size: A4 portrait; margin: 0; }
+  body { margin: 0; padding: 0; background: white; }
+}
 </style>
 </head>
 <body>
@@ -61,7 +65,7 @@ const chromePath = 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';
 const profile = {
   labName: 'Apex Precision Diagnostics',
   address: 'Plot 42, Hiranandani Business Park, Powai, Mumbai 400076',
-  phone: '+91 22 2570 0000',
+  phone: '6361303305',
   email: 'reports@apexdiagnostics.in',
   registration: 'MAH-MUM-2024-NABL-0482',
   website: 'https://apexdiagnostics.in',
