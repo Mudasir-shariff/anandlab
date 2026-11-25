@@ -5181,8 +5181,8 @@ tbody tr:hover {
   margin: 0 auto;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
   background: #ffffff;
-  width: 190mm;
-  min-width: 190mm;
+  width: 210mm;
+  min-width: 210mm;
   max-width: 100%;
   box-sizing: border-box;
 }
@@ -5668,8 +5668,8 @@ tbody tr:hover {
   margin: 0 auto;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
   background: #FFFFFF;
-  width: 190mm;
-  min-width: 190mm;
+  width: 210mm;
+  min-width: 210mm;
   max-width: 100%;
   box-sizing: border-box;
 }
@@ -5687,23 +5687,23 @@ tbody tr:hover {
   flex-direction: row !important;
   justify-content: space-between !important;
   align-items: flex-start !important;
-  gap: 16px !important;
+  gap: 14px !important;
   width: 100% !important;
   max-width: 100% !important;
   box-sizing: border-box !important;
 }
 
 .ref-pat-left {
-  flex: 0 0 52% !important;
-  width: 52% !important;
-  min-width: 280px !important;
+  flex: 0 0 51% !important;
+  width: 51% !important;
+  min-width: 0 !important;
   box-sizing: border-box !important;
 }
 
 .ref-pat-right {
-  flex: 0 0 46% !important;
-  width: 46% !important;
-  min-width: 240px !important;
+  flex: 0 0 47% !important;
+  width: 47% !important;
+  min-width: 0 !important;
   box-sizing: border-box !important;
 }
 
@@ -5711,30 +5711,37 @@ tbody tr:hover {
   display: flex !important;
   flex-direction: row !important;
   align-items: baseline !important;
-  line-height: 1.6 !important;
-  font-size: 8.5pt !important;
+  line-height: 1.65 !important;
+  font-size: 9.5pt !important;
   width: 100% !important;
-  white-space: nowrap !important;
-  word-break: keep-all !important;
-  overflow-wrap: normal !important;
+  white-space: normal !important;
 }
 
-.ref-field-label {
-  width: 110px !important;
-  min-width: 110px !important;
-  max-width: 110px !important;
-  flex: 0 0 110px !important;
-  font-weight: 600 !important;
+.ref-pat-left .ref-field-label {
+  width: 96px !important;
+  min-width: 96px !important;
+  max-width: 96px !important;
+  flex: 0 0 96px !important;
+  font-weight: 700 !important;
   color: #1e293b !important;
   white-space: nowrap !important;
-  word-break: keep-all !important;
+}
+
+.ref-pat-right .ref-field-label {
+  width: 122px !important;
+  min-width: 122px !important;
+  max-width: 122px !important;
+  flex: 0 0 122px !important;
+  font-weight: 700 !important;
+  color: #1e293b !important;
+  white-space: nowrap !important;
 }
 
 .ref-field-colon {
-  width: 14px !important;
-  min-width: 14px !important;
-  max-width: 14px !important;
-  flex: 0 0 14px !important;
+  width: 12px !important;
+  min-width: 12px !important;
+  max-width: 12px !important;
+  flex: 0 0 12px !important;
   text-align: center !important;
   font-weight: 700 !important;
   color: #334155 !important;
@@ -5744,24 +5751,23 @@ tbody tr:hover {
 .ref-field-val {
   font-weight: 600 !important;
   color: #0f172a !important;
-  flex: 1 1 auto !important;
-  min-width: 140px !important;
-  white-space: nowrap !important;
-  word-break: keep-all !important;
-  overflow-wrap: normal !important;
-  overflow: hidden !important;
-  text-overflow: ellipsis !important;
+  flex: 1 1 0 !important;
+  min-width: 0 !important;
+  white-space: normal !important;
+  overflow: visible !important;
+  overflow-wrap: anywhere !important;
+  word-break: break-word !important;
 }
 
 .ref-pat-fullname {
   font-weight: 800 !important;
-  font-size: 9.5pt !important;
+  font-size: 11pt !important;
   color: #072a38 !important;
   text-transform: uppercase !important;
   letter-spacing: 0.2px !important;
-  white-space: nowrap !important;
-  word-break: keep-all !important;
-  display: inline-block !important;
+  white-space: normal !important;
+  display: inline !important;
+  line-height: 1.3 !important;
 }
 
 .modal-footer {

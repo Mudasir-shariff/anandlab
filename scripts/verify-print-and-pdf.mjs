@@ -46,7 +46,7 @@ function wrapHtml(title, reportHtml) {
 <style>
 ${reportCss}
 @page { size: A4 portrait; margin: 0; }
-html, body { margin: 0 !important; padding: 0 !important; width: 210mm !important; height: 297mm !important; background: #ffffff !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+html, body { margin: 0 !important; padding: 0 !important; width: 210mm !important; min-height: 297mm !important; height: auto !important; background: #ffffff !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
 .report.report-document { width: 210mm !important; max-width: 210mm !important; margin: 0 !important; padding: 0 !important; background: #ffffff !important; }
 .report-document .report-page { width: 210mm !important; max-width: 210mm !important; height: 297mm !important; min-height: 297mm !important; max-height: 297mm !important; margin: 0 !important; padding: 0 !important; border: 0 !important; box-shadow: none !important; display: flex !important; flex-direction: column !important; justify-content: flex-start !important; overflow: hidden !important; break-after: page !important; page-break-after: always !important; box-sizing: border-box !important; }
 .report-document .report-page:last-child { break-after: auto !important; page-break-after: auto !important; }

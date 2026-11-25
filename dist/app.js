@@ -287,10 +287,10 @@ async function init() {
           const iframe = document.createElement('iframe');
           iframe.id = 'labflow-print-iframe';
           iframe.style.position = 'fixed';
-          iframe.style.right = '0';
-          iframe.style.bottom = '0';
-          iframe.style.width = '0';
-          iframe.style.height = '0';
+          iframe.style.left = '-9999px';
+          iframe.style.top = '0';
+          iframe.style.width = '210mm';
+          iframe.style.height = '297mm';
           iframe.style.border = '0';
           iframe.style.visibility = 'hidden';
           iframe.setAttribute('aria-hidden', 'true');
@@ -2727,7 +2727,7 @@ function generateReceiptHTML(bill, lab, format = 'a4', fullPage = false) {
           <div class="ref-pat-row"><span class="ref-field-label">Name</span><span class="ref-field-colon">:</span><span class="ref-field-val"><strong class="ref-pat-fullname">${escapeHTML(patientDisplayName)}</strong></span></div>
           <div class="ref-pat-row"><span class="ref-field-label">Age/Gender</span><span class="ref-field-colon">:</span><span class="ref-field-val">${bill.patients?.age_value || '—'} ${bill.patients?.age_unit || 'Y'} / ${bill.patients?.sex || '—'}</span></div>
           <div class="ref-pat-row"><span class="ref-field-label">Patient No</span><span class="ref-field-colon">:</span><span class="ref-field-val">${escapeHTML(bill.patients?.patient_no || '—')}</span></div>
-          <div class="ref-pat-row"><span class="ref-field-label">Refered By</span><span class="ref-field-colon">:</span><span class="ref-field-val">${escapeHTML(bill.doctors?.name || 'SELF')}</span></div>
+          <div class="ref-pat-row"><span class="ref-field-label">Referred By</span><span class="ref-field-colon">:</span><span class="ref-field-val">${escapeHTML(bill.doctors?.name || 'SELF')}</span></div>
         </div>
         <div class="ref-patient-col ref-pat-right">
           <div class="ref-barcode-container">

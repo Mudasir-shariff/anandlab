@@ -221,7 +221,9 @@ function setupIPC() {
         printOptions.margins = { marginType: 'none' };
         printOptions.pageSize = { width: 80000, height: 200000 }; // 80mm x 200mm in microns
       } else {
+        printOptions.margins = { marginType: 'none' };
         printOptions.pageSize = 'A4';
+        printOptions.printBackground = true;
       }
 
       return new Promise((resolve) => {
@@ -268,6 +270,7 @@ function setupIPC() {
 
       const printOptions = {
         silent: silent,
+        margins: { marginType: 'none' },
         pageSize: 'A4',
         landscape: false,
         printBackground: true,
@@ -300,7 +303,9 @@ function setupIPC() {
       const styledHtml = ensureReportStyles(html);
       await printWin.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(styledHtml)}`);
       const pdfData = await printWin.webContents.printToPDF({
+        margins: { top: 0, bottom: 0, left: 0, right: 0 },
         pageSize: 'A4',
+        preferCSSPageSize: true,
         landscape: false,
         printBackground: true
       });
