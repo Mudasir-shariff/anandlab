@@ -1,12 +1,12 @@
 /**
  * Anand Diagnostic Center / Opti-X Labs Clinical Catalog.
- * Exact 38 tests and prices from laboratory pricing board.
+ * Exact 39 tests and prices from laboratory pricing board.
  */
 export const CATALOG_NOTICE = 'Clinical reference intervals for Anand Diagnostic Center. Laboratory validated.';
 
 export const PARAMETERS = {
-  // CBC
-  hb: { name: 'Hemoglobin', unit: 'g/dL', min: 12.0, max: 17.5, reference: '12.0 – 17.5', referenceM: '13.5 – 17.5', referenceF: '12.0 – 15.5', criticalMin: 7.0, criticalMax: 21.0 },
+  // CBC & Hemoglobin
+  hb: { name: 'Hemoglobin', unit: 'g/dL', min: 12.0, max: 17.5, minM: 13.5, maxM: 17.5, minF: 12.0, maxF: 15.5, reference: '12.0 – 17.5', referenceM: '13.5 – 17.5', referenceF: '12.0 – 15.5', criticalMin: 7.0, criticalMax: 21.0 },
   wbc: { name: 'Total Leukocyte Count (TLC)', unit: 'cells/µL', min: 4000, max: 11000, reference: '4,000 – 11,000', criticalMin: 2000, criticalMax: 40000 },
   neutrophils: { name: 'Neutrophils', unit: '%', min: 40, max: 70, reference: '40 – 70' },
   lymphocytes: { name: 'Lymphocytes', unit: '%', min: 20, max: 40, reference: '20 – 40' },
@@ -155,6 +155,7 @@ export const PARAMETERS = {
 
 export const TESTS = {
   CBC: { name: 'Complete Blood Count (CBC)', price: 300, sample: 'EDTA Whole Blood', department: 'Hematology', parameters: ['hb', 'wbc', 'neutrophils', 'lymphocytes', 'eosinophils', 'monocytes', 'basophils', 'platelets', 'rbc', 'hct', 'mcv', 'mch', 'mchc', 'rdw_cv', 'rdw_sd'] },
+  HB: { name: 'Hemoglobin (Hb)', price: 150, sample: 'EDTA Whole Blood', department: 'Hematology', parameters: ['hb'] },
   BLOOD_GROUP: { name: 'Blood Grouping & Rh Type', price: 70, sample: 'EDTA Whole Blood', department: 'Hematology', parameters: ['abo_group', 'rh_factor'] },
   WIDAL: { name: 'Widal Test (Agglutination)', price: 200, sample: 'Serum', department: 'Serology', parameters: ['widal_to', 'widal_th', 'widal_ah', 'widal_bh', 'widal_result'] },
   CRP: { name: 'CRP (C-Reactive Protein)', price: 300, sample: 'Serum', department: 'Biochemistry', parameters: ['crp'] },
@@ -196,6 +197,7 @@ export const TESTS = {
 
 export const reportNotes = {
   CBC: 'Complete blood count parameters should be clinically correlated with patient symptoms and peripheral smear examination.',
+  HB: 'Evaluates blood oxygen-carrying capacity and screens for anemia or polycythemia. Adult reference: Males 13.5–17.5 g/dL, Females 12.0–15.5 g/dL (Pregnancy >= 11.0 g/dL). Critical alert if < 7.0 or > 21.0 g/dL; correlate clinically and with CBC indices.',
   BLOOD_GROUP: 'Confirmed by forward cell grouping and reverse serum grouping procedures.',
   WIDAL: 'Single high titers indicate exposure; paired sera after 7-10 days demonstrating a fourfold rise provide diagnostic confirmation.',
   CRP: 'Quantitative CRP measurement. Serial determinations provide valuable guidance in monitoring inflammatory disease.',

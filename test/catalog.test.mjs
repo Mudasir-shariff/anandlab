@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { TESTS, PARAMETERS, makeDemoOrders, reportNotes, filterNotesForSelectedTests } from '../dist/catalog.js';
 
 const codes = [
-  'CBC', 'BLOOD_GROUP', 'WIDAL', 'CRP', 'PLATELET', 'AEC', 'ESR', 'MALARIA',
+  'CBC', 'HB', 'BLOOD_GROUP', 'WIDAL', 'CRP', 'PLATELET', 'AEC', 'ESR', 'MALARIA',
   'MANTOUX', 'CHIKUNGUNYA', 'HIV', 'HBSAG', 'VDRL', 'HSV', 'URINE_ROUTINE',
   'PREGNANCY', 'FBS', 'PPBS', 'RA_FACTOR', 'ASLO', 'HBA1C', 'LFT',
   'URIC_ACID', 'THYROID_PROFILE', 'LIPID_PROFILE', 'UREA', 'ELECTROLYTES',
@@ -13,10 +13,22 @@ const codes = [
 
 const parametersFor = order => [...new Set(order.tests.flatMap(code => TESTS[code].parameters))];
 
-test('catalog contains the 38 requested tests and matches exact Anand Diagnostic pricing', () => {
-  assert.equal(codes.length, 38);
+test('catalog contains the 39 tests and matches exact Anand Diagnostic pricing', () => {
+  assert.equal(codes.length, 39);
   assert.deepEqual(Object.keys(TESTS), codes);
   assert.equal(TESTS.CBC.price, 300);
+  assert.equal(TESTS.HB.price, 150);
+  assert.equal(TESTS.HB.name, 'Hemoglobin (Hb)');
+  assert.equal(TESTS.HB.department, 'Hematology');
+  assert.equal(TESTS.HB.sample, 'EDTA Whole Blood');
+  assert.deepEqual(TESTS.HB.parameters, ['hb']);
+  assert.equal(PARAMETERS.hb.unit, 'g/dL');
+  assert.equal(PARAMETERS.hb.minM, 13.5);
+  assert.equal(PARAMETERS.hb.maxM, 17.5);
+  assert.equal(PARAMETERS.hb.minF, 12.0);
+  assert.equal(PARAMETERS.hb.maxF, 15.5);
+  assert.equal(PARAMETERS.hb.criticalMin, 7.0);
+  assert.equal(PARAMETERS.hb.criticalMax, 21.0);
   assert.equal(TESTS.BLOOD_GROUP.price, 70);
   assert.equal(TESTS.WIDAL.price, 200);
   assert.equal(TESTS.CRP.price, 300);

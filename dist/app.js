@@ -652,6 +652,59 @@ async function handleLogout(toastMsg = '') {
 // -------------------------------------------------------------
 // Data Fetching & Reference Cache
 // -------------------------------------------------------------
+async function ensureCatalogSynced(existingTests) {
+  if (!Array.isArray(existingTests) || typeof state.supabase?.from !== 'function') return existingTests;
+  const existingCodes = new Set(existingTests.map(t => t.code));
+  const missingEntries = Object.entries(TESTS).filter(([code]) => !existingCodes.has(code));
+  if (missingEntries.length === 0) return existingTests;
+
+  let addedAny = false;
+  for (const [code, meta] of missingEntries) {
+    try {
+      const { data: testRow, error: testErr } = await state.supabase
+        .from('tests')
+        .upsert({
+          code,
+          name: meta.name,
+          department: meta.department,
+          sample_type: meta.sample,
+          price: meta.price,
+          active: true
+        }, { onConflict: 'code' })
+        .select('id')
+        .single();
+      if (testErr || !testRow?.id) continue;
+
+      const paramRows = (meta.parameters || []).map((pKey, idx) => {
+        const p = PARAMETERS[pKey] || { name: pKey, unit: '', reference: '' };
+        return {
+          test_id: testRow.id,
+          code: pKey,
+          name: p.name,
+          unit: p.unit || '',
+          reference_range: p.reference || '',
+          reference_range_m: p.referenceM || null,
+          reference_range_f: p.referenceF || null,
+          min_val: p.min !== undefined ? p.min : null,
+          max_val: p.max !== undefined ? p.max : null,
+          critical_min: p.criticalMin !== undefined ? p.criticalMin : null,
+          critical_max: p.criticalMax !== undefined ? p.criticalMax : null,
+          sort_order: idx + 1
+        };
+      });
+      if (paramRows.length > 0) {
+        await state.supabase.from('test_parameters').upsert(paramRows, { onConflict: 'test_id,code' });
+      }
+      addedAny = true;
+    } catch (err) {
+      console.warn(`Catalog sync skipped for ${code}:`, err?.message || err);
+    }
+  }
+  if (!addedAny) return existingTests;
+  const { data: refreshed } = await state.supabase.from('tests').select('*, test_parameters(*)').order('name');
+  return refreshed || existingTests;
+}
+
 async function loadReferenceData() {
   try {
     // 1. Settings
@@ -692,7 +745,7 @@ async function loadReferenceData() {
 
     // 4. Tests & Parameters
     const { data: tests } = await state.supabase.from('tests').select('*, test_parameters(*)').order('name');
-    if (tests) state.testsCatalog = tests;
+    if (tests) state.testsCatalog = await ensureCatalogSynced(tests);
   } catch (err) {
     console.error('Error loading reference data:', err);
     showToast('Could not load some laboratory reference data.', 'error');
@@ -1266,6 +1319,9 @@ function attachNewBillListeners(container) {
         let text = pill.textContent.toLowerCase();
         if (text.includes('platelet') || text.includes('plate')) {
           text += ' plates plate count platelet';
+        }
+        if (text.includes('hemoglobin') && !text.includes('hba1c')) {
+          text += ' haemoglobin hb hb% hgb anemia';
         }
         pill.style.display = (text.includes(q) || (q.startsWith('plate') && text.includes('plat'))) ? 'inline-flex' : 'none';
       });
@@ -2062,6 +2118,14 @@ function renderResultEntryForm(container) {
                   <tbody>
                     ${rows.map(row => {
       const initialFlag = row.flag || '';
+      const paramDef = PARAMETERS[row.parameter_code];
+      const patSex = r.patients?.sex;
+      const effectiveMin = (patSex === 'Male' && Number.isFinite(paramDef?.minM)) ? paramDef.minM
+        : (patSex === 'Female' && Number.isFinite(paramDef?.minF)) ? paramDef.minF
+        : row.min_val;
+      const effectiveMax = (patSex === 'Male' && Number.isFinite(paramDef?.maxM)) ? paramDef.maxM
+        : (patSex === 'Female' && Number.isFinite(paramDef?.maxF)) ? paramDef.maxF
+        : row.max_val;
       return `
                         <tr class="result-param-row ${initialFlag ? 'row-abnormal' : ''}" data-param-id="${row.id}">
                           <td>
@@ -2073,8 +2137,8 @@ function renderResultEntryForm(container) {
                                 type="text"
                                 class="result-value-input tabular-nums"
                                 data-id="${row.id}"
-                                data-min="${row.min_val ?? ''}"
-                                data-max="${row.max_val ?? ''}"
+                                data-min="${effectiveMin ?? ''}"
+                                data-max="${effectiveMax ?? ''}"
                                 data-crit-min="${row.critical_min ?? ''}"
                                 data-crit-max="${row.critical_max ?? ''}"
                                 value="${escapeHTML(row.value || '')}"

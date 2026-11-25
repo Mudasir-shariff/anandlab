@@ -135,4 +135,21 @@ assert(count(maximum, /<article class="report-page"/g) > pageCount, 'long metada
 assert.equal(count(maximum, /class="report-result-row /g), codes.reduce((sum, code) => sum + TESTS[code].parameters.length, 0));
 for (const line of manyNotes.split('\n')) assert(maximum.includes(line));
 assert.equal(count(maximum, /class="report-reviewers"/g), 1, 'the authorization block occurs exactly once');
-console.log('PASS: archived catalog definitions, strict numeric results, draft labels, immutable report date, missing definitions, duplicate panel identity, and long metadata pagination.');
+
+const hbOrderMale = { ...makeTestOrder('HB'), sex: 'Male', results: { hb: 12.8 } };
+const hbHtmlMale = renderReport(hbOrderMale, profile);
+assert(hbHtmlMale.includes('Hemoglobin (Hb)'));
+assert(hbHtmlMale.includes('EDTA Whole Blood'));
+assert(hbHtmlMale.includes('Photometric Method (SLS / Cyanmethemoglobin)'));
+assert(hbHtmlMale.includes('13.5 – 17.5'));
+assert(hbHtmlMale.includes('Below reference range'), 'Male Hb 12.8 g/dL must flag L against 13.5 - 17.5');
+assert(hbHtmlMale.includes('Page 1 of 1'));
+
+const hbHtmlFemaleHigh = renderReport({ ...makeTestOrder('HB'), sex: 'Female', results: { hb: 16.2 } }, profile);
+assert(hbHtmlFemaleHigh.includes('12.0 – 15.5'));
+assert(hbHtmlFemaleHigh.includes('Above reference range'), 'Female Hb 16.2 g/dL must flag H against 12.0 - 15.5');
+
+const hbHtmlFemaleNormal = renderReport({ ...makeTestOrder('HB'), sex: 'Female', results: { hb: 13.0 } }, profile);
+assert(!hbHtmlFemaleNormal.includes('report-abnormal'), 'Female Hb 13.0 g/dL must be normal without flags');
+
+console.log('PASS: archived catalog definitions, strict numeric results, draft labels, immutable report date, missing definitions, duplicate panel identity, standalone HB, and long metadata pagination.');

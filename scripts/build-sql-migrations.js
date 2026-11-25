@@ -7,9 +7,11 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const migrationsDir = path.resolve(__dirname, '..', 'supabase', 'migrations');
 
+const testCount = Object.keys(TESTS).length;
+
 let sql = `-- ====================================================================
 -- LABFLOW / ANAND DIAGNOSTIC CENTER: SEED DATA 003
--- Initial Lab Settings, Default Referrers, and 38 Clinical Test Panels
+-- Initial Lab Settings, Default Referrers, and ${testCount} Clinical Test Panels
 -- ====================================================================
 
 -- 1. Initial Lab Settings
@@ -55,7 +57,7 @@ ON CONFLICT (id) DO UPDATE SET
 -- 2. Referring Doctors (Empty by default - registered by laboratory staff)
 -- 3. Referral Labs & Hospitals (Empty by default - registered by laboratory staff)
 
--- 4. 38 Test Panels & Parameters
+-- 4. ${testCount} Test Panels & Parameters
 DO $$
 DECLARE
     v_test_id UUID;
@@ -111,4 +113,4 @@ const content004 = fs.existsSync(file004) ? fs.readFileSync(file004, 'utf8') : '
 const contentAll = `${content001}\n\n${content002}\n\n${sql}\n\n${content004}`.trim() + '\n';
 
 fs.writeFileSync(fileAll, contentAll, 'utf8');
-console.log('Saved all_in_one_setup.sql with complete 38 tests and catalog v2.');
+console.log(`Saved all_in_one_setup.sql with complete ${testCount} tests and catalog v2.`);

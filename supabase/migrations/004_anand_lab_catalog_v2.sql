@@ -234,7 +234,8 @@ VALUES
     ('DENGUE', 'Dengue NS1 antigen and IgM/IgG, qualitative', 'Serology', 'Serum', 600.0, 35, 'review', 'Record the platform and day of illness. Each marker has a separate qualitative result. Isolated IgG on one sample cannot establish acute infection.'),
     ('AMYLASE', 'Amylase, total', 'Biochemistry', 'Serum', 500.0, 36, 'review', 'Use the assay’s serum enzyme interval.'),
     ('LIPASE', 'Lipase', 'Biochemistry', 'Serum', 400.0, 37, 'review', 'Use the assay’s serum enzyme interval.'),
-    ('CALCIUM', 'Calcium, total', 'Biochemistry', 'Serum', 450.0, 38, 'review', 'Use age-specific intervals. This is total calcium. Ionized calcium has different collection requirements, units and intervals.')
+    ('CALCIUM', 'Calcium, total', 'Biochemistry', 'Serum', 450.0, 38, 'review', 'Use age-specific intervals. This is total calcium. Ionized calcium has different collection requirements, units and intervals.'),
+    ('HB', 'Hemoglobin (Hb)', 'Hematology', 'EDTA Whole Blood', 150.0, 39, 'review', 'Standalone Hemoglobin order and CBC share the same Hb measurement, unit (g/dL), photometric method (SLS / Cyanmethemoglobin), and sex-specific adult reference intervals.')
 ON CONFLICT DO NOTHING;
 
 -- CBC
@@ -568,6 +569,13 @@ VALUES
     ('CALCIUM', 'calcium_total', 'Total calcium', 1, 'number', 'mg/dL', NULL, NULL, 'routine', NULL, NULL, 'Age partitions apply to total calcium. Do not apply these values to ionized calcium.', 'supplied')
 ON CONFLICT DO NOTHING;
 
+-- HB
+INSERT INTO labflow_catalog_v2.parameters
+    (test_code, code, name, sort_order, result_kind, unit, expected_result, allowed_results, inclusion, report_when, calculation, reporting_note, origin)
+VALUES
+    ('HB', 'hb', 'Hemoglobin', 1, 'number', 'g/dL', NULL, NULL, 'routine', NULL, NULL, 'Standalone Hemoglobin order matching CBC Hb intervals (male 13.5–17.5 g/dL, female 12.0–15.5 g/dL).', 'supplied')
+ON CONFLICT DO NOTHING;
+
 INSERT INTO labflow_catalog_v2.parameter_sources
     (test_code, parameter_code, source_code)
 VALUES
@@ -694,7 +702,8 @@ VALUES
     ('DENGUE', 'dengue_igg', 'DENV'),
     ('AMYLASE', 'amylase', 'AMY'),
     ('LIPASE', 'lipase', 'LPS'),
-    ('CALCIUM', 'calcium_total', 'CMP')
+    ('CALCIUM', 'calcium_total', 'CMP'),
+    ('HB', 'hb', 'CBC')
 ON CONFLICT DO NOTHING;
 
 INSERT INTO labflow_catalog_v2.numeric_rules
@@ -801,7 +810,9 @@ VALUES
     ('LIPASE', 'lipase', 'number', 'published_example', '', 1, 'reference', '[18,)', 'any', 'any', 'routine', '[13,60]', 'U/L', 'Reference interval', 'LPS'),
     ('CALCIUM', 'calcium_total', 'number', 'published_example', '', 1, 'reference', '[18,60)', 'any', 'any', 'routine', '[8.6,10]', 'mg/dL', 'Reference interval', 'CMP'),
     ('CALCIUM', 'calcium_total', 'number', 'published_example', '', 2, 'reference', '[60,91)', 'any', 'any', 'routine', '[8.8,10.2]', 'mg/dL', 'Reference interval', 'CMP'),
-    ('CALCIUM', 'calcium_total', 'number', 'published_example', '', 3, 'reference', '[91,)', 'any', 'any', 'routine', '[8.2,9.6]', 'mg/dL', 'Reference interval', 'CMP')
+    ('CALCIUM', 'calcium_total', 'number', 'published_example', '', 3, 'reference', '[91,)', 'any', 'any', 'routine', '[8.2,9.6]', 'mg/dL', 'Reference interval', 'CMP'),
+    ('HB', 'hb', 'number', 'published_example', '', 1, 'reference', '[18,)', 'male', 'any', 'routine', '[13.5,17.5]', 'g/dL', 'Reference interval', 'CBC'),
+    ('HB', 'hb', 'number', 'published_example', '', 2, 'reference', '[18,)', 'female', 'any', 'routine', '[12,15.5]', 'g/dL', 'Reference interval', 'CBC')
 ON CONFLICT DO NOTHING;
 
 CREATE OR REPLACE VIEW labflow_catalog_v2.catalogue AS

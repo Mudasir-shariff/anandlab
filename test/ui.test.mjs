@@ -204,6 +204,15 @@ test('Labflow Desktop UI: Login, Billing, Reports, Printing and Settings validat
   assert(w.document.querySelector('#patient-fullname'), 'Patient full name input should be present');
   assert(w.document.querySelector('#test-catalog-pills'), 'Test catalog pills should render');
   assert(w.document.querySelector('#bill-doctor'), 'Doctor select should be present');
+  assert(w.document.querySelector('#test-catalog-pills').textContent.includes('Hemoglobin (Hb)'), 'Standalone HB test should appear in catalog');
+  assert(w.document.querySelector('#test-catalog-pills').textContent.includes('₹150'), 'HB ₹150 price should appear in catalog');
+  const searchInput = w.document.querySelector('#test-search-filter');
+  searchInput.value = 'haemoglobin';
+  searchInput.dispatchEvent(new w.Event('input', { bubbles: true }));
+  const hbPill = Array.from(w.document.querySelectorAll('.test-pill')).find(p => p.textContent.includes('Hemoglobin (Hb)'));
+  assert(hbPill && hbPill.style.display === 'inline-flex', 'Haemoglobin alias search should keep standalone HB test visible');
+  searchInput.value = '';
+  searchInput.dispatchEvent(new w.Event('input', { bubbles: true }));
 
   // 6. Test Reports Navigation
   const reportsNavBtn = w.document.querySelector('.nav-item[data-nav="reports"]');

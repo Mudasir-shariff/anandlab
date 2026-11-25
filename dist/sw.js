@@ -1,5 +1,5 @@
 // Labflow Service Worker for PWA (Installable on Android & Windows)
-const CACHE_NAME = 'labflow-app-v1.3.2';
+const CACHE_NAME = 'labflow-app-v1.3.3';
 const PRECACHE_URLS = [
   './',
   './index.html',

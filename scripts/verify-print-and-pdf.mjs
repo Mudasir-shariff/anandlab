@@ -77,6 +77,21 @@ const profile = {
 
 const scenarios = [
   {
+    name: 'classic-hb',
+    title: 'Classic Layout - Standalone Hemoglobin (Hb)',
+    template: 'classic',
+    order: {
+      ...makeTestOrder('HB'),
+      name: 'Mrs. Deepika Narayanan',
+      age: 29,
+      sex: 'Female',
+      patientId: 'PT-2026-005210',
+      referrer: 'Dr. Kavitha Rao, MD (OBG)',
+      results: { hb: 11.4 },
+      notes: 'Evaluates blood oxygen-carrying capacity and screens for anemia or polycythemia. Adult reference: Males 13.5–17.5 g/dL, Females 12.0–15.5 g/dL (Pregnancy >= 11.0 g/dL).'
+    }
+  },
+  {
     name: 'classic-cbc',
     title: 'Classic Layout - Complete Blood Count',
     template: 'classic',

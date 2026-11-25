@@ -36,15 +36,14 @@ if (!supabaseUrl || !secretKey) {
 const supabase = createClient(supabaseUrl, secretKey);
 
 async function main() {
-  console.log('Synchronizing 38 tests with Anand Diagnostic Center pricing to Supabase...');
+  const validCodes = Object.keys(TESTS);
+  console.log(`Synchronizing ${validCodes.length} tests with Anand Diagnostic Center pricing to Supabase...`);
 
   // 1. Fetch existing tests
   const { data: existingTests, error: fetchErr } = await supabase.from('tests').select('id, code');
   if (fetchErr) throw fetchErr;
 
-  const validCodes = Object.keys(TESTS);
-
-  // 2. Remove tests that are NOT in the 38 list
+  // 2. Remove tests that are NOT in the catalog list
   for (const et of existingTests) {
     if (!validCodes.includes(et.code)) {
       console.log(`Deleting obsolete test: ${et.code}`);
@@ -53,7 +52,7 @@ async function main() {
     }
   }
 
-  // 3. Upsert the 38 tests and their parameters
+  // 3. Upsert all catalog tests and their parameters
   let count = 0;
   for (const [code, meta] of Object.entries(TESTS)) {
     // Upsert test
@@ -105,7 +104,7 @@ async function main() {
     }
 
     count++;
-    console.log(`✔ [${count}/38] Synced: ${code} - ${meta.name} (₹${meta.price})`);
+    console.log(`✔ [${count}/${validCodes.length}] Synced: ${code} - ${meta.name} (₹${meta.price})`);
   }
 
   // Also update lab name in lab_settings to Anand Diagnostic Center

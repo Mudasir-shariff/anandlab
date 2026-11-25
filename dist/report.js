@@ -53,7 +53,7 @@ const displayDate = value => {
 };
 
 const PARAMETER_METHODS = {
-  hb: 'Automated Cell Counter, Photometric Measurement',
+  hb: 'Photometric Method (SLS / Cyanmethemoglobin)',
   wbc: 'Coulter Principle',
   neutrophils: 'VCS Technology',
   lymphocytes: 'VCS Technology',
@@ -232,7 +232,7 @@ const watermarkSvg = `<div class="report-watermark" aria-hidden="true" style="po
   <svg class="watermark-wave" width="160" height="14" viewBox="0 0 160 14" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:160px;height:14px;display:block;margin-top:4px;"><path d="M0 7C40 0 40 14 80 7C120 0 120 14 160 7" stroke="#006b76" stroke-width="2.5" opacity="0.25"/></svg>
 </div>`;
 
-const molecularLatticeSvg = `<svg class="molecular-lattice" width="75" height="75" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:75px;height:75px;display:block;">
+const molecularLatticeSvg = `<svg class="molecular-lattice" width="90" height="90" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:90px;height:90px;display:block;">
   <path d="M30 10L50 22V46L30 58L10 46V22L30 10Z" stroke="#006b76" stroke-width="1" opacity="0.12"/>
   <path d="M70 10L90 22V46L70 58L50 46V22L70 10Z" stroke="#006b76" stroke-width="1" opacity="0.12"/>
   <path d="M50 46L70 58V82L50 94L30 82V58L50 46Z" stroke="#006b76" stroke-width="1" opacity="0.12"/>
@@ -293,76 +293,40 @@ function rowHeight(row) {
   if (row.notice) return 11;
   const parameter = row.parameter || {};
   const reference = parameter.reference || (Number.isFinite(parameter.min) && Number.isFinite(parameter.max) ? `${parameter.min} – ${parameter.max}` : 'Not recorded');
-  const lines = Math.max(lineCount(parameter.name || row.key, 36), lineCount(row.value, 12), lineCount(parameter.unit || '—', 13), lineCount(reference, 26));
-  return 2.6 + lines * 3.8 + (row.unknown ? 3.5 : 0);
+  const lines = Math.max(lineCount(parameter.name || row.key, 44), lineCount(row.value, 14), lineCount(parameter.unit || '—', 15), lineCount(reference, 22));
+  return 2.4 + lines * 3.6 + (row.unknown ? 3.5 : 0);
 }
 
 function frameHeight(order, profile, template, hasRibbon, hasWarning) {
-  const labNameLines = lineCount(profile.labName || 'Laboratory report', 28);
-  const addressLines = profile.address ? lineCount(profile.address, 55) : 0;
-  const brand = 25 + Math.max(0, labNameLines - 1) * 6.5 + Math.max(0, addressLines - 1) * 3.5;
-  const patNameLines = lineCount(formatPatientName(order.name, order.sex), 18);
-  const refLines = lineCount(order.referrer || 'SELF', 22);
-  const billLines = lineCount(order.id || '', 20);
-  const extraLeftLines = Math.max(0, patNameLines - 1) + Math.max(0, refLines - 1);
-  const extraRightLines = Math.max(0, billLines - 1);
-  const patient = 32 + (template === 'sahara' ? 4 : 0) + Math.max(extraLeftLines, extraRightLines) * 4.8;
-  const title = 9;
-  const footer = 18 + (profile.reportFooter ? Math.max(0, lineCount(profile.reportFooter, 95) - 1) * 3.3 : 0) + (profile.workingHours ? Math.max(0, lineCount(profile.workingHours, 95) - 1) * 3.3 : 0);
-  const bottomRibbon = 9;
-  return brand + patient + title + footer + bottomRibbon + (hasRibbon ? 7 : 0) + (hasWarning ? 10 : 0);
+  const nameLines = lineCount(profile.labName || 'Laboratory report', template === 'sahara' ? 23 : 29);
+  const addressLines = profile.address ? lineCount(profile.address, 50) : 0;
+  const contactLines = [profile.registration, profile.phone, profile.email, profile.website].filter(Boolean).reduce((sum, value) => sum + lineCount(value, 29), 0);
+  const brand = Math.max(template === 'sahara' ? 32 : 30, 12 + nameLines * 6.4 + addressLines * 3.4, 10 + contactLines * 3.6);
+  const left = lineCount(order.name, 38) * 4.8 + 3 + lineCount(`${order.age} years / ${order.sex}`, 48) * 3.6 + lineCount(order.patientId, 47) * 3.6 + lineCount(order.referrer || 'Self', 47) * 3.6;
+  const patient = Math.max(29, left + 7);
+  const footer = 10 + (profile.reportFooter ? lineCount(profile.reportFooter, 105) * 3.1 : 4) + (profile.workingHours ? lineCount(profile.workingHours, 100) * 3.1 : 0);
+  return brand + patient + footer + 12 + (hasRibbon ? 7 : 0) + (hasWarning ? 9 : 0);
 }
 
 function splitNoteLines(value) {
   const lines = [];
-  for (const rawLine of String(value || '').replace(/\r\n?/g, '\n').split('\n')) {
-    if (!rawLine.trim()) {
-      lines.push('');
-      continue;
-    }
-    const words = rawLine.split(/\s+/);
-    let current = '';
-    for (const word of words) {
-      if (!current) {
-        if (word.length <= 85) {
-          current = word;
-        } else {
-          for (let i = 0; i < word.length; i += 85) {
-            const chunk = word.slice(i, i + 85);
-            if (chunk.length === 85 && i + 85 < word.length) lines.push(chunk);
-            else current = chunk;
-          }
-        }
-      } else if (current.length + 1 + word.length <= 85) {
-        current += ' ' + word;
-      } else {
-        lines.push(current);
-        if (word.length <= 85) {
-          current = word;
-        } else {
-          current = '';
-          for (let i = 0; i < word.length; i += 85) {
-            const chunk = word.slice(i, i + 85);
-            if (chunk.length === 85 && i + 85 < word.length) lines.push(chunk);
-            else current = chunk;
-          }
-        }
-      }
-    }
-    if (current) lines.push(current);
+  for (const line of String(value || '').replace(/\r\n?/g, '\n').split('\n')) {
+    const characters = Array.from(line);
+    if (!characters.length) lines.push('');
+    for (let index = 0; index < characters.length; index += 85) lines.push(characters.slice(index, index + 85).join(''));
   }
   return lines;
 }
 
 function paginate(order, profile, template, definitions, hasRibbon, warning) {
-  // Exact 297mm A4 page minus dynamic frame height and 10mm padding/safety allowance.
-  const bodyBudget = Math.max(40, 297 - frameHeight(order, profile, template, hasRibbon, Boolean(warning)) - 10);
+  // Dimensions include conservative wrapping and a20mm safety allowance within printable A4.
+  const bodyBudget = Math.max(35, 277 - frameHeight(order, profile, template, hasRibbon, Boolean(warning)) - 20);
   const pages = [{ sections: [], used: 0, notes: null }];
   let current = pages[0];
   for (const section of definitions.sections) {
     let offset = 0;
     while (offset < section.rows.length) {
-      const heading = 29.5 + Math.max(0, lineCount(section.test.name, 46) - 1) * 4.8;
+      const heading = 22 + Math.max(0, lineCount(section.test.name, 55) - 1) * 4.2;
       let room = bodyBudget - current.used - heading;
       if (room < rowHeight(section.rows[offset]) && current.sections.length) {
         current = { sections: [], used: 0, notes: null }; pages.push(current); room = bodyBudget - heading;
@@ -370,8 +334,7 @@ function paginate(order, profile, template, definitions, hasRibbon, warning) {
       const rows = [];
       let used = heading;
       while (offset < section.rows.length) {
-        const subExtra = (section.code === 'CBC' && section.rows[offset].key === 'neutrophils') ? 6.5 : 0;
-        const height = rowHeight(section.rows[offset]) + subExtra;
+        const height = rowHeight(section.rows[offset]);
         if (rows.length && used + height > bodyBudget - current.used) break;
         rows.push(section.rows[offset++]); used += height;
         if (used >= bodyBudget - current.used) break;
@@ -382,22 +345,19 @@ function paginate(order, profile, template, definitions, hasRibbon, warning) {
     }
   }
   const notes = splitNoteLines(order.notes || 'No additional clinical notes.');
-  const endAndSigHeight = 25;
-  const pageRowsCount = current.sections.reduce((s, sec) => s + sec.rows.length, 0);
-  // Standard pages with <10 rows & <3 sections render assay method subtitles (~4.2mm per row)
-  const methodAllowance = (!current.noteOnly && pageRowsCount < 10 && current.sections.length < 3) ? pageRowsCount * 4.5 + current.sections.length * 6 : 0;
-  const noteHeight = 15 + notes.length * 4.3;
-  if (current.used + methodAllowance + noteHeight + endAndSigHeight <= bodyBudget) {
+  const authorHeight = 16 + Math.max(lineCount(profile.labIncharge || 'Checked by', 42) + lineCount(profile.labInchargeQualification, 48), lineCount(profile.pathologist || order.approvedByName || order.approvedBy || 'Reviewer details not configured', 42) + lineCount(profile.pathologistQualification, 48)) * 3.6;
+  const noteHeight = 13 + notes.length * 3.8;
+  if (current.used + noteHeight + authorHeight <= bodyBudget) {
     current.notes = notes.join('\n'); current.signatures = true;
   } else {
     let offset = 0;
     while (offset < notes.length) {
-      const room = Math.max(1, Math.floor((bodyBudget - 18) / 4.3));
+      const room = Math.max(1, Math.floor((bodyBudget - 13) / 3.8));
       const lines = notes.slice(offset, offset + Math.min(24, room));
-      current = { sections: [], used: 18 + lines.length * 4.3, notes: lines.join('\n'), noteOnly: true, notesContinued: offset > 0 };
+      current = { sections: [], used: 13 + lines.length * 3.8, notes: lines.join('\n'), noteOnly: true, notesContinued: offset > 0 };
       pages.push(current); offset += lines.length;
     }
-    if (current.used + endAndSigHeight > bodyBudget) pages.push({ sections: [], used: endAndSigHeight, notes: null, noteOnly: true, signatures: true });
+    if (current.used + authorHeight > bodyBudget) pages.push({ sections: [], used: authorHeight, notes: null, noteOnly: true, signatures: true });
     else current.signatures = true;
   }
   return pages;
@@ -421,11 +381,12 @@ function resultRow(row, code, sex) {
   const parameter = row.parameter || { name: row.key, unit: 'Not recorded', reference: 'Not recorded' };
   const numeric = numericValue(row.value), available = numeric !== null;
   const isOk = isValidResult(row.value);
-  const flag = !row.unknown && available && Number.isFinite(parameter.min) && numeric < parameter.min ? 'L' : !row.unknown && available && Number.isFinite(parameter.max) && numeric > parameter.max ? 'H' : '';
-  // Use sex-specific reference interval string when available (display only; min/max thresholds are unchanged),
-  // unless an archived or custom reference was explicitly specified for this parameter.
+  // Use sex-specific reference interval and thresholds when available unless an archived/custom reference was supplied.
   const isCustomRef = parameter.reference && (!PARAMETERS[row.key] || parameter.reference !== PARAMETERS[row.key].reference);
   const sexRef = !isCustomRef && (sex === 'Male' && parameter.referenceM ? parameter.referenceM : sex === 'Female' && parameter.referenceF ? parameter.referenceF : null);
+  const minBound = !isCustomRef && sex === 'Male' && Number.isFinite(parameter.minM) ? parameter.minM : !isCustomRef && sex === 'Female' && Number.isFinite(parameter.minF) ? parameter.minF : parameter.min;
+  const maxBound = !isCustomRef && sex === 'Male' && Number.isFinite(parameter.maxM) ? parameter.maxM : !isCustomRef && sex === 'Female' && Number.isFinite(parameter.maxF) ? parameter.maxF : parameter.max;
+  const flag = !row.unknown && available && Number.isFinite(minBound) && numeric < minBound ? 'L' : !row.unknown && available && Number.isFinite(maxBound) && numeric > maxBound ? 'H' : '';
   const reference = row.unknown ? 'Not captured' : sexRef || parameter.reference || (Number.isFinite(parameter.min) && Number.isFinite(parameter.max) ? `${parameter.min} – ${parameter.max}` : 'Not captured');
   const method = PARAMETER_METHODS[row.key] || '';
   const safeCssMethod = method ? `--method:'${escape(method).replace(/'/g, '')}'` : '';
@@ -553,6 +514,6 @@ export function renderReport(order = {}, settings = {}, options = {}) {
     const pageRowsCount = page.sections.reduce((sum, s) => sum + s.rows.length + (s.code === 'CBC' ? 1 : 0), 0);
     const isDense = pageRowsCount >= 10 || page.sections.length >= 3;
     const isLastPage = index === pages.length - 1;
-    return `<article class="report-page" data-density="${isDense ? 'dense' : 'standard'}" aria-label="Report page ${index + 1} of ${pages.length}">${watermarkSvg}<div class="molecular-lattice-tr" aria-hidden="true" style="position:absolute;top:98px;right:10px;width:75px;height:75px;pointer-events:none;z-index:0;opacity:0.4;">${molecularLatticeSvg}</div><div class="molecular-lattice-bl" aria-hidden="true" style="position:absolute;bottom:85px;left:10px;width:75px;height:75px;pointer-events:none;z-index:0;opacity:0.4;">${molecularLatticeSvg}</div>${mode ? `<div class="report-status-ribbon ${draft ? 'report-status-draft' : ''}">${escape(mode)}</div>` : ''}${letterhead(profile)}${patientDetails(order)}${warning ? `<p class="report-data-warning">${escape(warning)}</p>` : ''}<div class="report-document-title"><span>LABORATORY REPORT</span><b>${draft ? 'DRAFT' : 'RESULTS'}</b></div><main class="report-results-content">${page.sections.length ? page.sections.map(section => `<section class="report-test-section"><div class="report-test-heading"><span>${text(section.test.department)}</span><h3>${text(section.test.name)}${section.continued ? ' <small>(continued)</small>' : ''}</h3><div>Specimen: ${text(section.test.sample)}</div></div><table class="report-results-table"><colgroup><col style="width:39%"><col style="width:15%"><col style="width:16%"><col style="width:30%"></colgroup><thead><tr><th>TEST DESCRIPTION</th><th>RESULT</th><th>UNITS</th><th>BIOLOGICAL REFERENCE</th></tr></thead><tbody>${section.rows.map(row => resultRow(row, section.code, order.sex)).join('')}</tbody></table></section>`).join('') : page.noteOnly ? '' : '<p class="report-no-results">No test results are available for this order.</p>'}</main>${page.notes !== null ? `<section class="report-clinical-notes"><h4>Interpretation :${page.notesContinued ? ' (continued)' : ''}</h4><p>${escape(page.notes)}</p><small>H = above reference interval · L = below reference interval. Interpret results with clinical findings. Reference intervals require laboratory validation.</small></section>` : ''}${isLastPage ? '<div class="report-end-marker">****End Of The Report****</div>' : ''}${page.signatures ? signatures(order, profile) : '<p class="report-continued-note">Report continued on the next page.</p>'}<footer class="report-page-footer"><div class="report-footer-rule"></div><div class="report-footer-row"><span>${text(order.id)}</span><strong>Page ${index + 1} of ${pages.length}</strong><span>${isLastPage ? 'End of report' : 'Continued'}</span></div>${profile.reportFooter ? `<p>${escape(profile.reportFooter)}</p>` : '<p>Results relate only to the sample tested. Please correlate with clinical findings.</p>'}${profile.workingHours ? `<p>Working hours: ${escape(profile.workingHours)}</p>` : ''}</footer>${bottomBanner()}</article>`;
+    return `<article class="report-page" data-density="${isDense ? 'dense' : 'standard'}" aria-label="Report page ${index + 1} of ${pages.length}">${watermarkSvg}<div class="molecular-lattice-tr" aria-hidden="true" style="position:absolute;top:98px;right:10px;width:75px;height:75px;pointer-events:none;z-index:0;opacity:0.4;">${molecularLatticeSvg}</div><div class="molecular-lattice-bl" aria-hidden="true" style="position:absolute;bottom:85px;left:10px;width:75px;height:75px;pointer-events:none;z-index:0;opacity:0.4;">${molecularLatticeSvg}</div>${mode ? `<div class="report-status-ribbon ${draft ? 'report-status-draft' : ''}">${escape(mode)}</div>` : ''}${letterhead(profile)}${patientDetails(order)}${warning ? `<p class="report-data-warning">${escape(warning)}</p>` : ''}<div class="report-document-title"><span>LABORATORY REPORT</span><b>${draft ? 'DRAFT' : 'RESULTS'}</b></div><main class="report-results-content">${page.sections.length ? page.sections.map(section => `<section class="report-test-section"><div class="report-test-heading"><span>${text(section.test.department)}</span><h3>${text(section.test.name)}${section.continued ? ' <small>(continued)</small>' : ''}</h3><div>Specimen: ${text(section.test.sample)}</div></div><table class="report-results-table"><colgroup><col style="width:43%"><col style="width:16%"><col style="width:17%"><col style="width:24%"></colgroup><thead><tr><th>TEST DESCRIPTION</th><th>RESULT</th><th>UNITS</th><th>BIOLOGICAL REFERENCE</th></tr></thead><tbody>${section.rows.map(row => resultRow(row, section.code, order.sex)).join('')}</tbody></table></section>`).join('') : page.noteOnly ? '' : '<p class="report-no-results">No test results are available for this order.</p>'}</main>${page.notes !== null ? `<section class="report-clinical-notes"><h4>Interpretation :${page.notesContinued ? ' (continued)' : ''}</h4><p>${escape(page.notes)}</p><small>H = above reference interval · L = below reference interval. Interpret results with clinical findings. Reference intervals require laboratory validation.</small></section>` : ''}${isLastPage ? '<div class="report-end-marker">****End Of The Report****</div>' : ''}${page.signatures ? signatures(order, profile) : '<p class="report-continued-note">Report continued on the next page.</p>'}<footer class="report-page-footer"><div class="report-footer-rule"></div><div class="report-footer-row"><span>${text(order.id)}</span><strong>Page ${index + 1} of ${pages.length}</strong><span>${isLastPage ? 'End of report' : 'Continued'}</span></div>${profile.reportFooter ? `<p>${escape(profile.reportFooter)}</p>` : '<p>Results relate only to the sample tested. Please correlate with clinical findings.</p>'}${profile.workingHours ? `<p>Working hours: ${escape(profile.workingHours)}</p>` : ''}</footer>${bottomBanner()}</article>`;
   }).join('')}</div>`;
 }
